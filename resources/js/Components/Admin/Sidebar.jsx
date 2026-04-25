@@ -17,17 +17,16 @@ export default function Sidebar({ admin, currentPage }) {
 
     return (
         <>
-            {/* Mobile Toggle Button */}
+            {/* Toggle Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 style={styles.toggleButton}
-                className="md:hidden"
             >
-                ☰
+                {isOpen ? "✕" : "☰"}
             </button>
 
             {/* Sidebar */}
-            <div style={styles.sidebar}>
+            <div style={{ ...styles.sidebar, left: isOpen ? "0" : "-280px" }}>
                 {/* Logo Section */}
                 <div style={styles.logoSection}>
                     <div style={styles.logo}>RH</div>
@@ -97,17 +96,18 @@ export default function Sidebar({ admin, currentPage }) {
 
 const styles = {
     toggleButton: {
-        display: "none",
         position: "fixed",
         top: "16px",
         left: "16px",
-        zIndex: 1000,
-        background: "white",
-        border: "1px solid #e2e8f0",
-        padding: "8px 12px",
+        zIndex: 1001,
+        background: "#0F6E56",
+        border: "none",
+        padding: "10px 14px",
         borderRadius: "8px",
         cursor: "pointer",
         fontSize: "20px",
+        color: "white",
+        fontWeight: "bold",
     },
     sidebar: {
         display: "flex",
@@ -119,8 +119,10 @@ const styles = {
         padding: "24px 16px",
         boxSizing: "border-box",
         position: "fixed",
-        left: 0,
         top: 0,
+        left: 0,
+        transition: "left 0.3s ease",
+        zIndex: 1000,
     },
     logoSection: {
         display: "flex",
