@@ -1,4 +1,5 @@
 import { Head, router } from "@inertiajs/react";
+import Sidebar from "../../../Components/Admin/Sidebar";
 
 export default function Dashboard({ admin }) {
     const logout = () => {
@@ -8,6 +9,7 @@ export default function Dashboard({ admin }) {
     return (
         <>
             <Head title="Tableau de bord" />
+            <Sidebar admin={admin} currentPage="admin.dashboard" />
             <div style={styles.page}>
                 <div style={styles.header}>
                     <div style={styles.logo}>RH</div>
@@ -46,6 +48,7 @@ const styles = {
         background: "#f0f4f8",
         fontFamily: "system-ui, sans-serif",
         padding: "24px",
+        marginLeft: "280px",
     },
     header: {
         display: "flex",
