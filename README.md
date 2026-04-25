@@ -1,33 +1,201 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 📋 RH Management Platform
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Plateforme de gestion des ressources humaines (RH) permettant aux administrateurs de gérer les employés de manière efficace et sécurisée.
 
-## About Laravel
+## 🎯 Vue d'ensemble
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+**RH Management** est une application web moderne construite avec **Laravel** et **React (Inertia.js)** pour la gestion des employés. Seuls les administrateurs peuvent créer, consulter et gérer les employés. Le système d'inscription publique a été désactivé pour garantir la sécurité.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## ✨ Fonctionnalités
 
-## Learning Laravel
+### 🔐 Authentification & Sécurité
+- ✅ **Admin Panel** : Interface d'administration sécurisée avec authentification dédiée
+- ✅ **Middleware de Protection** : Seuls les admins authentifiés peuvent accéder aux fonctionnalités
+- ✅ **Inscription Désactivée** : Aucun utilisateur ne peut s'auto-enregistrer
+- ✅ **Gestion Sécurisée** : Seul l'admin peut créer des employés
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 👥 Gestion des Employés
+- ✅ **Créer un Employé** : Ajouter des employés avec tous les détails requis
+- ✅ **Lister les Employés** : Consulter tous les employés dans un tableau interactif
+- ✅ **Supprimer un Employé** : Supprimer des employés avec confirmation
+- ✅ **Détails Complets** : Nom, Prénoms, Numéro téléphone, Email (optionnel), Poste
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 🎨 Interface Utilisateur
+- ✅ **Sidebar Navigation** : Menu latéral avec toggle pour ouvrir/fermer
+- ✅ **Thème Sombre** : Design moderne avec fond sombre et texte blanc
+- ✅ **Responsive Design** : Adapté desktop et mobile
+- ✅ **Tableau de Bord** : Affichage des infos admin
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+---
+
+## 📊 Champs des Employés
+
+Chaque employé contient les informations suivantes dans la table `users` :
+
+| Champ | Type | Obligatoire | Description |
+|-------|------|------------|-------------|
+| `first_name` | string | ✅ Oui | Prénom de l'employé |
+| `last_name` | string | ✅ Oui | Nom de l'employé |
+| `phone` | string | ✅ Oui | Numéro de téléphone |
+| `email` | string | ❌ Non | Email (optionnel) |
+| `position` | string | ✅ Oui | Poste/Position |
+| `password` | string (hashed) | ✅ Oui | Mot de passe sécurisé |
+
+---
+
+## 🛣️ Routes Principales
+
+### Routes Admin (Protégées par middleware)
+```
+GET  /admin/dashboard          - Tableau de bord admin
+GET  /admin/employees          - Liste des employés
+GET  /admin/employees/create   - Formulaire création employé
+POST /admin/employees          - Créer un employé
+DELETE /admin/employees/{id}   - Supprimer un employé
+POST /admin/logout             - Déconnexion admin
+```
+
+### Routes Utilisateurs (Public)
+```
+GET  /login                    - Formulaire de connexion
+POST /login                    - Soumettre la connexion
+GET  /                         - Page d'accueil
+```
+
+**Note** : La route `/register` a été supprimée et n'est plus accessible.
+
+---
+
+## 🚀 Installation & Setup
+
+### Prérequis
+- PHP 8.2+
+- Laravel 11
+- Node.js 18+
+- Composer
+- MySQL/SQLite
+
+### Étapes d'installation
+
+1. **Cloner le projet**
+```bash
+git clone <repository-url>
+cd management
+```
+
+2. **Installer les dépendances**
+```bash
+composer install
+npm install
+```
+
+3. **Configurer l'environnement**
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+4. **Configurer la base de données** dans `.env`
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=management
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+5. **Exécuter les migrations**
+```bash
+php artisan migrate
+```
+
+6. **Créer un admin** (si nécessaire)
+```bash
+php artisan tinker
+# Puis créer un Admin via le modèle
+```
+
+7. **Lancer le serveur de développement**
+```bash
+php artisan serve
+npm run dev
+```
+
+L'application est accessible à `http://127.0.0.1:8000`
+
+---
+
+## 📝 Mises à Jour Récentes (25 avril 2026)
+
+### ✅ Nouvelles Fonctionnalités
+- ✨ **Sidebar Navigation** : Menu latéral avec theme sombre (fond #1a202c, texte blanc)
+- ✨ **Gestion Complète des Employés** : CRUD complet pour la gestion des employés
+- ✨ **Formulaire de Création** : Formulaire d'ajout d'employé avec validation
+- ✨ **Table Interactive** : Affichage des tous les employés avec actions
+
+### 🔒 Modifications de Sécurité
+- 🔐 **Suppression de /register** : Route d'inscription supprimée et inaccessible
+- 🔐 **Seul Admin Crée Users** : Uniquement l'admin peut créer des utilisateurs
+- 🔐 **Authentification Obligatoire** : Middleware de protection sur toutes routes admin
+
+### 📊 Changements Base de Données
+- 📋 Migration créée pour modifier la table `users`
+- 📋 Nouvel structure : `first_name`, `last_name`, `phone`, `position`, `email` (optionnel)
+- 📋 Ancien champ `name` remplacé par `first_name` et `last_name`
+
+### 🎨 Interface Utilisateur
+- 🎨 Dashboard admin avec infos personnelles
+- 🎨 Sidebar sombre et moderne avec toggle
+- 🎨 Tableau employés avec colonnes complètes
+- 🎨 Boutons d'action (Créer, Supprimer) stylisés
+
+---
+
+## 📂 Structure des Fichiers
+
+```
+resources/js/
+├── Components/
+│   └── Admin/
+│       └── Sidebar.jsx           # Composant Sidebar
+├── Pages/
+│   ├── Admin/
+│   │   ├── Dashboard.jsx         # Tableau de bord admin
+│   │   └── Employees/
+│   │       ├── Employees.jsx     # Liste des employés
+│   │       └── CreateEmployee.jsx # Formulaire création
+│   └── Welcome.jsx               # Page d'accueil
+```
+
+---
+
+## 🔧 Configuration Importante
+
+### Modèle User
+```php
+#[Fillable(['first_name', 'last_name', 'email', 'phone', 'position', 'password'])]
+```
+
+### Middleware Admin
+Routes protégées par `AdminAuth` middleware pour garantir que seul l'admin accède aux fonctionnalités.
+
+---
+
+## 📞 Support & Maintenance
+
+Pour toute question ou problème :
+- Vérifier les logs : `storage/logs/`
+- Vider le cache : `php artisan cache:clear`
+- Réinitialiser les routes : `php artisan route:clear`
+
+---
+
+## 📄 License
+
+Ce projet est une application Laravel standard. Voir LICENSE pour plus de détails.
 
 ## Agentic Development
 
