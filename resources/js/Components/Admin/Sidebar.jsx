@@ -8,7 +8,7 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
 
     const menuItems = [
         { label: "Tableau de bord", route: "admin.dashboard", icon: "📊" },
-        // { label: "Utilisateurs", route: "admin.users", icon: "👥" },
+        { label: "Employés", route: "admin.employees", icon: "👥" },
         // { label: "Paramètres", route: "admin.settings", icon: "⚙️" },
         // { label: "Rapports", route: "admin.reports", icon: "📈" },
     ];

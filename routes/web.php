@@ -9,7 +9,6 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
     ]);
@@ -32,6 +31,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::middleware(\App\Http\Middleware\AdminAuth::class)->group(function () {
         Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
+        Route::get('/employees', [AuthController::class, 'employees'])->name('employees');
+        Route::get('/employees/create', [AuthController::class, 'showCreateEmployee'])->name('employees.create');
+        Route::post('/employees', [AuthController::class, 'createEmployee'])->name('employees.store');
+        Route::delete('/employees/{id}', [AuthController::class, 'deleteEmployee'])->name('employees.delete');
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     });
 });

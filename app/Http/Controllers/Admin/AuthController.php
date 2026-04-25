@@ -46,6 +46,51 @@ class AuthController extends Controller
         return Inertia::render('Admin/Dashboard/Dashboard', ['admin' => $admin]);
     }
 
+    public function employees()
+    {
+        $admin = Admin::findOrFail(session('admin_id'));
+        $employees = \App\Models\User::all();
+        return Inertia::render('Admin/Employees/Employees', ['admin' => $admin, 'employees' => $employees]);
+    }
+
+    public function showCreateEmployee()
+    {
+        $admin = Admin::findOrFail(session('admin_id'));
+        return Inertia::render('Admin/Employees/CreateEmployee', ['admin' => $admin]);
+    }
+
+    public function createEmployee(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+        ], [
+            'name.required' => 'Le nom est obligatoire.',
+            'email.required' => 'L\'email est obligatoire.',
+            'email.email' => 'L\'email n\'est pas valide.',
+            'email.unique' => 'Cet email est déjà utilisé.',
+            'password.required' => 'Le mot de passe est obligatoire.',
+            'password.min' => 'Le mot de passe doit contenir au moins 6 caractères.',
+        ]);
+
+        \App\Models\User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        return redirect()->route('admin.employees')->with('success', 'Employé créé avec succès');
+    }
+
+    public function deleteEmployee($id)
+    {
+        $employee = \App\Models\User::findOrFail($id);
+        $employee->delete();
+
+        return redirect()->route('admin.employees')->with('success', 'Employé supprimé avec succès');
+    }
+
     public function logout()
     {
         session()->forget(['admin_logged_in', 'admin_id']);
