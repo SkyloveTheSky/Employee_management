@@ -7,10 +7,11 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['first_name', 'last_name', 'email', 'phone', 'position', 'password'])]
+#[Fillable(['first_name', 'last_name', 'email', 'phone', 'position', 'hire_date', 'salary_base', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -26,7 +27,14 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'hire_date' => 'date',
+            'salary_base' => 'decimal:2',
             'password' => 'hashed',
         ];
+    }
+
+    public function payrolls(): HasMany
+    {
+        return $this->hasMany(Payroll::class);
     }
 }

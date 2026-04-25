@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\PayrollController;
+use App\Http\Controllers\Admin\CompanySettingsController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -34,7 +36,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/employees', [AuthController::class, 'employees'])->name('employees');
         Route::get('/employees/create', [AuthController::class, 'showCreateEmployee'])->name('employees.create');
         Route::post('/employees', [AuthController::class, 'createEmployee'])->name('employees.store');
+        Route::get('/employees/{id}/edit', [AuthController::class, 'showEditEmployee'])->name('employees.edit');
+        Route::patch('/employees/{id}', [AuthController::class, 'updateEmployee'])->name('employees.update');
         Route::delete('/employees/{id}', [AuthController::class, 'deleteEmployee'])->name('employees.delete');
+        Route::get('/payrolls', [PayrollController::class, 'index'])->name('payrolls.index');
+        Route::post('/payrolls', [PayrollController::class, 'store'])->name('payrolls.store');
+        Route::get('/payrolls/{id}/edit', [PayrollController::class, 'edit'])->name('payrolls.edit');
+        Route::patch('/payrolls/{id}', [PayrollController::class, 'update'])->name('payrolls.update');
+        Route::delete('/payrolls/{id}', [PayrollController::class, 'destroy'])->name('payrolls.delete');
+        Route::get('/settings/company', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');
+        Route::post('/settings/company', [CompanySettingsController::class, 'update'])->name('settings.company.update');
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     });
 });

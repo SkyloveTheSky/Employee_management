@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\Hash;
 
@@ -33,5 +34,10 @@ class Admin extends Authenticatable
     public function checkPassword(string $password): bool
     {
         return Hash::check($password, $this->attributes['password_admin']);
+    }
+
+    public function generatedPayrolls(): HasMany
+    {
+        return $this->hasMany(Payroll::class, 'generated_by_admin_id');
     }
 }

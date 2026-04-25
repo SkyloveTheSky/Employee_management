@@ -4,6 +4,17 @@ import { useState } from "react";
 
 export default function Employees({ admin, employees, isOpen: initialOpen = true }) {
     const [isOpen, setIsOpen] = useState(initialOpen);
+    const formatDate = (value) => {
+        if (!value) return "-";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "-";
+        return new Intl.DateTimeFormat("fr-FR", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        }).format(date);
+    };
+    const formatAr = (value) => `${Number(value || 0).toLocaleString("fr-FR")} Ar`;
 
     const handleDelete = (id, name) => {
         if (confirm(`Êtes-vous sûr de vouloir supprimer ${name} ?`)) {
@@ -42,6 +53,8 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
                                 <th style={styles.th}>Téléphone</th>
                                 <th style={styles.th}>Email</th>
                                 <th style={styles.th}>Poste</th>
+                                <th style={styles.th}>Date d'embauche</th>
+                                <th style={styles.th}>Salaire de base</th>
                                 <th style={styles.th}>Actions</th>
                             </tr>
                         </thead>
@@ -55,7 +68,15 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
                                         <td style={styles.td}>{employee.phone}</td>
                                         <td style={styles.td}>{employee.email || "N/A"}</td>
                                         <td style={styles.td}>{employee.position}</td>
-                                        <td style={styles.td}>
+                                        <td style={styles.td}>{formatDate(employee.hire_date)}</td>
+                                        <td style={styles.td}>{formatAr(employee.salary_base)}</td>
+                                        <td style={styles.actionsCell}>
+                                            <button
+                                                onClick={() => router.visit(route('admin.employees.edit', employee.id))}
+                                                style={styles.editButton}
+                                            >
+                                                Modifier
+                                            </button>
                                             <button
                                                 onClick={() => handleDelete(employee.id, `${employee.first_name} ${employee.last_name}`)}
                                                 style={styles.deleteButton}
@@ -67,7 +88,7 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="7" style={{ ...styles.td, textAlign: "center" }}>
+                                    <td colSpan="9" style={{ ...styles.td, textAlign: "center" }}>
                                         Aucun employé trouvé
                                     </td>
                                 </tr>
@@ -160,6 +181,23 @@ const styles = {
     td: {
         padding: "12px 16px",
         color: "#4a5568",
+    },
+    actionsCell: {
+        padding: "12px 16px",
+        color: "#4a5568",
+        display: "flex",
+        gap: "8px",
+    },
+    editButton: {
+        padding: "6px 12px",
+        background: "#3182ce",
+        color: "white",
+        border: "none",
+        borderRadius: "6px",
+        fontSize: "12px",
+        fontWeight: "600",
+        cursor: "pointer",
+        transition: "all 0.2s",
     },
     deleteButton: {
         padding: "6px 12px",

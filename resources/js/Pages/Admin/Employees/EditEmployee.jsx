@@ -1,0 +1,130 @@
+import { Head, router } from "@inertiajs/react";
+import Sidebar from "../../../Components/Admin/Sidebar";
+import { useState } from "react";
+
+export default function EditEmployee({ admin, employee, isOpen: initialOpen = true }) {
+    const [isOpen, setIsOpen] = useState(initialOpen);
+    const [formData, setFormData] = useState({
+        first_name: employee.first_name || "",
+        last_name: employee.last_name || "",
+        phone: employee.phone || "",
+        email: employee.email || "",
+        position: employee.position || "",
+        hire_date: employee.hire_date || "",
+        salary_base: employee.salary_base || 0,
+    });
+    const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState(false);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+        if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setLoading(true);
+        router.patch(route("admin.employees.update", employee.id), formData, {
+            onError: (validationErrors) => {
+                setErrors(validationErrors);
+                setLoading(false);
+            },
+            onSuccess: () => setLoading(false),
+        });
+    };
+
+    return (
+        <>
+            <Head title="Modifier un Employé" />
+            <Sidebar admin={admin} currentPage="admin.employees" isOpen={isOpen} setIsOpen={setIsOpen} />
+            <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
+                <div style={styles.header}>
+                    <div style={styles.logo}>RH</div>
+                    <div>
+                        <h1 style={styles.title}>Modifier un Employé</h1>
+                        <p style={styles.subtitle}>Mettez à jour les informations de l'employé</p>
+                    </div>
+                </div>
+
+                <div style={styles.formContainer}>
+                    <form onSubmit={handleSubmit}>
+                        <Field label="Prénom" name="first_name" value={formData.first_name} onChange={handleChange} error={errors.first_name} />
+                        <Field label="Nom" name="last_name" value={formData.last_name} onChange={handleChange} error={errors.last_name} />
+                        <Field label="Numéro Téléphone" name="phone" value={formData.phone} onChange={handleChange} error={errors.phone} />
+                        <Field label="Email (Optionnel)" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} />
+                        <Field label="Poste" name="position" value={formData.position} onChange={handleChange} error={errors.position} />
+
+                        <div style={styles.formGroup}>
+                            <label style={styles.label}>Date d'embauche</label>
+                            <input
+                                type="date"
+                                name="hire_date"
+                                value={formData.hire_date}
+                                onChange={handleChange}
+                                style={{ ...styles.input, borderColor: errors.hire_date ? "#e53e3e" : "#e2e8f0" }}
+                            />
+                            {errors.hire_date && <p style={styles.error}>{errors.hire_date}</p>}
+                        </div>
+
+                        <div style={styles.formGroup}>
+                            <label style={styles.label}>Salaire de base (Ar)</label>
+                            <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                name="salary_base"
+                                value={formData.salary_base}
+                                onChange={handleChange}
+                                style={{ ...styles.input, borderColor: errors.salary_base ? "#e53e3e" : "#e2e8f0" }}
+                            />
+                            {errors.salary_base && <p style={styles.error}>{errors.salary_base}</p>}
+                        </div>
+
+                        <div style={styles.formActions}>
+                            <button type="button" onClick={() => router.visit(route("admin.employees"))} style={styles.cancelButton} disabled={loading}>
+                                Annuler
+                            </button>
+                            <button type="submit" style={styles.submitButton} disabled={loading}>
+                                {loading ? "Mise à jour..." : "Enregistrer"}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </>
+    );
+}
+
+function Field({ label, name, value, onChange, error, type = "text" }) {
+    return (
+        <div style={styles.formGroup}>
+            <label style={styles.label}>{label}</label>
+            <input
+                type={type}
+                name={name}
+                value={value}
+                onChange={onChange}
+                style={{ ...styles.input, borderColor: error ? "#e53e3e" : "#e2e8f0" }}
+            />
+            {error && <p style={styles.error}>{error}</p>}
+        </div>
+    );
+}
+
+const styles = {
+    page: { minHeight: "100vh", background: "#f0f4f8", fontFamily: "system-ui, sans-serif", padding: "24px", transition: "margin-left 0.3s ease" },
+    header: { display: "flex", alignItems: "center", gap: "16px", background: "white", padding: "20px 24px", borderRadius: "12px", marginBottom: "24px", border: "1px solid #e2e8f0" },
+    logo: { width: "44px", height: "44px", background: "#0F6E56", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "16px", flexShrink: 0 },
+    title: { fontSize: "18px", fontWeight: "600", color: "#1a202c", margin: 0 },
+    subtitle: { fontSize: "13px", color: "#718096", margin: 0 },
+    formContainer: { background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", padding: "24px", maxWidth: "520px" },
+    formGroup: { marginBottom: "18px" },
+    label: { display: "block", fontSize: "13px", fontWeight: "600", color: "#1a202c", marginBottom: "8px" },
+    input: { width: "100%", padding: "10px 12px", fontSize: "14px", border: "1px solid #e2e8f0", borderRadius: "8px", boxSizing: "border-box", fontFamily: "system-ui, sans-serif" },
+    error: { fontSize: "12px", color: "#e53e3e", margin: "4px 0 0" },
+    formActions: { display: "flex", gap: "12px", marginTop: "18px" },
+    cancelButton: { flex: 1, padding: "10px 16px", background: "white", color: "#718096", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
+    submitButton: { flex: 1, padding: "10px 16px", background: "#0F6E56", color: "white", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
+};
+

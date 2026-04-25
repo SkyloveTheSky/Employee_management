@@ -10,6 +10,8 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
         phone: "",
         email: "",
         position: "",
+        hire_date: "",
+        salary_base: "",
         password: "",
     });
     const [errors, setErrors] = useState({});
@@ -139,6 +141,38 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
                                 }}
                             />
                             {errors.position && <p style={styles.error}>{errors.position}</p>}
+                        </div>
+
+                        <div style={styles.formGroup}>
+                            <label style={styles.label}>Date d'embauche</label>
+                            <input
+                                type="date"
+                                name="hire_date"
+                                value={formData.hire_date}
+                                onChange={handleChange}
+                                style={{
+                                    ...styles.input,
+                                    borderColor: errors.hire_date ? "#e53e3e" : "#e2e8f0",
+                                }}
+                            />
+                            {errors.hire_date && <p style={styles.error}>{errors.hire_date}</p>}
+                        </div>
+
+                        <div style={styles.formGroup}>
+                            <label style={styles.label}>Salaire de base (Ar)</label>
+                            <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                name="salary_base"
+                                value={formData.salary_base}
+                                onChange={handleChange}
+                                style={{
+                                    ...styles.input,
+                                    borderColor: errors.salary_base ? "#e53e3e" : "#e2e8f0",
+                                }}
+                            />
+                            {errors.salary_base && <p style={styles.error}>{errors.salary_base}</p>}
                         </div>
 
                         <div style={styles.formGroup}>
