@@ -32,9 +32,9 @@ class CompanySettingsController extends Controller
             'nif' => ['nullable', 'string', 'max:255'],
             'stat' => ['nullable', 'string', 'max:255'],
             'rcs' => ['nullable', 'string', 'max:255'],
-            'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:2048'],
         ], [
-            'logo.mimes' => 'Le logo doit être une image (jpg, png, webp).',
+            'logo.mimes' => 'Le logo doit être une image (jpg ou png).',
             'logo.max' => 'Le logo ne doit pas dépasser 2MB.',
         ]);
 

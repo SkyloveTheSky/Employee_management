@@ -148,6 +148,7 @@ export default function Index({ admin, payrolls, employees }) {
                                             <td style={styles.td}>{payroll.payment_status === "paid" ? "Payé" : "Non payé"}</td>
                                             <td style={styles.actionsCell}>
                                                 <button onClick={() => router.visit(route("admin.payrolls.edit", payroll.id))} style={styles.editButton}>Modifier</button>
+                                                <button onClick={() => window.open(route("admin.payrolls.pdf", payroll.id), "_blank")} style={styles.pdfButton}>PDF</button>
                                                 <button
                                                     onClick={() => {
                                                         if (confirm("Supprimer cette fiche de paie ?")) router.delete(route("admin.payrolls.delete", payroll.id));
@@ -220,6 +221,7 @@ const styles = {
     td: { padding: "12px 16px", color: "#4a5568", borderBottom: "1px solid #e2e8f0" },
     actionsCell: { padding: "12px 16px", color: "#4a5568", borderBottom: "1px solid #e2e8f0", display: "flex", gap: "8px" },
     editButton: { padding: "6px 12px", background: "#3182ce", color: "white", border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
+    pdfButton: { padding: "6px 12px", background: "#111827", color: "white", border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
     deleteButton: { padding: "6px 12px", background: "#e53e3e", color: "white", border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
     innerTable: { width: "100%", borderCollapse: "collapse", background: "#f9fafb" },
     innerTh: { border: "1px solid #e2e8f0", padding: "8px", textAlign: "left", fontSize: "12px", color: "#1a202c" },

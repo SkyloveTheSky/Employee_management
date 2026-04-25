@@ -44,6 +44,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/payrolls/{id}/edit', [PayrollController::class, 'edit'])->name('payrolls.edit');
         Route::patch('/payrolls/{id}', [PayrollController::class, 'update'])->name('payrolls.update');
         Route::delete('/payrolls/{id}', [PayrollController::class, 'destroy'])->name('payrolls.delete');
+        Route::get('/payrolls/{id}/pdf', [PayrollController::class, 'pdf'])->name('payrolls.pdf');
         Route::get('/settings/company', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');
         Route::post('/settings/company', [CompanySettingsController::class, 'update'])->name('settings.company.update');
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

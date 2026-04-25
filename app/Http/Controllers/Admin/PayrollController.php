@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\CompanySetting;
 use App\Models\Payroll;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -112,6 +115,7 @@ class PayrollController extends Controller
             'cnaps_amount' => $cnapsAmount,
             'assurance_amount' => $assuranceAmount,
             'total_retenu' => $totalRetenu,
+            'net_salary' => $netToPay,
             'net_to_pay' => $netToPay,
             'payment_method' => $validated['payment_method'],
             'payment_status' => $validated['payment_status'] ?? 'unpaid',
@@ -203,6 +207,7 @@ class PayrollController extends Controller
             'cnaps_amount' => $cnapsAmount,
             'assurance_amount' => $assuranceAmount,
             'total_retenu' => $totalRetenu,
+            'net_salary' => $netToPay,
             'net_to_pay' => $netToPay,
             'payment_method' => $validated['payment_method'],
             'payment_status' => $validated['payment_status'] ?? 'unpaid',
@@ -219,6 +224,66 @@ class PayrollController extends Controller
         $payroll->delete();
 
         return redirect()->route('admin.payrolls.index')->with('success', 'Fiche de paie supprimée avec succès.');
+    }
+
+    public function pdf($id)
+    {
+        $payroll = Payroll::query()->with('user')->findOrFail($id);
+        $settings = CompanySetting::query()->first();
+
+        // Construire le dossier avec le nom de l'employé
+        $employeeName = strtoupper($payroll->user->first_name . '_' . $payroll->user->last_name);
+        $basePath = storage_path('app/public');
+        $folderPath = "{$basePath}/{$employeeName}";
+
+        // Créer le dossier s'il n'existe pas
+        if (!is_dir($folderPath)) {
+            mkdir($folderPath, 0755, true);
+        }
+
+        $folder = $employeeName;
+
+        // Nommer le fichier: FP_Mois_Année.pdf (ex: FP_04_2026.pdf)
+        $monthPadded = str_pad((string) $payroll->period_month, 2, '0', STR_PAD_LEFT);
+        $filename = "FP_{$monthPadded}_{$payroll->period_year}.pdf";
+        $path = "{$folder}/{$filename}";
+
+        // Pas de doublon : si le PDF existe déjà, on le renvoie directement.
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->download($path, $filename);
+        }
+
+        $logoDataUri = null;
+        if ($settings?->logo_path && Storage::disk('public')->exists($settings->logo_path)) {
+            $content = Storage::disk('public')->get($settings->logo_path);
+            $ext = pathinfo($settings->logo_path, PATHINFO_EXTENSION) ?: 'png';
+            // DomPDF nécessite le support GD WebP pour intégrer un logo .webp.
+            // Si WebP n'est pas supporté, on ignore le logo pour éviter une exception.
+            if (strtolower($ext) === 'webp' && ! function_exists('imagecreatefromwebp')) {
+                $logoDataUri = null;
+            } else {
+                $logoDataUri = 'data:image/' . $ext . ';base64,' . base64_encode($content);
+            }
+        }
+
+        $lines = [
+            ['numero' => 1, 'designation' => 'Salaire de base', 'base' => $payroll->base_salary, 'taux' => null, 'gain' => $payroll->base_salary, 'retenu' => 0],
+            ['numero' => 2, 'designation' => 'Prime', 'base' => $payroll->base_salary, 'taux' => null, 'gain' => $payroll->prime_amount, 'retenu' => 0],
+            ['numero' => 3, 'designation' => 'Heures supplémentaires', 'base' => $payroll->base_salary, 'taux' => null, 'gain' => $payroll->overtime_amount, 'retenu' => 0],
+            ['numero' => 4, 'designation' => 'CNAPS', 'base' => $payroll->gross_salary, 'taux' => $payroll->cnaps_rate . '%', 'gain' => 0, 'retenu' => $payroll->cnaps_amount],
+            ['numero' => 5, 'designation' => 'Assurance', 'base' => $payroll->gross_salary, 'taux' => $payroll->assurance_rate . '%', 'gain' => 0, 'retenu' => $payroll->assurance_amount],
+        ];
+
+        $pdf = Pdf::loadView('admin.payrolls.payslip', [
+            'payroll' => $payroll,
+            'employee' => $payroll->user,
+            'settings' => $settings,
+            'logoDataUri' => $logoDataUri,
+            'lines' => $lines,
+        ])->setPaper('a4');
+        Storage::disk('public')->put($path, $pdf->output());
+
+        return $pdf->download($filename);
     }
 }
 

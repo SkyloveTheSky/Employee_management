@@ -24,6 +24,7 @@ class Payroll extends Model
         'cnaps_amount',
         'assurance_amount',
         'total_retenu',
+        'net_salary',
         'net_to_pay',
         'payment_method',
         'payment_status',
@@ -43,6 +44,7 @@ class Payroll extends Model
             'cnaps_amount' => 'decimal:2',
             'assurance_amount' => 'decimal:2',
             'total_retenu' => 'decimal:2',
+            'net_salary' => 'decimal:2',
             'net_to_pay' => 'decimal:2',
             'paid_at' => 'date',
         ];

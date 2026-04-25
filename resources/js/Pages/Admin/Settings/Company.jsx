@@ -42,10 +42,10 @@ export default function Company({ admin, settings }) {
                         <Field label="RCS" value={data.rcs} onChange={(v) => setData("rcs", v)} error={errors.rcs} />
 
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Logo (png/jpg/webp)</label>
+                            <label style={styles.label}>Logo (png/jpg)</label>
                             <input
                                 type="file"
-                                accept="image/png,image/jpeg,image/webp"
+                                accept="image/png,image/jpeg"
                                 onChange={(e) => setData("logo", e.target.files?.[0] || null)}
                                 style={styles.input}
                             />
