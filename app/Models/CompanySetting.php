@@ -13,6 +13,11 @@ class CompanySetting extends Model
         'stat',
         'rcs',
         'logo_path',
+        'payroll_styles',
+    ];
+
+    protected $casts = [
+        'payroll_styles' => 'array',
     ];
 }
 

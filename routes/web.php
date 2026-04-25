@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\PayrollController;
+use App\Http\Controllers\Admin\PayrollStyleController;
 use App\Http\Controllers\Admin\CompanySettingsController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -45,6 +46,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('/payrolls/{id}', [PayrollController::class, 'update'])->name('payrolls.update');
         Route::delete('/payrolls/{id}', [PayrollController::class, 'destroy'])->name('payrolls.delete');
         Route::get('/payrolls/{id}/pdf', [PayrollController::class, 'pdf'])->name('payrolls.pdf');
+        Route::get('/payrolls/style/edit', [PayrollStyleController::class, 'edit'])->name('payrolls.style.edit');
+        Route::post('/payrolls/style/update', [PayrollStyleController::class, 'update'])->name('payrolls.style.update');
         Route::get('/settings/company', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');
         Route::post('/settings/company', [CompanySettingsController::class, 'update'])->name('settings.company.update');
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

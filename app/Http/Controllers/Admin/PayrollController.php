@@ -280,7 +280,13 @@ class PayrollController extends Controller
             'settings' => $settings,
             'logoDataUri' => $logoDataUri,
             'lines' => $lines,
-        ])->setPaper('a4');
+            'styles' => $settings?->payroll_styles ?? [],
+        ])
+        ->setPaper('a4')
+        ->setOption('encoding', 'UTF-8')
+        ->setOption('isHtml5ParserEnabled', true)
+        ->setOption('isFontSubsettingEnabled', true);
+
         Storage::disk('public')->put($path, $pdf->output());
 
         return $pdf->download($filename);

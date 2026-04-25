@@ -10,6 +10,7 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
         { label: "Tableau de bord", route: "admin.dashboard", icon: "📊" },
         { label: "Employés", route: "admin.employees", icon: "👥" },
         { label: "Payrolls", route: "admin.payrolls.index", icon: "💰" },
+        { label: "Style PDF", route: "admin.payrolls.style.edit", icon: "🎨" },
         { label: "Entreprise", route: "admin.settings.company.edit", icon: "🏢" },
         // { label: "Rapports", route: "admin.reports", icon: "📈" },
     ];
