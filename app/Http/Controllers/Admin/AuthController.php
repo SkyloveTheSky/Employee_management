@@ -62,21 +62,29 @@ class AuthController extends Controller
     public function createEmployee(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'email' => 'nullable|email|unique:users,email',
+            'position' => 'required|string|max:255',
             'password' => 'required|string|min:6',
         ], [
-            'name.required' => 'Le nom est obligatoire.',
-            'email.required' => 'L\'email est obligatoire.',
+            'first_name.required' => 'Le prénom est obligatoire.',
+            'last_name.required' => 'Le nom est obligatoire.',
+            'phone.required' => 'Le numéro de téléphone est obligatoire.',
             'email.email' => 'L\'email n\'est pas valide.',
             'email.unique' => 'Cet email est déjà utilisé.',
+            'position.required' => 'Le poste est obligatoire.',
             'password.required' => 'Le mot de passe est obligatoire.',
             'password.min' => 'Le mot de passe doit contenir au moins 6 caractères.',
         ]);
 
         \App\Models\User::create([
-            'name' => $request->name,
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'phone' => $request->phone,
             'email' => $request->email,
+            'position' => $request->position,
             'password' => Hash::make($request->password),
         ]);
 

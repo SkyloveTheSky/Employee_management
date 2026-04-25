@@ -37,10 +37,11 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
                         <thead>
                             <tr>
                                 <th style={styles.th}>ID</th>
+                                <th style={styles.th}>Prénom</th>
                                 <th style={styles.th}>Nom</th>
-                                <th style={styles.th}>Email</th>
                                 <th style={styles.th}>Téléphone</th>
-                                <th style={styles.th}>Date de création</th>
+                                <th style={styles.th}>Email</th>
+                                <th style={styles.th}>Poste</th>
                                 <th style={styles.th}>Actions</th>
                             </tr>
                         </thead>
@@ -49,15 +50,14 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
                                 employees.map((employee) => (
                                     <tr key={employee.id} style={styles.tr}>
                                         <td style={styles.td}>{employee.id}</td>
-                                        <td style={styles.td}>{employee.name}</td>
-                                        <td style={styles.td}>{employee.email}</td>
-                                        <td style={styles.td}>{employee.phone || "N/A"}</td>
-                                        <td style={styles.td}>
-                                            {new Date(employee.created_at).toLocaleDateString("fr-FR")}
-                                        </td>
+                                        <td style={styles.td}>{employee.first_name}</td>
+                                        <td style={styles.td}>{employee.last_name}</td>
+                                        <td style={styles.td}>{employee.phone}</td>
+                                        <td style={styles.td}>{employee.email || "N/A"}</td>
+                                        <td style={styles.td}>{employee.position}</td>
                                         <td style={styles.td}>
                                             <button
-                                                onClick={() => handleDelete(employee.id, employee.name)}
+                                                onClick={() => handleDelete(employee.id, `${employee.first_name} ${employee.last_name}`)}
                                                 style={styles.deleteButton}
                                             >
                                                 Supprimer
@@ -67,7 +67,7 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="6" style={{ ...styles.td, textAlign: "center" }}>
+                                    <td colSpan="7" style={{ ...styles.td, textAlign: "center" }}>
                                         Aucun employé trouvé
                                     </td>
                                 </tr>

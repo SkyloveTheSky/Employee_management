@@ -5,8 +5,11 @@ import { useState } from "react";
 export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
     const [isOpen, setIsOpen] = useState(initialOpen);
     const [formData, setFormData] = useState({
-        name: "",
+        first_name: "",
+        last_name: "",
+        phone: "",
         email: "",
+        position: "",
         password: "",
     });
     const [errors, setErrors] = useState({});
@@ -59,23 +62,55 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
                 <div style={styles.formContainer}>
                     <form onSubmit={handleSubmit}>
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Nom Complet</label>
+                            <label style={styles.label}>Prénom</label>
                             <input
                                 type="text"
-                                name="name"
-                                value={formData.name}
+                                name="first_name"
+                                value={formData.first_name}
                                 onChange={handleChange}
-                                placeholder="Ex: Jean Dupont"
+                                placeholder="Ex: Jean"
                                 style={{
                                     ...styles.input,
-                                    borderColor: errors.name ? "#e53e3e" : "#e2e8f0",
+                                    borderColor: errors.first_name ? "#e53e3e" : "#e2e8f0",
                                 }}
                             />
-                            {errors.name && <p style={styles.error}>{errors.name}</p>}
+                            {errors.first_name && <p style={styles.error}>{errors.first_name}</p>}
                         </div>
 
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Email</label>
+                            <label style={styles.label}>Nom</label>
+                            <input
+                                type="text"
+                                name="last_name"
+                                value={formData.last_name}
+                                onChange={handleChange}
+                                placeholder="Ex: Dupont"
+                                style={{
+                                    ...styles.input,
+                                    borderColor: errors.last_name ? "#e53e3e" : "#e2e8f0",
+                                }}
+                            />
+                            {errors.last_name && <p style={styles.error}>{errors.last_name}</p>}
+                        </div>
+
+                        <div style={styles.formGroup}>
+                            <label style={styles.label}>Numéro Téléphone</label>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                placeholder="Ex: +33612345678"
+                                style={{
+                                    ...styles.input,
+                                    borderColor: errors.phone ? "#e53e3e" : "#e2e8f0",
+                                }}
+                            />
+                            {errors.phone && <p style={styles.error}>{errors.phone}</p>}
+                        </div>
+
+                        <div style={styles.formGroup}>
+                            <label style={styles.label}>Email (Optionnel)</label>
                             <input
                                 type="email"
                                 name="email"
@@ -88,6 +123,22 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
                                 }}
                             />
                             {errors.email && <p style={styles.error}>{errors.email}</p>}
+                        </div>
+
+                        <div style={styles.formGroup}>
+                            <label style={styles.label}>Poste</label>
+                            <input
+                                type="text"
+                                name="position"
+                                value={formData.position}
+                                onChange={handleChange}
+                                placeholder="Ex: Responsable RH"
+                                style={{
+                                    ...styles.input,
+                                    borderColor: errors.position ? "#e53e3e" : "#e2e8f0",
+                                }}
+                            />
+                            {errors.position && <p style={styles.error}>{errors.position}</p>}
                         </div>
 
                         <div style={styles.formGroup}>
