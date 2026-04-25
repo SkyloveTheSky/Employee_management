@@ -1,8 +1,6 @@
 import { Link, router } from "@inertiajs/react";
-import { useState } from "react";
 
-export default function Sidebar({ admin, currentPage }) {
-    const [isOpen, setIsOpen] = useState(false);
+export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
 
     const logout = () => {
         router.post(route("admin.logout"));
@@ -84,12 +82,7 @@ export default function Sidebar({ admin, currentPage }) {
             </div>
 
             {/* Overlay for mobile */}
-            {isOpen && (
-                <div
-                    onClick={() => setIsOpen(false)}
-                    style={styles.overlay}
-                />
-            )}
+            {/* Removed: overlay now allows clicking on content without closing sidebar */}
         </>
     );
 }
