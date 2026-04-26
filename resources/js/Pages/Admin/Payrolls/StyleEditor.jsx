@@ -327,7 +327,7 @@ export default function StyleEditor({ admin, styles }) {
                                         fontWeight: localStyles.table_totals?.fontWeight,
                                         color: localStyles.table_totals?.color,
                                     }}>
-                                        <td colspan="2" style={{
+                                        <td colSpan="2" style={{
                                             borderColor: localStyles.table_body?.borderColor,
                                             fontSize: localStyles.table_totals?.fontSize,
                                             padding: "4px",

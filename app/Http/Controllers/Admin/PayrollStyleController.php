@@ -17,11 +17,11 @@ class PayrollStyleController extends Controller
         $admin = Admin::findOrFail(session('admin_id'));
         $settings = CompanySetting::first();
 
-        $styles = $settings?->payroll_styles ?? $this->getDefaultStyles();
+        $template = $settings?->payroll_styles ?? $this->getDefaultTemplate();
 
-        return Inertia::render('Admin/Payrolls/StyleEditor', [
+        return Inertia::render('Admin/Payrolls/PdfTemplateBuilder', [
             'admin' => $admin,
-            'styles' => $styles,
+            'initialTemplate' => $template,
         ]);
     }
 
@@ -45,65 +45,15 @@ class PayrollStyleController extends Controller
         return back()->with('success', 'Styles personnalisés appliques avec succes.');
     }
 
-    private function getDefaultStyles(): array
+    private function getDefaultTemplate(): array
     {
         return [
-            'company_box' => [
-                'backgroundColor' => '#fafafa',
-                'borderColor' => '#999',
-                'borderWidth' => '1px',
-                'padding' => '8px',
-                'borderRadius' => '0px',
-                'fontFamily' => 'Liberation Sans, sans-serif',
-            ],
-            'employee_box' => [
-                'backgroundColor' => '#fafafa',
-                'borderColor' => '#999',
-                'borderWidth' => '1px',
-                'padding' => '8px',
-                'borderRadius' => '0px',
-                'fontFamily' => 'Liberation Sans, sans-serif',
-            ],
-            'title_text' => [
-                'fontSize' => '18px',
-                'fontWeight' => 'bold',
-                'color' => '#1a1a1a',
-                'textAlign' => 'center',
-                'marginBottom' => '10px',
-            ],
-            'box_title' => [
-                'fontSize' => '12px',
-                'fontWeight' => 'bold',
-                'color' => '#1a1a1a',
-                'borderBottomColor' => '#ccc',
-                'borderBottomWidth' => '1px',
-                'paddingBottom' => '3px',
-            ],
-            'table_header' => [
-                'backgroundColor' => '#e0e0e0',
-                'borderColor' => '#999',
-                'fontSize' => '10px',
-                'fontWeight' => 'bold',
-                'color' => '#1a1a1a',
-            ],
-            'table_body' => [
-                'borderColor' => '#999',
-                'fontSize' => '10px',
-                'color' => '#1a1a1a',
-            ],
-            'table_totals' => [
-                'backgroundColor' => '#f0f0f0',
-                'fontSize' => '10px',
-                'fontWeight' => 'bold',
-                'color' => '#1a1a1a',
-            ],
-            'payment_info_box' => [
-                'backgroundColor' => '#fafafa',
-                'borderColor' => '#999',
-                'borderWidth' => '1px',
-                'padding' => '8px',
-                'marginTop' => '18px',
-            ],
+            ['type' => 'company_info', 'label' => 'Informations Entreprise', 'order' => 1, 'visible' => true, 'style' => []],
+            ['type' => 'employee_info', 'label' => 'Informations Employé', 'order' => 2, 'visible' => true, 'style' => []],
+            ['type' => 'earnings_table', 'label' => 'Tableau des Gains', 'order' => 3, 'visible' => true, 'style' => []],
+            ['type' => 'deductions_table', 'label' => 'Tableau des Retenues', 'order' => 4, 'visible' => true, 'style' => []],
+            ['type' => 'summary_box', 'label' => 'Résumé', 'order' => 5, 'visible' => true, 'style' => []],
+            ['type' => 'payment_info', 'label' => 'Informations Paiement', 'order' => 6, 'visible' => true, 'style' => []],
         ];
     }
 }
