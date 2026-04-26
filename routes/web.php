@@ -34,22 +34,29 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::middleware(\App\Http\Middleware\AdminAuth::class)->group(function () {
         Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
+
+        // Employees — statiques avant dynamiques
         Route::get('/employees', [AuthController::class, 'employees'])->name('employees');
         Route::get('/employees/create', [AuthController::class, 'showCreateEmployee'])->name('employees.create');
         Route::post('/employees', [AuthController::class, 'createEmployee'])->name('employees.store');
         Route::get('/employees/{id}/edit', [AuthController::class, 'showEditEmployee'])->name('employees.edit');
         Route::patch('/employees/{id}', [AuthController::class, 'updateEmployee'])->name('employees.update');
         Route::delete('/employees/{id}', [AuthController::class, 'deleteEmployee'])->name('employees.delete');
+
+        // Payrolls — statiques EN PREMIER, dynamiques après
         Route::get('/payrolls', [PayrollController::class, 'index'])->name('payrolls.index');
         Route::post('/payrolls', [PayrollController::class, 'store'])->name('payrolls.store');
+        Route::get('/payrolls/style/edit', [PayrollStyleController::class, 'edit'])->name('payrolls.style.edit');
+        Route::post('/payrolls/style/update', [PayrollStyleController::class, 'update'])->name('payrolls.style.update');
         Route::get('/payrolls/{id}/edit', [PayrollController::class, 'edit'])->name('payrolls.edit');
         Route::patch('/payrolls/{id}', [PayrollController::class, 'update'])->name('payrolls.update');
         Route::delete('/payrolls/{id}', [PayrollController::class, 'destroy'])->name('payrolls.delete');
         Route::get('/payrolls/{id}/pdf', [PayrollController::class, 'pdf'])->name('payrolls.pdf');
-        Route::get('/payrolls/style/edit', [PayrollStyleController::class, 'edit'])->name('payrolls.style.edit');
-        Route::post('/payrolls/style/update', [PayrollStyleController::class, 'update'])->name('payrolls.style.update');
+
+        // Settings
         Route::get('/settings/company', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');
         Route::post('/settings/company', [CompanySettingsController::class, 'update'])->name('settings.company.update');
+
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     });
 });
