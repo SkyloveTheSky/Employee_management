@@ -4,10 +4,13 @@ import Sidebar from "../../../Components/Admin/Sidebar";
 
 export default function Index({ admin, payrolls, employees }) {
     const [isOpen, setIsOpen] = useState(true);
+    const currentDate = new Date();
+    const currentMonth = String(currentDate.getFullYear()).padStart(4, '0') + '-' +
+                         String(currentDate.getMonth() + 1).padStart(2, '0');
+
     const { data, setData, post, processing, errors, reset } = useForm({
         user_id: "",
-        period_month: "",
-        period_year: new Date().getFullYear(),
+        period_month_year: currentMonth,
         prime_amount: 0,
         overtime_amount: 0,
         cnaps_rate: 1,
@@ -21,7 +24,7 @@ export default function Index({ admin, payrolls, employees }) {
     const submit = (e) => {
         e.preventDefault();
         post(route("admin.payrolls.store"), {
-            onSuccess: () => reset("prime_amount", "overtime_amount", "cnaps_rate", "assurance_rate", "paid_at", "notes"),
+            onSuccess: () => reset("prime_amount", "overtime_amount", "cnaps_rate", "assurance_rate", "paid_at", "notes", "user_id"),
         });
     };
 
@@ -31,6 +34,29 @@ export default function Index({ admin, payrolls, employees }) {
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return "-";
         return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "long", year: "numeric" }).format(date);
+    };
+    const formatMonth = (monthYear) => {
+        if (!monthYear) return "-";
+        const [year, month] = monthYear.split('-');
+        const date = new Date(year, parseInt(month) - 1, 1);
+        return new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(date);
+    };
+
+    // Générer une liste de 24 mois (2 ans précédents + mois actuel + 1 futur)
+    const generateMonthsList = () => {
+        const months = [];
+        const today = new Date();
+
+        for (let i = -24; i <= 3; i++) {
+            const date = new Date(today.getFullYear(), today.getMonth() + i, 1);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const monthYear = `${year}-${month}`;
+            const label = formatMonth(monthYear);
+            months.push({ value: monthYear, label });
+        }
+
+        return months;
     };
 
     const buildLines = (payroll) => [
@@ -70,13 +96,26 @@ export default function Index({ admin, payrolls, employees }) {
                             {errors.user_id && <p style={styles.error}>{errors.user_id}</p>}
                         </div>
                         <div>
-                            <label style={styles.label}>Mois (1-12)</label>
-                            <input type="number" min="1" max="12" value={data.period_month} onChange={(e) => setData("period_month", e.target.value)} style={styles.input} />
+                            <label style={styles.label}>Période (Mois et Année)</label>
+                            <select
+                                value={data.period_month_year}
+                                onChange={(e) => setData("period_month_year", e.target.value)}
+                                style={styles.input}
+                            >
+                                <option value="">-- Sélectionner un mois --</option>
+                                {generateMonthsList().map((month) => (
+                                    <option key={month.value} value={month.value}>
+                                        {month.label}
+                                    </option>
+                                ))}
+                            </select>
+                            {data.period_month_year && (
+                                <p style={{ fontSize: '14px', color: '#666', marginTop: '5px', fontWeight: '500' }}>
+                                    📅 Fiche de paie pour: <strong>{formatMonth(data.period_month_year)}</strong>
+                                </p>
+                            )}
+                            {errors.period_month_year && <p style={styles.error}>{errors.period_month_year}</p>}
                             {errors.period_month && <p style={styles.error}>{errors.period_month}</p>}
-                        </div>
-                        <div>
-                            <label style={styles.label}>Année</label>
-                            <input type="number" min="2000" max="2100" value={data.period_year} onChange={(e) => setData("period_year", e.target.value)} style={styles.input} />
                             {errors.period_year && <p style={styles.error}>{errors.period_year}</p>}
                         </div>
                         <div>
@@ -139,7 +178,7 @@ export default function Index({ admin, payrolls, employees }) {
                                     <Fragment key={payroll.id}>
                                         <tr>
                                             <td style={styles.td}>{payroll.user?.first_name} {payroll.user?.last_name}</td>
-                                            <td style={styles.td}>{String(payroll.period_month).padStart(2, "0")}/{payroll.period_year}</td>
+                                            <td style={styles.td}>{`${String(payroll.period_month).padStart(2, "0")}/${payroll.period_year}`} ({formatMonth(`${payroll.period_year}-${String(payroll.period_month).padStart(2, "0")}`)}) </td>
                                             <td style={styles.td}>{formatAr(payroll.gross_salary)}</td>
                                             <td style={styles.td}>{formatAr(payroll.total_retenu)}</td>
                                             <td style={{ ...styles.td, fontWeight: 600 }}>{formatAr(payroll.net_to_pay)}</td>

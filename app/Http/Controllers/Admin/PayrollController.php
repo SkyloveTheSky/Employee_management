@@ -58,8 +58,7 @@ class PayrollController extends Controller
 
         $validated = $request->validate([
             'user_id' => ['required', 'exists:users,id'],
-            'period_month' => ['required', 'integer', 'between:1,12'],
-            'period_year' => ['required', 'integer', 'min:2000', 'max:2100'],
+            'period_month_year' => ['required', 'date_format:Y-m'],
             'prime_amount' => ['nullable', 'numeric', 'min:0'],
             'overtime_amount' => ['nullable', 'numeric', 'min:0'],
             'cnaps_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -70,10 +69,13 @@ class PayrollController extends Controller
             'notes' => ['nullable', 'string', 'max:1500'],
         ]);
 
+        // Extraire le mois et l'année du format YYYY-MM
+        [$period_year, $period_month] = explode('-', $validated['period_month_year']);
+
         $alreadyExists = Payroll::query()
             ->where('user_id', $validated['user_id'])
-            ->where('period_month', $validated['period_month'])
-            ->where('period_year', $validated['period_year'])
+            ->where('period_month', (int) $period_month)
+            ->where('period_year', (int) $period_year)
             ->exists();
 
         if ($alreadyExists) {
@@ -104,8 +106,8 @@ class PayrollController extends Controller
         Payroll::create([
             'user_id' => $validated['user_id'],
             'generated_by_admin_id' => session('admin_id'),
-            'period_month' => $validated['period_month'],
-            'period_year' => $validated['period_year'],
+            'period_month' => (int) $period_month,
+            'period_year' => (int) $period_year,
             'base_salary' => $baseSalary,
             'prime_amount' => $primeAmount,
             'overtime_amount' => $overtimeAmount,
@@ -150,8 +152,7 @@ class PayrollController extends Controller
 
         $validated = $request->validate([
             'user_id' => ['required', 'exists:users,id'],
-            'period_month' => ['required', 'integer', 'between:1,12'],
-            'period_year' => ['required', 'integer', 'min:2000', 'max:2100'],
+            'period_month_year' => ['required', 'date_format:Y-m'],
             'prime_amount' => ['nullable', 'numeric', 'min:0'],
             'overtime_amount' => ['nullable', 'numeric', 'min:0'],
             'cnaps_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -162,10 +163,13 @@ class PayrollController extends Controller
             'notes' => ['nullable', 'string', 'max:1500'],
         ]);
 
+        // Extraire le mois et l'année du format YYYY-MM
+        [$period_year, $period_month] = explode('-', $validated['period_month_year']);
+
         $alreadyExists = Payroll::query()
             ->where('user_id', $validated['user_id'])
-            ->where('period_month', $validated['period_month'])
-            ->where('period_year', $validated['period_year'])
+            ->where('period_month', (int) $period_month)
+            ->where('period_year', (int) $period_year)
             ->where('id', '!=', $payroll->id)
             ->exists();
 
@@ -196,8 +200,8 @@ class PayrollController extends Controller
 
         $payroll->update([
             'user_id' => $validated['user_id'],
-            'period_month' => $validated['period_month'],
-            'period_year' => $validated['period_year'],
+            'period_month' => (int) $period_month,
+            'period_year' => (int) $period_year,
             'base_salary' => $baseSalary,
             'prime_amount' => $primeAmount,
             'overtime_amount' => $overtimeAmount,

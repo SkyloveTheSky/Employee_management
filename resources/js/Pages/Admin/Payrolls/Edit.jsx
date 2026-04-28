@@ -4,10 +4,10 @@ import Sidebar from "../../../Components/Admin/Sidebar";
 
 export default function Edit({ admin, payroll, employees }) {
     const [isOpen, setIsOpen] = useState(true);
+    const monthYear = `${payroll.period_year}-${String(payroll.period_month).padStart(2, '0')}`;
     const { data, setData, patch, processing, errors } = useForm({
         user_id: payroll.user_id || "",
-        period_month: payroll.period_month || "",
-        period_year: payroll.period_year || new Date().getFullYear(),
+        period_month_year: monthYear,
         prime_amount: Number(payroll.prime_amount || 0),
         overtime_amount: Number(payroll.overtime_amount || 0),
         cnaps_rate: Number(payroll.cnaps_rate || 1),
@@ -21,6 +21,30 @@ export default function Edit({ admin, payroll, employees }) {
     const submit = (e) => {
         e.preventDefault();
         patch(route("admin.payrolls.update", payroll.id));
+    };
+
+    const formatMonth = (monthYear) => {
+        if (!monthYear) return "-";
+        const [year, month] = monthYear.split('-');
+        const date = new Date(year, parseInt(month) - 1, 1);
+        return new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(date);
+    };
+
+    // Générer une liste de 24 mois (2 ans précédents + mois actuel + 1 futur)
+    const generateMonthsList = () => {
+        const months = [];
+        const today = new Date();
+
+        for (let i = -24; i <= 3; i++) {
+            const date = new Date(today.getFullYear(), today.getMonth() + i, 1);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const monthYear = `${year}-${month}`;
+            const label = formatMonth(monthYear);
+            months.push({ value: monthYear, label });
+        }
+
+        return months;
     };
 
     return (
@@ -51,13 +75,26 @@ export default function Edit({ admin, payroll, employees }) {
                             {errors.user_id && <p style={styles.error}>{errors.user_id}</p>}
                         </div>
                         <div>
-                            <label style={styles.label}>Mois</label>
-                            <input type="number" min="1" max="12" value={data.period_month} onChange={(e) => setData("period_month", e.target.value)} style={styles.input} />
+                            <label style={styles.label}>Période (Mois et Année)</label>
+                            <select
+                                value={data.period_month_year}
+                                onChange={(e) => setData("period_month_year", e.target.value)}
+                                style={styles.input}
+                            >
+                                <option value="">-- Sélectionner un mois --</option>
+                                {generateMonthsList().map((month) => (
+                                    <option key={month.value} value={month.value}>
+                                        {month.label}
+                                    </option>
+                                ))}
+                            </select>
+                            {data.period_month_year && (
+                                <p style={{ fontSize: '14px', color: '#666', marginTop: '5px', fontWeight: '500' }}>
+                                    📅 Fiche de paie pour: <strong>{formatMonth(data.period_month_year)}</strong>
+                                </p>
+                            )}
+                            {errors.period_month_year && <p style={styles.error}>{errors.period_month_year}</p>}
                             {errors.period_month && <p style={styles.error}>{errors.period_month}</p>}
-                        </div>
-                        <div>
-                            <label style={styles.label}>Année</label>
-                            <input type="number" min="2000" max="2100" value={data.period_year} onChange={(e) => setData("period_year", e.target.value)} style={styles.input} />
                             {errors.period_year && <p style={styles.error}>{errors.period_year}</p>}
                         </div>
                         <div>
