@@ -1,5 +1,6 @@
 import { Link, router } from "@inertiajs/react";
 
+
 export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
 
     const logout = () => {
@@ -7,12 +8,11 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
     };
 
     const menuItems = [
-    { label: "Tableau de bord", route: "admin.dashboard", icon: "/assets/icon/dashboard.svg" },
-    { label: "Employés", route: "admin.employees", icon: "👥" },
-    { label: "Payrolls", route: "admin.payrolls.index", icon: "💰" },
-    { label: "Style PDF", route: "admin.payrolls.style.edit", icon: "🎨" },
-    { label: "Entreprise", route: "admin.settings.company.edit", icon: "🏢" },
-    // { label: "Rapports", route: "admin.reports", icon: "📈" },
+    { label: "Tableau de bord", route: "admin.dashboard", icon: "/assets/icon/dashboard.svg", isSvg: true },
+    { label: "Employés",        route: "admin.employees",              icon: "/assets/icon/users.svg", isSvg: true },
+    { label: "Payrolls",        route: "admin.payrolls.index",         icon: "/assets/icon/payroll.svg", isSvg: true },
+    { label: "Style PDF",       route: "admin.payrolls.style.edit",    icon: "/assets/icon/edit.svg", isSvg: true },
+    { label: "Entreprise",      route: "admin.settings.company.edit",  icon: "/assets/icon/building.svg", isSvg: true },
 ];
 
     return (
@@ -56,7 +56,10 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
                                         : "4px solid transparent",
                             }}
                         >
-                            <span style={styles.icon}>{item.icon}</span>
+                            {item.isSvg
+                                ? <img src={item.icon} alt={item.label} style={styles.iconImg} />
+                                : <span style={styles.icon}>{item.icon}</span>
+                            }
                             {item.label}
                         </Link>
                     ))}
@@ -118,6 +121,15 @@ const styles = {
         left: 0,
         transition: "left 0.3s ease",
         zIndex: 1000,
+    },
+    icon: {
+        fontSize: "18px",
+    },
+
+    iconImg: {
+        width: "20px",
+        height: "20px",
+        filter: "invert(1)",
     },
     logoSection: {
         display: "flex",
