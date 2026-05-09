@@ -6,18 +6,22 @@ use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\CompanySetting;
 use App\Models\Payroll;
+use App\Traits\BuildsLogoDataUri;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PayrollStyleController extends Controller
 {
+    use BuildsLogoDataUri;
+
     public function edit(): Response
     {
-        $admin = Admin::findOrFail(session('admin_id'));
+        $admin    = Admin::findOrFail(session('admin_id'));
         $settings = CompanySetting::first();
         $template = $settings?->payroll_styles ?? $this->getDefaultTemplate();
 
@@ -72,7 +76,6 @@ class PayrollStyleController extends Controller
             ]);
         }
 
-        // Régénérer tous les PDFs existants avec le nouveau style
         $this->regenerateAllPdfs($settings);
 
         return back()->with('success', 'Styles sauvegardés et PDFs régénérés avec succès.');
@@ -87,15 +90,13 @@ class PayrollStyleController extends Controller
                 continue;
             }
 
-            // Reconstruire le chemin du fichier
-            $firstName = \Illuminate\Support\Str::slug($payroll->user->first_name ?? '');
-            $lastName  = \Illuminate\Support\Str::slug($payroll->user->last_name ?? '');
-            $folder    = "employees/{$firstName}-{$lastName}-{$payroll->user->id}/payrolls";
+            $firstName   = Str::slug($payroll->user->first_name ?? '');
+            $lastName    = Str::slug($payroll->user->last_name ?? '');
+            $folder      = "employees/{$firstName}-{$lastName}-{$payroll->user->id}/payrolls";
             $monthPadded = str_pad((string) $payroll->period_month, 2, '0', STR_PAD_LEFT);
-            $filename  = "FP_{$monthPadded}_{$payroll->period_year}.pdf";
-            $path      = "{$folder}/{$filename}";
+            $filename    = "FP_{$monthPadded}_{$payroll->period_year}.pdf";
+            $path        = "{$folder}/{$filename}";
 
-            // Ne régénérer que les PDFs déjà générés
             if (!Storage::disk('public')->exists($path)) {
                 continue;
             }
@@ -103,11 +104,11 @@ class PayrollStyleController extends Controller
             $logoDataUri = $this->buildLogoDataUri($settings);
 
             $lines = [
-                ['numero' => 1, 'designation' => 'Salaire de base',         'base' => $payroll->base_salary,   'taux' => null,                            'gain' => $payroll->base_salary,    'retenu' => 0],
-                ['numero' => 2, 'designation' => 'Prime',                   'base' => $payroll->base_salary,   'taux' => null,                            'gain' => $payroll->prime_amount,   'retenu' => 0],
-                ['numero' => 3, 'designation' => 'Heures supplémentaires',  'base' => $payroll->base_salary,   'taux' => null,                            'gain' => $payroll->overtime_amount,'retenu' => 0],
-                ['numero' => 4, 'designation' => 'CNAPS',                   'base' => $payroll->gross_salary,  'taux' => $payroll->cnaps_rate . '%',      'gain' => 0,                        'retenu' => $payroll->cnaps_amount],
-                ['numero' => 5, 'designation' => 'Assurance',               'base' => $payroll->gross_salary,  'taux' => $payroll->assurance_rate . '%',  'gain' => 0,                        'retenu' => $payroll->assurance_amount],
+                ['numero' => 1, 'designation' => 'Salaire de base',        'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->base_salary,     'retenu' => 0],
+                ['numero' => 2, 'designation' => 'Prime',                  'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->prime_amount,    'retenu' => 0],
+                ['numero' => 3, 'designation' => 'Heures supplémentaires', 'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->overtime_amount, 'retenu' => 0],
+                ['numero' => 4, 'designation' => 'CNAPS',                  'base' => $payroll->gross_salary, 'taux' => $payroll->cnaps_rate . '%',     'gain' => 0,                         'retenu' => $payroll->cnaps_amount],
+                ['numero' => 5, 'designation' => 'Assurance',              'base' => $payroll->gross_salary, 'taux' => $payroll->assurance_rate . '%', 'gain' => 0,                         'retenu' => $payroll->assurance_amount],
             ];
 
             $pdf = Pdf::loadView('admin.payrolls.payslip', [
@@ -125,22 +126,6 @@ class PayrollStyleController extends Controller
 
             Storage::disk('public')->put($path, $pdf->output());
         }
-    }
-
-    private function buildLogoDataUri(CompanySetting $settings): ?string
-    {
-        if (!$settings->logo_path || !Storage::disk('public')->exists($settings->logo_path)) {
-            return null;
-        }
-
-        $content = Storage::disk('public')->get($settings->logo_path);
-        $ext     = pathinfo($settings->logo_path, PATHINFO_EXTENSION) ?: 'png';
-
-        if (strtolower($ext) === 'webp' && !function_exists('imagecreatefromwebp')) {
-            return null;
-        }
-
-        return 'data:image/' . $ext . ';base64,' . base64_encode($content);
     }
 
     private function getDefaultSampleData(): array
