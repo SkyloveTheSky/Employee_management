@@ -20,8 +20,9 @@ class PayrollStyleController extends Controller
         $template = $settings?->payroll_styles ?? $this->getDefaultTemplate();
 
         return Inertia::render('Admin/Payrolls/PdfTemplateBuilder', [
-            'admin' => $admin,
+            'admin'           => $admin,
             'initialTemplate' => $template,
+            'currentPage'     => 'admin.payrolls.style.edit',
         ]);
     }
 
@@ -48,12 +49,12 @@ class PayrollStyleController extends Controller
     private function getDefaultTemplate(): array
     {
         return [
-            ['type' => 'company_info', 'label' => 'Informations Entreprise', 'order' => 1, 'visible' => true, 'style' => []],
-            ['type' => 'employee_info', 'label' => 'Informations Employé', 'order' => 2, 'visible' => true, 'style' => []],
-            ['type' => 'earnings_table', 'label' => 'Tableau des Gains', 'order' => 3, 'visible' => true, 'style' => []],
-            ['type' => 'deductions_table', 'label' => 'Tableau des Retenues', 'order' => 4, 'visible' => true, 'style' => []],
-            ['type' => 'summary_box', 'label' => 'Résumé', 'order' => 5, 'visible' => true, 'style' => []],
-            ['type' => 'payment_info', 'label' => 'Informations Paiement', 'order' => 6, 'visible' => true, 'style' => []],
+            ['type' => 'company_info',     'label' => 'Informations Entreprise', 'order' => 1, 'visible' => true, 'style' => []],
+            ['type' => 'employee_info',    'label' => 'Informations Employé',    'order' => 2, 'visible' => true, 'style' => []],
+            ['type' => 'earnings_table',   'label' => 'Tableau des Gains',       'order' => 3, 'visible' => true, 'style' => []],
+            ['type' => 'deductions_table', 'label' => 'Tableau des Retenues',    'order' => 4, 'visible' => true, 'style' => []],
+            ['type' => 'summary_box',      'label' => 'Résumé',                  'order' => 5, 'visible' => true, 'style' => []],
+            ['type' => 'payment_info',     'label' => 'Informations Paiement',   'order' => 6, 'visible' => true, 'style' => []],
         ];
     }
 }

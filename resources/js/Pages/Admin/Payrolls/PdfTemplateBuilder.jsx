@@ -5,7 +5,7 @@ import { useTemplateBuilder, WIDGET_TYPES, WIDGET_DEFAULTS } from "../../../Comp
 import WidgetPropertyEditor from "../../../Components/Admin/PdfTemplateBuilder/WidgetPropertyEditor.jsx";
 import WidgetRenderer from "../../../Components/Admin/PdfTemplateBuilder/WidgetRenderer.jsx";
 
-export default function PdfTemplateBuilder({ admin, initialTemplate = null }) {
+export default function PdfTemplateBuilder({ admin, initialTemplate = null, currentPage }) {
     const [isOpen, setIsOpen] = useState(true);
     const [selectedWidgetId, setSelectedWidgetId] = useState(null);
     const [sampleData, setSampleData] = useState({
@@ -52,7 +52,7 @@ export default function PdfTemplateBuilder({ admin, initialTemplate = null }) {
             <Head title="Éditeur Template PDF" />
             <Sidebar
                 admin={admin}
-                currentPage="admin.payrolls.index"
+                currentPage={currentPage}
                 isOpen={isOpen}
                 setIsOpen={setIsOpen}
             />

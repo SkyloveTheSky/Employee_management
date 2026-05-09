@@ -1,5 +1,5 @@
 import { Link, router } from "@inertiajs/react";
-
+import { colors, gradients } from "@/config/colors";
 
 export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
 
@@ -8,12 +8,12 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
     };
 
     const menuItems = [
-    { label: "Tableau de bord", route: "admin.dashboard", icon: "/assets/icon/dashboard.svg", isSvg: true },
-    { label: "Employés",        route: "admin.employees",              icon: "/assets/icon/users.svg", isSvg: true },
-    { label: "Payrolls",        route: "admin.payrolls.index",         icon: "/assets/icon/payroll.svg", isSvg: true },
-    { label: "Style PDF",       route: "admin.payrolls.style.edit",    icon: "/assets/icon/edit.svg", isSvg: true },
-    { label: "Entreprise",      route: "admin.settings.company.edit",  icon: "/assets/icon/building.svg", isSvg: true },
-];
+        { label: "Tableau de bord", route: "admin.dashboard", icon: "/assets/icon/dashboard.svg", isSvg: true },
+        { label: "Employés",        route: "admin.employees",              icon: "/assets/icon/users.svg", isSvg: true },
+        { label: "Payrolls",        route: "admin.payrolls.index",         icon: "/assets/icon/payroll.svg", isSvg: true },
+        { label: "PDF custom",       route: "admin.payrolls.style.edit",    icon: "/assets/icon/edit.svg", isSvg: true },
+        { label: "Entreprise",      route: "admin.settings.company.edit",  icon: "/assets/icon/building.svg", isSvg: true },
+    ];
 
     return (
         <>
@@ -44,15 +44,15 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
                                 ...styles.navItem,
                                 background:
                                     currentPage === item.route
-                                        ? "#0F6E56"
+                                        ? colors.primary
                                         : "transparent",
                                 color:
                                     currentPage === item.route
-                                        ? "#ffffff"
-                                        : "#cbd5e0",
+                                        ? colors.white
+                                        : colors.light,
                                 borderLeft:
                                     currentPage === item.route
-                                        ? "4px solid #26c281"
+                                        ? `4px solid ${colors.accent}`
                                         : "4px solid transparent",
                             }}
                         >
@@ -98,13 +98,13 @@ const styles = {
         top: "16px",
         left: "16px",
         zIndex: 1001,
-        background: "#0F6E56",
+        background: colors.primary,
         border: "none",
         padding: "10px 14px",
         borderRadius: "8px",
         cursor: "pointer",
         fontSize: "20px",
-        color: "white",
+        color: colors.white,
         fontWeight: "bold",
     },
     sidebar: {
@@ -112,8 +112,8 @@ const styles = {
         flexDirection: "column",
         width: "280px",
         height: "100vh",
-        background: "#1a202c",
-        borderRight: "1px solid #2d3748",
+        background: colors.primaryDark,
+        borderRight: `1px solid ${colors.dark}`,
         padding: "24px 16px",
         boxSizing: "border-box",
         position: "fixed",
@@ -137,17 +137,17 @@ const styles = {
         gap: "12px",
         marginBottom: "32px",
         paddingBottom: "20px",
-        borderBottom: "1px solid #2d3748",
+        borderBottom: `1px solid ${colors.dark}`,
     },
     logo: {
         width: "44px",
         height: "44px",
-        background: "#0F6E56",
+        background: colors.primary,
         borderRadius: "10px",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "white",
+        color: colors.white,
         fontWeight: "700",
         fontSize: "16px",
         flexShrink: 0,
@@ -155,7 +155,7 @@ const styles = {
     appName: {
         fontSize: "16px",
         fontWeight: "600",
-        color: "#ffffff",
+        color: colors.white,
         margin: 0,
     },
     nav: {
@@ -177,7 +177,7 @@ const styles = {
         padding: "12px 12px",
         borderRadius: "8px",
         textDecoration: "none",
-        color: "#cbd5e0",
+        color: colors.light,
         fontSize: "14px",
         fontWeight: "500",
         cursor: "pointer",
@@ -189,7 +189,7 @@ const styles = {
     },
     userSection: {
         paddingTop: "20px",
-        borderTop: "1px solid #2d3748",
+        borderTop: `1px solid ${colors.dark}`,
     },
     userCard: {
         display: "flex",
@@ -197,18 +197,18 @@ const styles = {
         gap: "12px",
         marginBottom: "16px",
         padding: "12px",
-        background: "#2d3748",
+        background: gradients.primary,
         borderRadius: "8px",
     },
     userAvatar: {
         width: "40px",
         height: "40px",
-        background: "#0F6E56",
+        background: colors.primary,
         borderRadius: "50%",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "white",
+        color: colors.white,
         fontWeight: "600",
         fontSize: "14px",
         flexShrink: 0,
@@ -220,7 +220,7 @@ const styles = {
     userName: {
         fontSize: "13px",
         fontWeight: "600",
-        color: "#ffffff",
+        color: colors.white,
         margin: 0,
         whiteSpace: "nowrap",
         overflow: "hidden",
@@ -238,7 +238,7 @@ const styles = {
         width: "100%",
         padding: "10px 12px",
         background: "#e53e3e",
-        color: "#ffffff",
+        color: colors.white,
         border: "1px solid #c53030",
         borderRadius: "8px",
         fontSize: "13px",
