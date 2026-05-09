@@ -7,13 +7,13 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
     };
 
     const menuItems = [
-        { label: "Tableau de bord", route: "admin.dashboard", icon: "📊" },
-        { label: "Employés", route: "admin.employees", icon: "👥" },
-        { label: "Payrolls", route: "admin.payrolls.index", icon: "💰" },
-        { label: "Style PDF", route: "admin.payrolls.style.edit", icon: "🎨" },
-        { label: "Entreprise", route: "admin.settings.company.edit", icon: "🏢" },
-        // { label: "Rapports", route: "admin.reports", icon: "📈" },
-    ];
+    { label: "Tableau de bord", route: "admin.dashboard", icon: "/assets/icon/dashboard.svg" },
+    { label: "Employés", route: "admin.employees", icon: "👥" },
+    { label: "Payrolls", route: "admin.payrolls.index", icon: "💰" },
+    { label: "Style PDF", route: "admin.payrolls.style.edit", icon: "🎨" },
+    { label: "Entreprise", route: "admin.settings.company.edit", icon: "🏢" },
+    // { label: "Rapports", route: "admin.reports", icon: "📈" },
+];
 
     return (
         <>
