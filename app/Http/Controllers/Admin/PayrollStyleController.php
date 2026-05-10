@@ -23,7 +23,7 @@ class PayrollStyleController extends Controller
     {
         $admin    = Admin::findOrFail(session('admin_id'));
         $settings = CompanySetting::first();
-        $template = $settings?->payroll_styles ?? $this->getDefaultTemplate();
+        $template = $this->normalizeStyles($settings?->payroll_styles ?? $this->getDefaultTemplate());
         $margins  = $settings?->payroll_margins ?? $this->getDefaultMargins();
 
         $samplePayroll = Payroll::with('user')->latest()->first();
@@ -73,14 +73,17 @@ class PayrollStyleController extends Controller
         ]);
 
         $settings = CompanySetting::first();
+        // Normalize styles before saving to ensure every widget has a 'style' key and sane defaults
+        $normalizedStyles = $this->normalizeStyles($validated['styles']);
+
         if (!$settings) {
             $settings = CompanySetting::create([
-                'payroll_styles'  => $validated['styles'],
+                'payroll_styles'  => $normalizedStyles,
                 'payroll_margins' => $validated['margins'],
             ]);
         } else {
             $settings->update([
-                'payroll_styles'  => $validated['styles'],
+                'payroll_styles'  => $normalizedStyles,
                 'payroll_margins' => $validated['margins'],
             ]);
         }
@@ -126,7 +129,7 @@ class PayrollStyleController extends Controller
                 'settings'    => $settings,
                 'logoDataUri' => $logoDataUri,
                 'lines'       => $lines,
-                'styles'      => $settings->payroll_styles ?? [],
+                'styles'      => $this->normalizeStyles($settings->payroll_styles ?? []),
                 'margins'     => $settings->payroll_margins ?? $this->getDefaultMargins(),
             ])
             ->setPaper('a4')
@@ -136,6 +139,42 @@ class PayrollStyleController extends Controller
 
             Storage::disk('public')->put($path, $pdf->output());
         }
+    }
+
+    private function normalizeStyles($raw = []): array
+    {
+        $result = [];
+
+        // Accept JSON string or array; try to decode if string
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $raw = $decoded;
+            } else {
+                // invalid JSON -> return empty
+                return $result;
+            }
+        }
+
+        if (!is_array($raw)) {
+            return $result;
+        }
+
+        foreach ($raw as $widget) {
+            if (!is_array($widget)) {
+                continue;
+            }
+
+            $result[] = [
+                'type'    => isset($widget['type']) ? (string) $widget['type'] : '',
+                'label'   => isset($widget['label']) ? (string) $widget['label'] : null,
+                'order'   => isset($widget['order']) ? (int) $widget['order'] : 99,
+                'visible' => isset($widget['visible']) ? (bool) $widget['visible'] : true,
+                'style'   => isset($widget['style']) && is_array($widget['style']) ? $widget['style'] : [],
+            ];
+        }
+
+        return $result;
     }
 
     private function getDefaultSampleData(): array

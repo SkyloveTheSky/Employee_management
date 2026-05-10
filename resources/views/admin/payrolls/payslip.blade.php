@@ -11,13 +11,23 @@
     $widgetMap   = [];
     $widgetOrder = [];
     foreach (($styles ?? []) as $widget) {
-        if (!isset($widget['type'])) continue;
+        if (!is_array($widget)) {
+            continue;
+        }
+        if (!isset($widget['type'])) {
+            continue;
+        }
         $widgetMap[$widget['type']] = $widget;
-        if ($widget['visible'] ?? true) {
+        $visible = isset($widget['visible']) ? (bool) $widget['visible'] : true;
+        if ($visible) {
             $widgetOrder[] = $widget;
         }
     }
-    usort($widgetOrder, fn($a, $b) => ($a['order'] ?? 99) <=> ($b['order'] ?? 99));
+    usort($widgetOrder, function($a, $b) {
+        $ao = isset($a['order']) ? (int) $a['order'] : 99;
+        $bo = isset($b['order']) ? (int) $b['order'] : 99;
+        return $ao <=> $bo;
+    });
 
     // Fallback si aucun widget n'est défini (ancienne structure)
     if (empty($widgetOrder)) {
@@ -62,16 +72,36 @@
     </div>
 
     @foreach($widgetOrder as $widget)
-        @php $type = $widget['type']; $s = $widget['style'] ?? []; @endphp
+        @php
+            $type = $widget['type'];
+            $s = isset($widget['style']) && is_array($widget['style']) ? $widget['style'] : [];
+
+            $bg = isset($s['backgroundColor']) ? $s['backgroundColor'] : '#fafafa';
+            $rowBg = isset($s['backgroundColor']) ? $s['backgroundColor'] : '#f0f0f0';
+            $borderWidth = isset($s['borderWidth']) ? $s['borderWidth'] : '1px';
+            $borderColor = isset($s['borderColor']) ? $s['borderColor'] : '#999';
+            $padding = isset($s['padding']) ? $s['padding'] : '8px';
+            $borderRadius = isset($s['borderRadius']) ? $s['borderRadius'] : '0px';
+            $fontFamily = isset($s['fontFamily']) ? $s['fontFamily'] : 'Liberation Sans, sans-serif';
+            $headerBorderColor = isset($s['headerBorderColor']) ? $s['headerBorderColor'] : '#999';
+            $headerBackgroundColor = isset($s['headerBackgroundColor']) ? $s['headerBackgroundColor'] : '#e0e0e0';
+            $headerFontSize = isset($s['headerFontSize']) ? $s['headerFontSize'] : '10px';
+            $headerFontWeight = isset($s['headerFontWeight']) ? $s['headerFontWeight'] : 'bold';
+            $bodyBorderColor = isset($s['bodyBorderColor']) ? $s['bodyBorderColor'] : '#999';
+            $bodyFontSize = isset($s['bodyFontSize']) ? $s['bodyFontSize'] : '10px';
+            $boxFontSize = isset($s['fontSize']) ? $s['fontSize'] : '11px';
+            $boxFontWeight = isset($s['fontWeight']) ? $s['fontWeight'] : 'bold';
+            $marginTop = isset($s['marginTop']) ? $s['marginTop'] : '18px';
+        @endphp
 
         {{-- ENTREPRISE --}}
         @if($type === 'company_info')
             <div style="
-                background-color: {{ $s['backgroundColor'] ?? '#fafafa' }};
-                border: {{ $s['borderWidth'] ?? '1px' }} solid {{ $s['borderColor'] ?? '#999' }};
-                padding: {{ $s['padding'] ?? '8px' }};
-                border-radius: {{ $s['borderRadius'] ?? '0px' }};
-                font-family: {{ $s['fontFamily'] ?? 'Liberation Sans, sans-serif' }};
+                background-color: {{ $bg }};
+                border: {{ $borderWidth }} solid {{ $borderColor }};
+                padding: {{ $padding }};
+                border-radius: {{ $borderRadius }};
+                font-family: {{ $fontFamily }};
                 margin-bottom: 10px;
             ">
                 <div class="box-title">ENTREPRISE</div>
@@ -88,11 +118,11 @@
         {{-- EMPLOYÉ --}}
         @elseif($type === 'employee_info')
             <div style="
-                background-color: {{ $s['backgroundColor'] ?? '#fafafa' }};
-                border: {{ $s['borderWidth'] ?? '1px' }} solid {{ $s['borderColor'] ?? '#999' }};
-                padding: {{ $s['padding'] ?? '8px' }};
-                border-radius: {{ $s['borderRadius'] ?? '0px' }};
-                font-family: {{ $s['fontFamily'] ?? 'Liberation Sans, sans-serif' }};
+                background-color: {{ $bg }};
+                border: {{ $borderWidth }} solid {{ $borderColor }};
+                padding: {{ $padding }};
+                border-radius: {{ $borderRadius }};
+                font-family: {{ $fontFamily }};
                 margin-bottom: 10px;
             ">
                 <div class="box-title">EMPLOYÉ</div>
@@ -108,38 +138,38 @@
             <table style="margin-bottom: 10px;">
                 <thead>
                     <tr>
-                        <th style="width:6%;   border: 1px solid {{ $s['headerBorderColor'] ?? '#999' }}; background-color: {{ $s['headerBackgroundColor'] ?? '#e0e0e0' }}; font-size: {{ $s['headerFontSize'] ?? '10px' }}; font-weight: {{ $s['headerFontWeight'] ?? 'bold' }};">N</th>
-                        <th style="width:32%;  border: 1px solid {{ $s['headerBorderColor'] ?? '#999' }}; background-color: {{ $s['headerBackgroundColor'] ?? '#e0e0e0' }}; font-size: {{ $s['headerFontSize'] ?? '10px' }}; font-weight: {{ $s['headerFontWeight'] ?? 'bold' }};">Désignation</th>
-                        <th style="width:14%;  border: 1px solid {{ $s['headerBorderColor'] ?? '#999' }}; background-color: {{ $s['headerBackgroundColor'] ?? '#e0e0e0' }}; font-size: {{ $s['headerFontSize'] ?? '10px' }}; font-weight: {{ $s['headerFontWeight'] ?? 'bold' }};">Base</th>
-                        <th style="width:12%;  border: 1px solid {{ $s['headerBorderColor'] ?? '#999' }}; background-color: {{ $s['headerBackgroundColor'] ?? '#e0e0e0' }}; font-size: {{ $s['headerFontSize'] ?? '10px' }}; font-weight: {{ $s['headerFontWeight'] ?? 'bold' }};">Taux</th>
-                        <th style="width:18%;  border: 1px solid {{ $s['headerBorderColor'] ?? '#999' }}; background-color: {{ $s['headerBackgroundColor'] ?? '#e0e0e0' }}; font-size: {{ $s['headerFontSize'] ?? '10px' }}; font-weight: {{ $s['headerFontWeight'] ?? 'bold' }};">Gain (Ar)</th>
-                        <th style="width:18%;  border: 1px solid {{ $s['headerBorderColor'] ?? '#999' }}; background-color: {{ $s['headerBackgroundColor'] ?? '#e0e0e0' }}; font-size: {{ $s['headerFontSize'] ?? '10px' }}; font-weight: {{ $s['headerFontWeight'] ?? 'bold' }};">Retenu (Ar)</th>
+                        <th style="width:6%;   border: 1px solid {{ $headerBorderColor }}; background-color: {{ $headerBackgroundColor }}; font-size: {{ $headerFontSize }}; font-weight: {{ $headerFontWeight }};">N</th>
+                        <th style="width:32%;  border: 1px solid {{ $headerBorderColor }}; background-color: {{ $headerBackgroundColor }}; font-size: {{ $headerFontSize }}; font-weight: {{ $headerFontWeight }};">Désignation</th>
+                        <th style="width:14%;  border: 1px solid {{ $headerBorderColor }}; background-color: {{ $headerBackgroundColor }}; font-size: {{ $headerFontSize }}; font-weight: {{ $headerFontWeight }};">Base</th>
+                        <th style="width:12%;  border: 1px solid {{ $headerBorderColor }}; background-color: {{ $headerBackgroundColor }}; font-size: {{ $headerFontSize }}; font-weight: {{ $headerFontWeight }};">Taux</th>
+                        <th style="width:18%;  border: 1px solid {{ $headerBorderColor }}; background-color: {{ $headerBackgroundColor }}; font-size: {{ $headerFontSize }}; font-weight: {{ $headerFontWeight }};">Gain (Ar)</th>
+                        <th style="width:18%;  border: 1px solid {{ $headerBorderColor }}; background-color: {{ $headerBackgroundColor }}; font-size: {{ $headerFontSize }}; font-weight: {{ $headerFontWeight }};">Retenu (Ar)</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($lines as $line)
                         <tr>
-                            <td class="center" style="border: 1px solid {{ $s['bodyBorderColor'] ?? '#999' }}; font-size: {{ $s['bodyFontSize'] ?? '10px' }};">{{ $line['numero'] }}</td>
-                            <td class="left"   style="border: 1px solid {{ $s['bodyBorderColor'] ?? '#999' }}; font-size: {{ $s['bodyFontSize'] ?? '10px' }};">{{ addslashes($line['designation'] ?? '') }}</td>
-                            <td class="right"  style="border: 1px solid {{ $s['bodyBorderColor'] ?? '#999' }}; font-size: {{ $s['bodyFontSize'] ?? '10px' }};">{{ number_format((float)$line['base'], 0, '.', ' ') }}</td>
-                            <td class="center" style="border: 1px solid {{ $s['bodyBorderColor'] ?? '#999' }}; font-size: {{ $s['bodyFontSize'] ?? '10px' }};">{{ addslashes($line['taux'] ?? '-') }}</td>
-                            <td class="right"  style="border: 1px solid {{ $s['bodyBorderColor'] ?? '#999' }}; font-size: {{ $s['bodyFontSize'] ?? '10px' }};">{{ number_format((float)$line['gain'], 0, '.', ' ') }}</td>
-                            <td class="right"  style="border: 1px solid {{ $s['bodyBorderColor'] ?? '#999' }}; font-size: {{ $s['bodyFontSize'] ?? '10px' }};">{{ number_format((float)$line['retenu'], 0, '.', ' ') }}</td>
+                            <td class="center" style="border: 1px solid {{ $bodyBorderColor }}; font-size: {{ $bodyFontSize }};">{{ $line['numero'] }}</td>
+                            <td class="left"   style="border: 1px solid {{ $bodyBorderColor }}; font-size: {{ $bodyFontSize }};">{{ addslashes($line['designation'] ?? '') }}</td>
+                            <td class="right"  style="border: 1px solid {{ $bodyBorderColor }}; font-size: {{ $bodyFontSize }};">{{ number_format((float)$line['base'], 0, '.', ' ') }}</td>
+                            <td class="center" style="border: 1px solid {{ $bodyBorderColor }}; font-size: {{ $bodyFontSize }};">{{ addslashes($line['taux'] ?? '-') }}</td>
+                            <td class="right"  style="border: 1px solid {{ $bodyBorderColor }}; font-size: {{ $bodyFontSize }};">{{ number_format((float)$line['gain'], 0, '.', ' ') }}</td>
+                            <td class="right"  style="border: 1px solid {{ $bodyBorderColor }}; font-size: {{ $bodyFontSize }};">{{ number_format((float)$line['retenu'], 0, '.', ' ') }}</td>
                         </tr>
                     @endforeach
-                    <tr style="background-color: {{ $s['backgroundColor'] ?? '#f0f0f0' }}; font-weight: bold;">
-                        <td colspan="4" class="right" style="border: 1px solid {{ $s['bodyBorderColor'] ?? '#999' }};">Salaire Brut</td>
-                        <td class="right"             style="border: 1px solid {{ $s['bodyBorderColor'] ?? '#999' }};">{{ number_format((float)$payroll->gross_salary, 0, '.', ' ') }}</td>
-                        <td class="right"             style="border: 1px solid {{ $s['bodyBorderColor'] ?? '#999' }};">-</td>
+                    <tr style="background-color: {{ $rowBg }}; font-weight: bold;">
+                        <td colspan="4" class="right" style="border: 1px solid {{ $bodyBorderColor }};">Salaire Brut</td>
+                        <td class="right"             style="border: 1px solid {{ $bodyBorderColor }};">{{ number_format((float)$payroll->gross_salary, 0, '.', ' ') }}</td>
+                        <td class="right"             style="border: 1px solid {{ $bodyBorderColor }};">-</td>
                     </tr>
-                    <tr style="background-color: {{ $s['backgroundColor'] ?? '#f0f0f0' }}; font-weight: bold;">
-                        <td colspan="4" class="right" style="border: 1px solid {{ $s['bodyBorderColor'] ?? '#999' }};">Total Retenu</td>
-                        <td class="right"             style="border: 1px solid {{ $s['bodyBorderColor'] ?? '#999' }};">-</td>
-                        <td class="right"             style="border: 1px solid {{ $s['bodyBorderColor'] ?? '#999' }};">{{ number_format((float)$payroll->total_retenu, 0, '.', ' ') }}</td>
+                    <tr style="background-color: {{ $rowBg }}; font-weight: bold;">
+                        <td colspan="4" class="right" style="border: 1px solid {{ $bodyBorderColor }};">Total Retenu</td>
+                        <td class="right"             style="border: 1px solid {{ $bodyBorderColor }};">-</td>
+                        <td class="right"             style="border: 1px solid {{ $bodyBorderColor }};">{{ number_format((float)$payroll->total_retenu, 0, '.', ' ') }}</td>
                     </tr>
-                    <tr style="background-color: {{ $s['backgroundColor'] ?? '#f0f0f0' }}; font-weight: bold; font-size: 12px;">
-                        <td colspan="4" class="right" style="border: 1px solid {{ $s['bodyBorderColor'] ?? '#999' }};">NET À PAYER</td>
-                        <td colspan="2" class="right" style="border: 1px solid {{ $s['bodyBorderColor'] ?? '#999' }};">{{ number_format((float)$payroll->net_to_pay, 0, '.', ' ') }}</td>
+                    <tr style="background-color: {{ $rowBg }}; font-weight: bold; font-size: 12px;">
+                        <td colspan="4" class="right" style="border: 1px solid {{ $bodyBorderColor }};">NET À PAYER</td>
+                        <td colspan="2" class="right" style="border: 1px solid {{ $bodyBorderColor }};">{{ number_format((float)$payroll->net_to_pay, 0, '.', ' ') }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -147,11 +177,11 @@
         {{-- RÉSUMÉ --}}
         @elseif($type === 'summary_box')
             <div style="
-                background-color: {{ $s['backgroundColor'] ?? '#f0f0f0' }};
-                padding: {{ $s['padding'] ?? '10px' }};
+                background-color: {{ $rowBg }};
+                padding: {{ $padding }};
                 margin-bottom: 10px;
-                font-size: {{ $s['fontSize'] ?? '11px' }};
-                font-weight: {{ $s['fontWeight'] ?? 'bold' }};
+                font-size: {{ $boxFontSize }};
+                font-weight: {{ $boxFontWeight }};
             ">
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                     <span>Salaire Brut :</span>
@@ -170,10 +200,10 @@
         {{-- PAIEMENT --}}
         @elseif($type === 'payment_info')
             <div style="
-                background-color: {{ $s['backgroundColor'] ?? '#fafafa' }};
-                border: {{ $s['borderWidth'] ?? '1px' }} solid {{ $s['borderColor'] ?? '#999' }};
-                padding: {{ $s['padding'] ?? '8px' }};
-                margin-top: {{ $s['marginTop'] ?? '18px' }};
+                background-color: {{ $bg }};
+                border: {{ $borderWidth }} solid {{ $borderColor }};
+                padding: {{ $padding }};
+                margin-top: {{ $marginTop }};
             ">
                 <div class="box-title">INFORMATIONS DE PAIEMENT</div>
                 <div class="box-item"><span class="label">Mode :</span> {{ addslashes($payroll->payment_method ?? 'N/A') }}</div>

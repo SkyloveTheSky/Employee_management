@@ -11,7 +11,7 @@ use App\Traits\BuildsLogoDataUri;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -231,20 +231,47 @@ class PayrollController extends Controller
 
     public function pdf($id)
     {
-
         $payroll  = Payroll::query()->with('user')->findOrFail($id);
         $settings = CompanySetting::query()->first();
 
-
-
-        $firstName   = Str::slug($payroll->user->first_name ?? '');
-        $lastName    = Str::slug($payroll->user->last_name ?? '');
-        $folder      = "employees/{$firstName}-{$lastName}-{$payroll->user->id}/payrolls";
-        $monthPadded = str_pad((string) $payroll->period_month, 2, '0', STR_PAD_LEFT);
-        $filename    = "FP_{$monthPadded}_{$payroll->period_year}.pdf";
-        $path        = "{$folder}/{$filename}";
-
+        // Build logo data URI if available
         $logoDataUri = $this->buildLogoDataUri($settings);
+
+        // Normalize and sanitize styles coming from settings
+        $rawStyles = $settings?->payroll_styles ?? [];
+        
+        // Handle JSON string case (when cast 'array' hasn't decoded yet)
+        if (is_string($rawStyles)) {
+            $decoded = json_decode($rawStyles, true);
+            $rawStyles = (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) ? $decoded : [];
+        }
+        
+        $styles = [];
+        if (is_array($rawStyles)) {
+            foreach ($rawStyles as $w) {
+                if (!is_array($w) || empty($w['type'])) {
+                    continue;
+                }
+
+                $styles[] = [
+                    'type'    => (string) ($w['type'] ?? ''),
+                    'order'   => isset($w['order']) ? (int) $w['order'] : 99,
+                    'visible' => isset($w['visible']) ? (bool) $w['visible'] : true,
+                    'style'   => isset($w['style']) && is_array($w['style']) ? $w['style'] : [],
+                ];
+            }
+        }
+
+        usort($styles, fn($a, $b) => ($a['order'] ?? 99) <=> ($b['order'] ?? 99));
+
+        // Margins (in px) with sensible defaults
+        $marginsRaw = $settings?->payroll_margins ?? [];
+        $margins = [
+            'top'    => isset($marginsRaw['top']) ? (int) $marginsRaw['top'] : 20,
+            'bottom' => isset($marginsRaw['bottom']) ? (int) $marginsRaw['bottom'] : 20,
+            'left'   => isset($marginsRaw['left']) ? (int) $marginsRaw['left'] : 20,
+            'right'  => isset($marginsRaw['right']) ? (int) $marginsRaw['right'] : 20,
+        ];
 
         $lines = [
             ['numero' => 1, 'designation' => 'Salaire de base',        'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->base_salary,     'retenu' => 0],
@@ -260,15 +287,16 @@ class PayrollController extends Controller
             'settings'    => $settings,
             'logoDataUri' => $logoDataUri,
             'lines'       => $lines,
-            'styles'      => $settings?->payroll_styles ?? [],
+            'styles'      => $styles,
+            'margins'     => $margins,
         ])
         ->setPaper('a4')
         ->setOption('encoding', 'UTF-8')
         ->setOption('isHtml5ParserEnabled', true)
-        ->setOption('isFontSubsettingEnabled', true);
+        ->setOption('isFontSubsettingEnabled', true)
+        ->setOption('isRemoteEnabled', true);
 
-        Storage::disk('public')->put($path, $pdf->output());
-
-        return $pdf->download($filename);
+        // Do not persist PDF to disk per user preference — stream as download only
+        return $pdf->download("FP_" . str_pad((string) $payroll->period_month, 2, '0', STR_PAD_LEFT) . "_{$payroll->period_year}.pdf");
     }
 }
