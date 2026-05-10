@@ -11,8 +11,8 @@ use App\Traits\BuildsLogoDataUri;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,7 +23,7 @@ class PayrollController extends Controller
 
     public function index(): Response
     {
-        $admin = Admin::findOrFail(session('admin_id'));
+        $admin     = Admin::findOrFail(session('admin_id'));
         $employees = User::query()
             ->select('id', 'first_name', 'last_name', 'salary_base')
             ->orderBy('first_name')
@@ -32,9 +32,9 @@ class PayrollController extends Controller
 
         if (! Schema::hasTable('payrolls')) {
             return Inertia::render('Admin/Payrolls/Index', [
-                'admin'     => $admin,
-                'employees' => $employees,
-                'payrolls'  => [],
+                'admin'      => $admin,
+                'employees'  => $employees,
+                'payrolls'   => [],
             ]);
         }
 
@@ -46,9 +46,9 @@ class PayrollController extends Controller
             ->get();
 
         return Inertia::render('Admin/Payrolls/Index', [
-            'admin'     => $admin,
-            'employees' => $employees,
-            'payrolls'  => $payrolls,
+            'admin'       => $admin,
+            'employees'   => $employees,
+            'payrolls'    => $payrolls,
             'currentPage' => 'admin.payrolls.index',
         ]);
     }
@@ -93,17 +93,16 @@ class PayrollController extends Controller
             return back()->withErrors(['user_id' => 'Employé introuvable.'])->withInput();
         }
 
-        $baseSalary     = (float) ($employee->salary_base ?? 0);
-        $primeAmount    = (float) ($validated['prime_amount'] ?? 0);
-        $overtimeAmount = (float) ($validated['overtime_amount'] ?? 0);
-        $cnapsRate      = (float) ($validated['cnaps_rate'] ?? 1);
-        $assuranceRate  = (float) ($validated['assurance_rate'] ?? 1);
-
-        $grossSalary    = $baseSalary + $primeAmount + $overtimeAmount;
-        $cnapsAmount    = $grossSalary * ($cnapsRate / 100);
-        $assuranceAmount= $grossSalary * ($assuranceRate / 100);
-        $totalRetenu    = $cnapsAmount + $assuranceAmount;
-        $netToPay       = max(0, $grossSalary - $totalRetenu);
+        $baseSalary      = (float) ($employee->salary_base ?? 0);
+        $primeAmount     = (float) ($validated['prime_amount'] ?? 0);
+        $overtimeAmount  = (float) ($validated['overtime_amount'] ?? 0);
+        $cnapsRate       = (float) ($validated['cnaps_rate'] ?? 1);
+        $assuranceRate   = (float) ($validated['assurance_rate'] ?? 1);
+        $grossSalary     = $baseSalary + $primeAmount + $overtimeAmount;
+        $cnapsAmount     = $grossSalary * ($cnapsRate / 100);
+        $assuranceAmount = $grossSalary * ($assuranceRate / 100);
+        $totalRetenu     = $cnapsAmount + $assuranceAmount;
+        $netToPay        = max(0, $grossSalary - $totalRetenu);
 
         Payroll::create([
             'user_id'               => $validated['user_id'],
@@ -150,8 +149,7 @@ class PayrollController extends Controller
 
     public function update(Request $request, $id): RedirectResponse
     {
-        $payroll = Payroll::findOrFail($id);
-
+        $payroll   = Payroll::findOrFail($id);
         $validated = $request->validate([
             'user_id'           => ['required', 'exists:users,id'],
             'period_month_year' => ['required', 'date_format:Y-m'],
@@ -185,12 +183,11 @@ class PayrollController extends Controller
             return back()->withErrors(['user_id' => 'Employé introuvable.'])->withInput();
         }
 
-        $baseSalary     = (float) ($employee->salary_base ?? 0);
-        $primeAmount    = (float) ($validated['prime_amount'] ?? 0);
-        $overtimeAmount = (float) ($validated['overtime_amount'] ?? 0);
-        $cnapsRate      = (float) ($validated['cnaps_rate'] ?? 1);
-        $assuranceRate  = (float) ($validated['assurance_rate'] ?? 1);
-
+        $baseSalary      = (float) ($employee->salary_base ?? 0);
+        $primeAmount     = (float) ($validated['prime_amount'] ?? 0);
+        $overtimeAmount  = (float) ($validated['overtime_amount'] ?? 0);
+        $cnapsRate       = (float) ($validated['cnaps_rate'] ?? 1);
+        $assuranceRate   = (float) ($validated['assurance_rate'] ?? 1);
         $grossSalary     = $baseSalary + $primeAmount + $overtimeAmount;
         $cnapsAmount     = $grossSalary * ($cnapsRate / 100);
         $assuranceAmount = $grossSalary * ($assuranceRate / 100);
@@ -198,24 +195,24 @@ class PayrollController extends Controller
         $netToPay        = max(0, $grossSalary - $totalRetenu);
 
         $payroll->update([
-            'user_id'         => $validated['user_id'],
-            'period_month'    => (int) $period_month,
-            'period_year'     => (int) $period_year,
-            'base_salary'     => $baseSalary,
-            'prime_amount'    => $primeAmount,
-            'overtime_amount' => $overtimeAmount,
-            'gross_salary'    => $grossSalary,
-            'cnaps_rate'      => $cnapsRate,
-            'assurance_rate'  => $assuranceRate,
-            'cnaps_amount'    => $cnapsAmount,
-            'assurance_amount'=> $assuranceAmount,
-            'total_retenu'    => $totalRetenu,
-            'net_salary'      => $netToPay,
-            'net_to_pay'      => $netToPay,
-            'payment_method'  => $validated['payment_method'],
-            'payment_status'  => $validated['payment_status'] ?? 'unpaid',
-            'paid_at'         => $validated['paid_at'] ?? null,
-            'notes'           => $validated['notes'] ?? null,
+            'user_id'          => $validated['user_id'],
+            'period_month'     => (int) $period_month,
+            'period_year'      => (int) $period_year,
+            'base_salary'      => $baseSalary,
+            'prime_amount'     => $primeAmount,
+            'overtime_amount'  => $overtimeAmount,
+            'gross_salary'     => $grossSalary,
+            'cnaps_rate'       => $cnapsRate,
+            'assurance_rate'   => $assuranceRate,
+            'cnaps_amount'     => $cnapsAmount,
+            'assurance_amount' => $assuranceAmount,
+            'total_retenu'     => $totalRetenu,
+            'net_salary'       => $netToPay,
+            'net_to_pay'       => $netToPay,
+            'payment_method'   => $validated['payment_method'],
+            'payment_status'   => $validated['payment_status'] ?? 'unpaid',
+            'paid_at'          => $validated['paid_at'] ?? null,
+            'notes'            => $validated['notes'] ?? null,
         ]);
 
         return redirect()->route('admin.payrolls.index')->with('success', 'Fiche de paie modifiée avec succès.');
@@ -230,73 +227,55 @@ class PayrollController extends Controller
     }
 
     public function pdf($id)
-    {
-        $payroll  = Payroll::query()->with('user')->findOrFail($id);
-        $settings = CompanySetting::query()->first();
+{
+    $payroll  = Payroll::query()->with('user')->findOrFail($id);
+    $settings = CompanySetting::query()->first();
 
-        // Build logo data URI if available
-        $logoDataUri = $this->buildLogoDataUri($settings);
+    // ── Chemin du fichier ──
+    $firstName   = Str::slug($payroll->user->first_name ?? '');
+    $lastName    = Str::slug($payroll->user->last_name ?? '');
+    $folder      = "employees/{$firstName}-{$lastName}-{$payroll->user->id}/payrolls";
+    $monthPadded = str_pad((string) $payroll->period_month, 2, '0', STR_PAD_LEFT);
+    $filename    = "FP_{$monthPadded}_{$payroll->period_year}.pdf";
+    $path        = "{$folder}/{$filename}";
 
-        // Normalize and sanitize styles coming from settings
-        $rawStyles = $settings?->payroll_styles ?? [];
-        
-        // Handle JSON string case (when cast 'array' hasn't decoded yet)
-        if (is_string($rawStyles)) {
-            $decoded = json_decode($rawStyles, true);
-            $rawStyles = (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) ? $decoded : [];
-        }
-        
-        $styles = [];
-        if (is_array($rawStyles)) {
-            foreach ($rawStyles as $w) {
-                if (!is_array($w) || empty($w['type'])) {
-                    continue;
-                }
+    // ── Logo ──
+    $logoDataUri = $this->buildLogoDataUri($settings);
 
-                $styles[] = [
-                    'type'    => (string) ($w['type'] ?? ''),
-                    'order'   => isset($w['order']) ? (int) $w['order'] : 99,
-                    'visible' => isset($w['visible']) ? (bool) $w['visible'] : true,
-                    'style'   => isset($w['style']) && is_array($w['style']) ? $w['style'] : [],
-                ];
-            }
-        }
+    // ── Styles : déjà castés en array par Laravel ──
+    $styles  = $settings?->payroll_styles  ?? [];
+    $margins = $settings?->payroll_margins ?? [
+        'top' => 20, 'bottom' => 20, 'left' => 20, 'right' => 20,
+    ];
 
-        usort($styles, fn($a, $b) => ($a['order'] ?? 99) <=> ($b['order'] ?? 99));
+    // ── Lignes du tableau ──
+    $lines = [
+        ['numero' => 1, 'designation' => 'Salaire de base',        'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->base_salary,     'retenu' => 0],
+        ['numero' => 2, 'designation' => 'Prime',                  'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->prime_amount,    'retenu' => 0],
+        ['numero' => 3, 'designation' => 'Heures supplémentaires', 'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->overtime_amount, 'retenu' => 0],
+        ['numero' => 4, 'designation' => 'CNAPS',                  'base' => $payroll->gross_salary, 'taux' => $payroll->cnaps_rate . '%',     'gain' => 0,                         'retenu' => $payroll->cnaps_amount],
+        ['numero' => 5, 'designation' => 'Assurance',              'base' => $payroll->gross_salary, 'taux' => $payroll->assurance_rate . '%', 'gain' => 0,                         'retenu' => $payroll->assurance_amount],
+    ];
 
-        // Margins (in px) with sensible defaults
-        $marginsRaw = $settings?->payroll_margins ?? [];
-        $margins = [
-            'top'    => isset($marginsRaw['top']) ? (int) $marginsRaw['top'] : 20,
-            'bottom' => isset($marginsRaw['bottom']) ? (int) $marginsRaw['bottom'] : 20,
-            'left'   => isset($marginsRaw['left']) ? (int) $marginsRaw['left'] : 20,
-            'right'  => isset($marginsRaw['right']) ? (int) $marginsRaw['right'] : 20,
-        ];
+    $pdf = Pdf::loadView('admin.payrolls.payslip', [
+    'payroll'     => $payroll,
+    'employee'    => $payroll->user,
+    'settings'    => $settings,
+    'logoDataUri' => $logoDataUri,
+    'lines'       => $lines,
+    'styles'      => $styles,
+    'margins'     => $margins,
+])
+->setPaper('a4')
+->setOption('encoding', 'UTF-8')
+->setOption('isHtml5ParserEnabled', true)
+->setOption('isFontSubsettingEnabled', true)
+->setOption('margin_top',    $margins['top'])
+->setOption('margin_bottom', $margins['bottom'])
+->setOption('margin_left',   $margins['left'])
+->setOption('margin_right',  $margins['right']);
+    Storage::disk('public')->put($path, $pdf->output());
 
-        $lines = [
-            ['numero' => 1, 'designation' => 'Salaire de base',        'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->base_salary,     'retenu' => 0],
-            ['numero' => 2, 'designation' => 'Prime',                  'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->prime_amount,    'retenu' => 0],
-            ['numero' => 3, 'designation' => 'Heures supplémentaires', 'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->overtime_amount, 'retenu' => 0],
-            ['numero' => 4, 'designation' => 'CNAPS',                  'base' => $payroll->gross_salary, 'taux' => $payroll->cnaps_rate . '%',     'gain' => 0,                         'retenu' => $payroll->cnaps_amount],
-            ['numero' => 5, 'designation' => 'Assurance',              'base' => $payroll->gross_salary, 'taux' => $payroll->assurance_rate . '%', 'gain' => 0,                         'retenu' => $payroll->assurance_amount],
-        ];
-
-        $pdf = Pdf::loadView('admin.payrolls.payslip', [
-            'payroll'     => $payroll,
-            'employee'    => $payroll->user,
-            'settings'    => $settings,
-            'logoDataUri' => $logoDataUri,
-            'lines'       => $lines,
-            'styles'      => $styles,
-            'margins'     => $margins,
-        ])
-        ->setPaper('a4')
-        ->setOption('encoding', 'UTF-8')
-        ->setOption('isHtml5ParserEnabled', true)
-        ->setOption('isFontSubsettingEnabled', true)
-        ->setOption('isRemoteEnabled', true);
-
-        // Do not persist PDF to disk per user preference — stream as download only
-        return $pdf->download("FP_" . str_pad((string) $payroll->period_month, 2, '0', STR_PAD_LEFT) . "_{$payroll->period_year}.pdf");
-    }
+    return $pdf->download($filename);
+}
 }

@@ -28,7 +28,7 @@ export default function Dashboard({ admin }) {
                 </div>
                 <div style={styles.content}>
                     <div style={styles.card}>
-                        <p style={styles.cardLabel}>Poste</p>
+                        <p style={styles.cardLabel}>Employé</p>
                         <p style={styles.cardValue}>{admin.post_admin}</p>
                     </div>
                     <div style={styles.card}>

@@ -123,19 +123,27 @@ class PayrollStyleController extends Controller
                 ['numero' => 5, 'designation' => 'Assurance',              'base' => $payroll->gross_salary, 'taux' => $payroll->assurance_rate . '%', 'gain' => 0,                         'retenu' => $payroll->assurance_amount],
             ];
 
-            $pdf = Pdf::loadView('admin.payrolls.payslip', [
-                'payroll'     => $payroll,
-                'employee'    => $payroll->user,
-                'settings'    => $settings,
-                'logoDataUri' => $logoDataUri,
-                'lines'       => $lines,
-                'styles'      => $this->normalizeStyles($settings->payroll_styles ?? []),
-                'margins'     => $settings->payroll_margins ?? $this->getDefaultMargins(),
-            ])
-            ->setPaper('a4')
-            ->setOption('encoding', 'UTF-8')
-            ->setOption('isHtml5ParserEnabled', true)
-            ->setOption('isFontSubsettingEnabled', true);
+
+
+            $margins = $settings->payroll_margins ?? $this->getDefaultMargins();
+
+$pdf = Pdf::loadView('admin.payrolls.payslip', [
+    'payroll'     => $payroll,
+    'employee'    => $payroll->user,
+    'settings'    => $settings,
+    'logoDataUri' => $logoDataUri,
+    'lines'       => $lines,
+    'styles'      => $this->normalizeStyles($settings->payroll_styles ?? []),
+    'margins'     => $margins,
+])
+->setPaper('a4')
+->setOption('encoding', 'UTF-8')
+->setOption('isHtml5ParserEnabled', true)
+->setOption('isFontSubsettingEnabled', true)
+->setOption('margin_top',    $margins['top'])
+->setOption('margin_bottom', $margins['bottom'])
+->setOption('margin_left',   $margins['left'])
+->setOption('margin_right',  $margins['right']);
 
             Storage::disk('public')->put($path, $pdf->output());
         }
