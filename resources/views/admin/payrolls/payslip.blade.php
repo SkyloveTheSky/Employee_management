@@ -1,4 +1,12 @@
 @php
+    // Initialiser les marges
+    $margins = $margins ?? [
+        'top'    => 20,
+        'bottom' => 20,
+        'left'   => 20,
+        'right'  => 20,
+    ];
+
     // Convertir le tableau de widgets en map indexée par type + ordre
     $widgetMap   = [];
     $widgetOrder = [];
@@ -29,7 +37,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <style>
         * { margin: 0; padding: 0; }
-        @page { margin: 20px 20px; }
+        @page { margin: {{ $margins['top'] }}px {{ $margins['right'] }}px {{ $margins['bottom'] }}px {{ $margins['left'] }}px; }
         body { font-family: Liberation Sans, DejaVu Sans, sans-serif; font-size: 11px; color: #1a1a1a; line-height: 1.4; }
         .container { width: 100%; }
         .box-title { font-size: 12px; font-weight: bold; border-bottom: 1px solid #ccc; padding-bottom: 3px; margin-bottom: 4px; }

@@ -24,6 +24,7 @@ class PayrollStyleController extends Controller
         $admin    = Admin::findOrFail(session('admin_id'));
         $settings = CompanySetting::first();
         $template = $settings?->payroll_styles ?? $this->getDefaultTemplate();
+        $margins  = $settings?->payroll_margins ?? $this->getDefaultMargins();
 
         $samplePayroll = Payroll::with('user')->latest()->first();
 
@@ -54,6 +55,7 @@ class PayrollStyleController extends Controller
         return Inertia::render('Admin/Payrolls/PdfTemplateBuilder', [
             'admin'           => $admin,
             'initialTemplate' => $template,
+            'initialMargins'  => $margins,
             'currentPage'     => 'admin.payrolls.style.edit',
             'sampleData'      => $sampleData,
         ]);
@@ -62,23 +64,30 @@ class PayrollStyleController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'styles' => ['required', 'array'],
+            'styles'  => ['required', 'array'],
+            'margins' => ['required', 'array'],
+            'margins.top'    => ['required', 'numeric', 'min:0', 'max:50'],
+            'margins.bottom' => ['required', 'numeric', 'min:0', 'max:50'],
+            'margins.left'   => ['required', 'numeric', 'min:0', 'max:50'],
+            'margins.right'  => ['required', 'numeric', 'min:0', 'max:50'],
         ]);
 
         $settings = CompanySetting::first();
         if (!$settings) {
             $settings = CompanySetting::create([
-                'payroll_styles' => $validated['styles'],
+                'payroll_styles'  => $validated['styles'],
+                'payroll_margins' => $validated['margins'],
             ]);
         } else {
             $settings->update([
-                'payroll_styles' => $validated['styles'],
+                'payroll_styles'  => $validated['styles'],
+                'payroll_margins' => $validated['margins'],
             ]);
         }
 
         $this->regenerateAllPdfs($settings);
 
-        return back()->with('success', 'Styles sauvegardés et PDFs régénérés avec succès.');
+        return back()->with('success', 'Styles et marges sauvegardés, PDFs régénérés avec succès.');
     }
 
     private function regenerateAllPdfs(CompanySetting $settings): void
@@ -118,6 +127,7 @@ class PayrollStyleController extends Controller
                 'logoDataUri' => $logoDataUri,
                 'lines'       => $lines,
                 'styles'      => $settings->payroll_styles ?? [],
+                'margins'     => $settings->payroll_margins ?? $this->getDefaultMargins(),
             ])
             ->setPaper('a4')
             ->setOption('encoding', 'UTF-8')
@@ -164,6 +174,16 @@ class PayrollStyleController extends Controller
             ['type' => 'deductions_table', 'label' => 'Tableau des Retenues',    'order' => 4, 'visible' => true, 'style' => []],
             ['type' => 'summary_box',      'label' => 'Résumé',                  'order' => 5, 'visible' => true, 'style' => []],
             ['type' => 'payment_info',     'label' => 'Informations Paiement',   'order' => 6, 'visible' => true, 'style' => []],
+        ];
+    }
+
+    private function getDefaultMargins(): array
+    {
+        return [
+            'top'    => 20,
+            'bottom' => 20,
+            'left'   => 20,
+            'right'  => 20,
         ];
     }
 }

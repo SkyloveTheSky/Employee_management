@@ -12,6 +12,7 @@ import SettingsPanel from "../../../Components/Admin/PdfTemplateBuilder/ShowSett
 export default function PdfTemplateBuilder({
     admin,
     initialTemplate = null,
+    initialMargins = null,
     currentPage,
     sampleData: initialSampleData,
 }) {
@@ -19,7 +20,7 @@ export default function PdfTemplateBuilder({
     const [saved, setSaved] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [dragOverId, setDragOverId] = useState(null);
-    const [margins, setMargins] = useState({ top: 20, bottom: 20, left: 20, right: 20 });
+    const [margins, setMargins] = useState(initialMargins ?? { top: 20, bottom: 20, left: 20, right: 20 });
     const dragWidgetId = useRef(null);
 
     const [sampleData] = useState(initialSampleData ?? {
@@ -225,7 +226,10 @@ export default function PdfTemplateBuilder({
                     {/* ── CENTRE ── */}
                     <main style={s.center}>
                         <div style={s.a4Wrapper}>
-                            <div style={s.a4Sheet}>
+                            <div style={{
+                                ...s.a4Sheet,
+                                padding: `${margins.top}px ${margins.right}px ${margins.bottom}px ${margins.left}px`
+                            }}>
                                 <div style={s.pdfTitle}>FICHE DE PAIE</div>
                                 <div style={s.pdfPeriod}>Période : {sampleData.period}</div>
                                 <div style={s.pdfDivider} />

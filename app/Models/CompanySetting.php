@@ -14,10 +14,12 @@ class CompanySetting extends Model
         'rcs',
         'logo_path',
         'payroll_styles',
+        'payroll_margins',
     ];
 
     protected $casts = [
         'payroll_styles' => 'array',
+        'payroll_margins' => 'array',
     ];
 }
 
