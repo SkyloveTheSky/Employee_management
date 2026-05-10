@@ -231,8 +231,11 @@ class PayrollController extends Controller
 
     public function pdf($id)
     {
+
         $payroll  = Payroll::query()->with('user')->findOrFail($id);
         $settings = CompanySetting::query()->first();
+
+
 
         $firstName   = Str::slug($payroll->user->first_name ?? '');
         $lastName    = Str::slug($payroll->user->last_name ?? '');
