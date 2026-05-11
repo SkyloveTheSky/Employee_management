@@ -24,7 +24,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <style>
-        * { margin: 0; padding: 0; }
+
         @page {
             margin-top:    {{ $margins['top'] * 3.78 }}px;
             margin-bottom: {{ $margins['bottom'] * 3.78 }}px;

@@ -270,10 +270,10 @@ class PayrollController extends Controller
 ->setOption('encoding', 'UTF-8')
 ->setOption('isHtml5ParserEnabled', true)
 ->setOption('isFontSubsettingEnabled', true)
-->setOption('margin_top',    $margins['top'])
-->setOption('margin_bottom', $margins['bottom'])
-->setOption('margin_left',   $margins['left'])
-->setOption('margin_right',  $margins['right']);
+->setOption('margin_top',    $margins['top']    * 2.83)
+->setOption('margin_bottom', $margins['bottom'] * 2.83)
+->setOption('margin_left',   $margins['left']   * 2.83)
+->setOption('margin_right',  $margins['right']  * 2.83);
     Storage::disk('public')->put($path, $pdf->output());
 
     return $pdf->download($filename);
