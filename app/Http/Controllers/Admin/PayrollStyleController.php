@@ -73,20 +73,37 @@ class PayrollStyleController extends Controller
         ]);
 
         $settings = CompanySetting::first();
+        
         // Normalize styles before saving to ensure every widget has a 'style' key and sane defaults
         $normalizedStyles = $this->normalizeStyles($validated['styles']);
+
+        // Log pour le debugging
+        \Log::info('Sauvegarde des styles PDF', [
+            'styles_count' => count($normalizedStyles),
+            'margins' => $validated['margins'],
+            'normalized_styles_sample' => $normalizedStyles[0] ?? null,
+        ]);
 
         if (!$settings) {
             $settings = CompanySetting::create([
                 'payroll_styles'  => $normalizedStyles,
                 'payroll_margins' => $validated['margins'],
             ]);
+            \Log::info('Nouvelle configuration CompanySetting créée', ['id' => $settings->id]);
         } else {
             $settings->update([
                 'payroll_styles'  => $normalizedStyles,
                 'payroll_margins' => $validated['margins'],
             ]);
+            \Log::info('Configuration CompanySetting mise à jour', ['id' => $settings->id]);
         }
+
+        // Vérifier que les données ont été bien sauvegardées
+        $savedSettings = CompanySetting::first();
+        \Log::info('Vérification de la sauvegarde', [
+            'saved_styles_count' => count($savedSettings->payroll_styles ?? []),
+            'saved_margins' => $savedSettings->payroll_margins,
+        ]);
 
         $this->regenerateAllPdfs($settings);
 
@@ -231,6 +248,9 @@ $pdf = Pdf::loadView('admin.payrolls.payslip', [
                 'order'   => isset($widget['order']) ? (int) $widget['order'] : 99,
                 'visible' => isset($widget['visible']) ? (bool) $widget['visible'] : true,
                 'style'   => isset($widget['style']) && is_array($widget['style']) ? $widget['style'] : [],
+                // Garder les champs spécifiques à certains widgets
+                'columns' => isset($widget['columns']) && is_array($widget['columns']) ? $widget['columns'] : null,
+                'height'  => isset($widget['height']) ? (string) $widget['height'] : null,
             ];
         }
 

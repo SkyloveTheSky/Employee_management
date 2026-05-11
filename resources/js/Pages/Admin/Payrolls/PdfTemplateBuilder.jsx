@@ -58,14 +58,23 @@ export default function PdfTemplateBuilder({
     const selectedWidget = widgets.find((w) => w.id === selectedWidgetId);
 
     const handleSave = () => {
+        // Préparer les données en supprimant les champs inutiles (id généré au runtime)
+        const cleanedWidgets = widgets.map(({ id, ...widget }) => widget);
+        
+        console.log('Envoi des styles:', { styles: cleanedWidgets, margins });
+        
         router.post(
             route("admin.payrolls.style.update"),
-            { styles: widgets, margins },
+            { styles: cleanedWidgets, margins },
             {
                 onSuccess: () => {
                     setSaved(true);
                     setTimeout(() => setSaved(false), 3000);
+                    console.log('✓ Styles sauvegardés avec succès');
                 },
+                onError: (errors) => {
+                    console.error('✗ Erreur lors de la sauvegarde:', errors);
+                }
             }
         );
     };
