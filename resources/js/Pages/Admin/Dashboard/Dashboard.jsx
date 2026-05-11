@@ -2,7 +2,7 @@ import { Head, router } from "@inertiajs/react";
 import Sidebar from "../../../Components/Admin/Sidebar";
 import { useState } from "react";
 
-export default function Dashboard({ admin }) {
+export default function Dashboard({ admin, totalUsers }) {
     const [isOpen, setIsOpen] = useState(true);
 
     const logout = () => {
@@ -28,8 +28,11 @@ export default function Dashboard({ admin }) {
                 </div>
                 <div style={styles.content}>
                     <div style={styles.card}>
-                        <p style={styles.cardLabel}>Employé</p>
-                        <p style={styles.cardValue}>{admin.post_admin}</p>
+                        <div style={styles.cardHeader}>
+                            <img src="/assets/icon/user.svg" alt="Users" style={styles.cardIcon}/>
+                            <p style={styles.cardLabel}>Nombre d'employés</p>
+    </div>
+                        <p style={styles.cardValue}>{totalUsers}</p>
                     </div>
                     <div style={styles.card}>
                         <p style={styles.cardLabel}>Email</p>
@@ -114,9 +117,20 @@ const styles = {
         margin: "0 0 6px",
     },
     cardValue: {
-        fontSize: "15px",
+        fontSize: "24px",
         fontWeight: "500",
         color: "#1a202c",
         margin: 0,
+    },
+    cardHeader: {
+        display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            marginBottom: "10px",
+    },
+
+    cardIcon: {
+        width: "22px",
+        height: "22px",
     },
 };

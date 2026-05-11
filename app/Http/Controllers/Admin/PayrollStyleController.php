@@ -92,6 +92,58 @@ class PayrollStyleController extends Controller
 
         return back()->with('success', 'Styles et marges sauvegardés, PDFs régénérés avec succès.');
     }
+    public function pdf($id)
+{
+    $payroll  = Payroll::query()->with('user')->findOrFail($id);
+    $settings = CompanySetting::query()->first();
+
+    // ── Chemin du fichier ──
+    $firstName   = Str::slug($payroll->user->first_name ?? '');
+    $lastName    = Str::slug($payroll->user->last_name ?? '');
+    $folder      = "employees/{$firstName}-{$lastName}-{$payroll->user->id}/payrolls";
+    $monthPadded = str_pad((string) $payroll->period_month, 2, '0', STR_PAD_LEFT);
+    $filename    = "FP_{$monthPadded}_{$payroll->period_year}.pdf";
+    $path        = "{$folder}/{$filename}";
+
+    // ── Logo ──
+    $logoDataUri = $this->buildLogoDataUri($settings);
+
+    // ── Styles : déjà castés en array par Laravel ──
+    $styles  = $settings?->payroll_styles  ?? [];
+    $margins = $settings?->payroll_margins ?? [
+        'top' => 20, 'bottom' => 20, 'left' => 20, 'right' => 20,
+    ];
+
+    // ── Lignes du tableau ──
+    $lines = [
+        ['numero' => 1, 'designation' => 'Salaire de base',        'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->base_salary,     'retenu' => 0],
+        ['numero' => 2, 'designation' => 'Prime',                  'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->prime_amount,    'retenu' => 0],
+        ['numero' => 3, 'designation' => 'Heures supplémentaires', 'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->overtime_amount, 'retenu' => 0],
+        ['numero' => 4, 'designation' => 'CNAPS',                  'base' => $payroll->gross_salary, 'taux' => $payroll->cnaps_rate . '%',     'gain' => 0,                         'retenu' => $payroll->cnaps_amount],
+        ['numero' => 5, 'designation' => 'Assurance',              'base' => $payroll->gross_salary, 'taux' => $payroll->assurance_rate . '%', 'gain' => 0,                         'retenu' => $payroll->assurance_amount],
+    ];
+
+    $pdf = Pdf::loadView('admin.payrolls.payslip', [
+    'payroll'     => $payroll,
+    'employee'    => $payroll->user,
+    'settings'    => $settings,
+    'logoDataUri' => $logoDataUri,
+    'lines'       => $lines,
+    'styles'      => $styles,
+    'margins'     => $margins,
+])
+->setPaper('a4')
+->setOption('encoding', 'UTF-8')
+->setOption('isHtml5ParserEnabled', true)
+->setOption('isFontSubsettingEnabled', true)
+->setOption('margin_top',    $margins['top']    * 2.83)
+->setOption('margin_bottom', $margins['bottom'] * 2.83)
+->setOption('margin_left',   $margins['left']   * 2.83)
+->setOption('margin_right',  $margins['right']  * 2.83);
+    Storage::disk('public')->put($path, $pdf->output());
+
+    return $pdf->download($filename);
+}
 
     private function regenerateAllPdfs(CompanySetting $settings): void
     {

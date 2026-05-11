@@ -7,6 +7,7 @@ use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 use Inertia\Inertia;
 
 
@@ -43,7 +44,8 @@ class AuthController extends Controller
     public function dashboard()
     {
         $admin = Admin::findOrFail(session('admin_id'));
-        return Inertia::render('Admin/Dashboard/Dashboard', ['admin' => $admin]);
+        $totalUsers = User::count();
+        return Inertia::render('Admin/Dashboard/Dashboard', ['admin' => $admin, 'totalUsers' => $totalUsers]);
     }
 
     public function employees()
@@ -159,4 +161,5 @@ class AuthController extends Controller
         session()->forget(['admin_logged_in', 'admin_id']);
         return redirect()->route('admin.login');
     }
+
 }

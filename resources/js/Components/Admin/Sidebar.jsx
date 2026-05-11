@@ -10,7 +10,7 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
     const menuItems = [
         { label: "Tableau de bord", route: "admin.dashboard", icon: "/assets/icon/dashboard.svg", isSvg: true },
         { label: "Employés",        route: "admin.employees",              icon: "/assets/icon/users.svg", isSvg: true },
-        { label: "Payrolls",        route: "admin.payrolls.index",         icon: "/assets/icon/payroll.svg", isSvg: true },
+        { label: "Paie",        route: "admin.payrolls.index",         icon: "/assets/icon/payroll.svg", isSvg: true },
         { label: "PDF custom",       route: "admin.payrolls.style.edit",    icon: "/assets/icon/edit.svg", isSvg: true },
         { label: "Entreprise",      route: "admin.settings.company.edit",  icon: "/assets/icon/building.svg", isSvg: true },
     ];

@@ -35,6 +35,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware(\App\Http\Middleware\AdminAuth::class)->group(function () {
         Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
 
+
         // Employees — statiques avant dynamiques
         Route::get('/employees', [AuthController::class, 'employees'])->name('employees');
         Route::get('/employees/create', [AuthController::class, 'showCreateEmployee'])->name('employees.create');
@@ -51,7 +52,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/payrolls/{id}/edit', [PayrollController::class, 'edit'])->name('payrolls.edit');
         Route::patch('/payrolls/{id}', [PayrollController::class, 'update'])->name('payrolls.update');
         Route::delete('/payrolls/{id}', [PayrollController::class, 'destroy'])->name('payrolls.delete');
-        Route::get('/payrolls/{id}/pdf', [PayrollController::class, 'pdf'])->name('payrolls.pdf');
+        Route::get('/payrolls/{id}/pdf', [PayrollStyleController::class, 'pdf'])->name('payrolls.pdf');
 
         // Settings
         Route::get('/settings/company', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');
