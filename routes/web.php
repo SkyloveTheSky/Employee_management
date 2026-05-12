@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\CompanySettingsController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardChartController;
+use App\Http\Controllers\Admin\EntrepriseWidgetController;
 
 use Inertia\Inertia;
 
@@ -38,6 +39,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware(\App\Http\Middleware\AdminAuth::class)->group(function () {
         Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
         Route::get('/dashboard/chart-data', [DashboardChartController::class, 'index'])->name('dashboard.chart-data');
+        Route::get('/admin/company-setting', [EntrepriseWidgetController::class,
+            'show'
+        ])->name('admin.company.widget');
 
 
         // Employees — statiques avant dynamiques

@@ -10,6 +10,23 @@ export default function WidgetRenderer({ widgets, data = {} }) {
         if (!widget.visible) return null;
 
         switch (widget.type) {
+            case WIDGET_TYPES.ENTREPRISE:
+                return (
+                    <div key={widget.id} style={{ ...styles.box, ...widget.style }}>
+                        <div style={styles.boxTitle}>ENTREPRISE</div>
+                        <div style={styles.boxContent}>
+                            <p style={styles.line}>
+                                <strong>Nom:</strong> {data.company_name || "Entreprise Demo"}
+                            </p>
+                            <p style={styles.line}>
+                                <strong>Propriétaire:</strong> {data.owner_name || "John Doe"}
+                            </p>
+                            <p style={styles.line}>
+                                <strong>NIF:</strong> {data.nif || "---"}
+                            </p>
+                        </div>
+                    </div>
+                );
 
             /* =========================
                CONTAINER (IMPORTANT)
