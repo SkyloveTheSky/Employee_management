@@ -2,6 +2,7 @@ export const colors = {
   primary: '#7F00FF',      // Violet principal
   primaryLight: '#B163FF', // Violet clair
   primaryDark: '#17153B',
+  background: '#F7FAFC',   // Fond clair
 
   dark: '#2d3748',         // Texte foncé
   light: '#cbd5e0',        // Texte clair

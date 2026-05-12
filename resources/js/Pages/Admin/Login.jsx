@@ -1,4 +1,5 @@
 import { useForm, Head } from "@inertiajs/react";
+import { colors } from "@/config/colors";
 
 export default function Login() {
     const { data, setData, post, processing, errors } = useForm({
@@ -91,7 +92,7 @@ export default function Login() {
 const styles = {
     page: {
         minHeight: "100vh",
-        background: "#f0f4f8",
+        background: colors.background,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -99,7 +100,7 @@ const styles = {
         padding: "20px",
     },
     card: {
-        background: "#ffffff",
+        background: colors.primary,
         borderRadius: "16px",
         padding: "40px",
         width: "100%",
@@ -113,7 +114,7 @@ const styles = {
     logo: {
         width: "56px",
         height: "56px",
-        background: "#0F6E56",
+        background: colors.primaryDark,
         borderRadius: "14px",
         display: "flex",
         alignItems: "center",
@@ -126,12 +127,12 @@ const styles = {
     title: {
         fontSize: "22px",
         fontWeight: "600",
-        color: "#1a202c",
+        color: colors.white,
         margin: "0 0 8px",
     },
     subtitle: {
         fontSize: "14px",
-        color: "#718096",
+        color: colors.white,
         margin: 0,
     },
     form: {
@@ -147,7 +148,7 @@ const styles = {
     label: {
         fontSize: "13px",
         fontWeight: "500",
-        color: "#4a5568",
+        color: colors.white,
     },
     input: {
         padding: "10px 14px",
@@ -167,7 +168,7 @@ const styles = {
     },
     button: {
         padding: "12px",
-        background: "#0F6E56",
+        background: colors.primaryDark,
         color: "white",
         border: "none",
         borderRadius: "8px",

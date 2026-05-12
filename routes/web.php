@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\PayrollStyleController;
 use App\Http\Controllers\Admin\CompanySettingsController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\DashboardChartController;
+
 use Inertia\Inertia;
 
 Route::get('/', function () {
@@ -32,8 +34,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 
+
     Route::middleware(\App\Http\Middleware\AdminAuth::class)->group(function () {
         Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
+        Route::get('/dashboard/chart-data', [DashboardChartController::class, 'index'])->name('dashboard.chart-data');
 
 
         // Employees — statiques avant dynamiques

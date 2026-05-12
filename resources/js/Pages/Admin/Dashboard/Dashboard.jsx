@@ -1,6 +1,8 @@
 import { Head, router } from "@inertiajs/react";
 import Sidebar from "../../../Components/Admin/Sidebar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { colors, gradients } from "@/config/colors";
+import Chart_Users from "@/Components/Admin/Charts/Chart_Users";
 
 export default function Dashboard({ admin, totalUsers }) {
     const [isOpen, setIsOpen] = useState(true);
@@ -8,6 +10,16 @@ export default function Dashboard({ admin, totalUsers }) {
     const logout = () => {
         router.post(route("admin.logout"));
     };
+
+    const [chartData, setChartData] = useState([]);
+
+     useEffect(() => {
+        fetch(route("admin.dashboard.chart-data"))
+            .then((res) => res.json())
+            .then((data) => {
+                setChartData(data.users_per_month);
+            });
+    }, []);
 
     return (
         <>
@@ -22,9 +34,7 @@ export default function Dashboard({ admin, totalUsers }) {
                             Bonjour, {admin.first_name_admin} {admin.name_admin}
                         </p>
                     </div>
-                    <button onClick={logout} style={styles.logout}>
-                        Déconnexion
-                    </button>
+
                 </div>
                 <div style={styles.content}>
                     <div style={styles.card}>
@@ -42,8 +52,12 @@ export default function Dashboard({ admin, totalUsers }) {
                         <p style={styles.cardLabel}>Téléphone</p>
                         <p style={styles.cardValue}>{admin.number_phone_admin}</p>
                     </div>
+                    <div>
+                        <Chart_Users data={chartData} />
+                    </div>
                 </div>
             </div>
+
         </>
     );
 }
@@ -51,7 +65,7 @@ export default function Dashboard({ admin, totalUsers }) {
 const styles = {
     page: {
         minHeight: "100vh",
-        background: "#f0f4f8",
+        background: colors.background,
         fontFamily: "system-ui, sans-serif",
         padding: "24px",
         transition: "margin-left 0.3s ease",
@@ -60,21 +74,21 @@ const styles = {
         display: "flex",
         alignItems: "center",
         gap: "16px",
-        background: "white",
+        background: gradients.primary,
         padding: "20px 24px",
-        borderRadius: "12px",
+        borderRadius: "8px",
         marginBottom: "24px",
-        border: "1px solid #e2e8f0",
+        border: `1px solid ${colors.primaryLight}`,
     },
     logo: {
         width: "44px",
         height: "44px",
-        background: "#0F6E56",
+        background: colors.primaryDark,
         borderRadius: "10px",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "white",
+        color: colors.white,
         fontWeight: "700",
         fontSize: "16px",
         flexShrink: 0,
@@ -87,13 +101,13 @@ const styles = {
     },
     subtitle: {
         fontSize: "13px",
-        color: "#718096",
+        color: colors.white,
         margin: 0,
     },
     logout: {
         marginLeft: "auto",
         padding: "8px 16px",
-        background: "transparent",
+        background: colors.error,
         border: "1px solid #e2e8f0",
         borderRadius: "8px",
         fontSize: "13px",
@@ -133,4 +147,5 @@ const styles = {
         width: "22px",
         height: "22px",
     },
+
 };
