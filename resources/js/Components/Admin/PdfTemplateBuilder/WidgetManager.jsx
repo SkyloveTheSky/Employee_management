@@ -1,16 +1,10 @@
 import React, { useState } from "react";
 
 export const WIDGET_TYPES = {
-    COMPANY_INFO: "company_info",
-    EMPLOYEE_INFO: "employee_info",
-    EARNINGS_TABLE: "earnings_table",
-    DEDUCTIONS_TABLE: "deductions_table",
-    SUMMARY_BOX: "summary_box",
-    PAYMENT_INFO: "payment_info",
-    CUSTOM_TEXT: "custom_text",
     SPACER: "spacer",
     CONTAINER: "container",
     ENTREPRISE: "entreprise",
+    EMPLOYEE: "employeeBlock",
 };
 
 /**
@@ -23,95 +17,6 @@ const clone = (obj) =>
         : JSON.parse(JSON.stringify(obj));
 
 export const WIDGET_DEFAULTS = {
-    [WIDGET_TYPES.COMPANY_INFO]: {
-        type: WIDGET_TYPES.COMPANY_INFO,
-        label: "Informations Entreprise",
-        order: 1,
-        style: {
-            backgroundColor: "#fafafa",
-            borderColor: "#999",
-            borderWidth: "1px",
-            padding: "8px",
-            borderRadius: "0px",
-            fontFamily: "Liberation Sans, sans-serif",
-            fontSize: "11px",
-        },
-        visible: true,
-    },
-
-    [WIDGET_TYPES.EMPLOYEE_INFO]: {
-        type: WIDGET_TYPES.EMPLOYEE_INFO,
-        label: "Informations Employé",
-        order: 2,
-        style: {
-            backgroundColor: "#fafafa",
-            borderColor: "#999",
-            borderWidth: "1px",
-            padding: "8px",
-            borderRadius: "0px",
-            fontFamily: "Liberation Sans, sans-serif",
-            fontSize: "11px",
-        },
-        visible: true,
-    },
-
-    [WIDGET_TYPES.EARNINGS_TABLE]: {
-        type: WIDGET_TYPES.EARNINGS_TABLE,
-        label: "Tableau des Gains",
-        order: 3,
-        columns: ["designation", "montant"],
-        style: {
-            headerBackgroundColor: "#e0e0e0",
-            headerBorderColor: "#999",
-            headerFontSize: "10px",
-            headerFontWeight: "bold",
-            bodyBorderColor: "#999",
-            bodyFontSize: "10px",
-        },
-        visible: true,
-    },
-
-    [WIDGET_TYPES.DEDUCTIONS_TABLE]: {
-        type: WIDGET_TYPES.DEDUCTIONS_TABLE,
-        label: "Tableau des Retenues",
-        order: 4,
-        columns: ["designation", "montant"],
-        style: {
-            headerBackgroundColor: "#e0e0e0",
-            headerBorderColor: "#999",
-            headerFontSize: "10px",
-            headerFontWeight: "bold",
-            bodyBorderColor: "#999",
-            bodyFontSize: "10px",
-        },
-        visible: true,
-    },
-
-    [WIDGET_TYPES.SUMMARY_BOX]: {
-        type: WIDGET_TYPES.SUMMARY_BOX,
-        label: "Résumé",
-        order: 5,
-        style: {
-            backgroundColor: "#f0f0f0",
-            fontSize: "11px",
-            fontWeight: "bold",
-        },
-        visible: true,
-    },
-
-    [WIDGET_TYPES.PAYMENT_INFO]: {
-        type: WIDGET_TYPES.PAYMENT_INFO,
-        label: "Informations Paiement",
-        order: 6,
-        style: {
-            backgroundColor: "#fafafa",
-            borderColor: "#999",
-            borderWidth: "1px",
-            padding: "8px",
-            marginTop: "18px",
-        },
-        visible: true,
-    },
 
     [WIDGET_TYPES.SPACER]: {
         type: WIDGET_TYPES.SPACER,
@@ -156,6 +61,19 @@ export const WIDGET_DEFAULTS = {
             fontFamily: "Liberation Sans, sans-serif",},
         visible: true,
     },
+    [WIDGET_TYPES.EMPLOYEE]: {
+        type: WIDGET_TYPES.EMPLOYEE,
+        label: "Bloc Employé",
+        order: 102,
+        style: {
+            backgroundColor: "#fafafa",
+            borderColor: "#999",
+            borderWidth: "1px",
+            padding: "8px",
+            borderRadius: "0px",
+            fontFamily: "Liberation Sans, sans-serif",},
+        visible: true,
+    },
 };
 
 /**
@@ -173,8 +91,7 @@ export const useTemplateBuilder = (initialTemplate = DEFAULT_TEMPLATE) => {
     const [widgets, setWidgets] = useState(initialTemplate);
 
     const addWidget = (widgetType) => {
-        const newWidget = clone(WIDGET_DEFAULTS[widgetType]);
-        newWidget.id = `widget_${Date.now()}_${Math.random()}`; // ID unique garanti
+        const newWidget = { ...WIDGET_DEFAULTS[widgetType], id: `widget_${Date.now()}` };// ID unique garanti
 
         setWidgets((prev) => [...prev, newWidget]);
     };

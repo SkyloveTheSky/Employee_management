@@ -9,6 +9,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardChartController;
 use App\Http\Controllers\Admin\EntrepriseWidgetController;
+use App\Http\Controllers\Admin\EmployeWidgetController;
 
 use Inertia\Inertia;
 
@@ -42,6 +43,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/admin/company-setting', [EntrepriseWidgetController::class,
             'show'
         ])->name('admin.company.widget');
+        Route::get('/admin/users', [EmployeWidgetController::class, 'index'])
+        ->name('admin.employee.widget.index');
+
+        Route::get('/admin/users/{id}', [EmployeWidgetController::class, 'show'])
+        ->name('admin.employee.widget.show');
 
 
         // Employees — statiques avant dynamiques

@@ -2,6 +2,7 @@ import React from "react";
 import { WIDGET_TYPES } from "./WidgetManager.jsx";
 import Container from "../Widgets/Container";
 
+
 /**
  * Rend les widgets du template pour l'aperçu PDF
  */
@@ -10,6 +11,8 @@ export default function WidgetRenderer({ widgets, data = {} }) {
         if (!widget.visible) return null;
 
         switch (widget.type) {
+
+
             case WIDGET_TYPES.ENTREPRISE:
                 return (
                     <div key={widget.id} style={{ ...styles.box, ...widget.style }}>
@@ -27,44 +30,7 @@ export default function WidgetRenderer({ widgets, data = {} }) {
                         </div>
                     </div>
                 );
-
-            /* =========================
-               CONTAINER (IMPORTANT)
-            ========================= */
-            case WIDGET_TYPES.CONTAINER:
-                return (
-                    <Container key={widget.id} style={widget.style}>
-                        {(widget.children || []).map((child) =>
-                            renderWidget(child)
-                        )}
-                    </Container>
-                );
-
-            /* =========================
-               COMPANY INFO
-            ========================= */
-            case WIDGET_TYPES.COMPANY_INFO:
-                return (
-                    <div key={widget.id} style={{ ...styles.box, ...widget.style }}>
-                        <div style={styles.boxTitle}>ENTREPRISE</div>
-                        <div style={styles.boxContent}>
-                            <p style={styles.line}>
-                                <strong>Nom:</strong> {data.company_name || "Entreprise Demo"}
-                            </p>
-                            <p style={styles.line}>
-                                <strong>Propriétaire:</strong> {data.owner_name || "John Doe"}
-                            </p>
-                            <p style={styles.line}>
-                                <strong>NIF:</strong> {data.nif || "---"}
-                            </p>
-                        </div>
-                    </div>
-                );
-
-            /* =========================
-               EMPLOYEE INFO
-            ========================= */
-            case WIDGET_TYPES.EMPLOYEE_INFO:
+            case WIDGET_TYPES.EMPLOYEE:
                 return (
                     <div key={widget.id} style={{ ...styles.box, ...widget.style }}>
                         <div style={styles.boxTitle}>EMPLOYE</div>
@@ -83,140 +49,17 @@ export default function WidgetRenderer({ widgets, data = {} }) {
                 );
 
             /* =========================
-               EARNINGS TABLE
+               CONTAINER (IMPORTANT)
             ========================= */
-            case WIDGET_TYPES.EARNINGS_TABLE:
+            case WIDGET_TYPES.CONTAINER:
                 return (
-                    <div key={widget.id} style={styles.tableContainer}>
-                        <table style={styles.table}>
-                            <thead>
-                                <tr style={styles.trHeader(widget.style)}>
-                                    <th style={styles.th(widget.style)}>Désignation</th>
-                                    <th style={{ ...styles.th(widget.style), textAlign: "right" }}>
-                                        Montant (Ar)
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr style={styles.trBody(widget.style)}>
-                                    <td style={styles.td(widget.style)}>Salaire de base</td>
-                                    <td style={{ ...styles.td(widget.style), textAlign: "right" }}>
-                                        {data.base_salary || "500 000"}
-                                    </td>
-                                </tr>
-
-                                {data.prime_amount && (
-                                    <tr style={styles.trBody(widget.style)}>
-                                        <td style={styles.td(widget.style)}>Prime</td>
-                                        <td style={{ ...styles.td(widget.style), textAlign: "right" }}>
-                                            {data.prime_amount}
-                                        </td>
-                                    </tr>
-                                )}
-
-                                <tr style={styles.trTotal(widget.style)}>
-                                    <td colSpan="2" style={styles.tdTotal(widget.style)}>
-                                        <strong>TOTAL GAINS</strong>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <Container key={widget.id} style={widget.style}>
+                        {(widget.children || []).map((child) =>
+                            renderWidget(child)
+                        )}
+                    </Container>
                 );
 
-            /* =========================
-               DEDUCTIONS TABLE
-            ========================= */
-            case WIDGET_TYPES.DEDUCTIONS_TABLE:
-                return (
-                    <div key={widget.id} style={styles.tableContainer}>
-                        <table style={styles.table}>
-                            <thead>
-                                <tr style={styles.trHeader(widget.style)}>
-                                    <th style={styles.th(widget.style)}>Désignation</th>
-                                    <th style={{ ...styles.th(widget.style), textAlign: "right" }}>
-                                        Montant (Ar)
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr style={styles.trBody(widget.style)}>
-                                    <td style={styles.td(widget.style)}>CNAPS</td>
-                                    <td style={{ ...styles.td(widget.style), textAlign: "right" }}>
-                                        {data.cnaps_amount || "4 600"}
-                                    </td>
-                                </tr>
-
-                                <tr style={styles.trBody(widget.style)}>
-                                    <td style={styles.td(widget.style)}>Assurance</td>
-                                    <td style={{ ...styles.td(widget.style), textAlign: "right" }}>
-                                        {data.assurance_amount || "4 600"}
-                                    </td>
-                                </tr>
-
-                                <tr style={styles.trTotal(widget.style)}>
-                                    <td colSpan="2" style={styles.tdTotal(widget.style)}>
-                                        <strong>TOTAL RETENUE</strong>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                );
-
-            /* =========================
-               SUMMARY
-            ========================= */
-            case WIDGET_TYPES.SUMMARY_BOX:
-                return (
-                    <div key={widget.id} style={{ ...styles.summaryBox, ...widget.style }}>
-                        <div style={styles.summaryRow}>
-                            <span>Salaire brut:</span>
-                            <strong>{data.gross_salary || "530 000"} Ar</strong>
-                        </div>
-
-                        <div style={styles.summaryRow}>
-                            <span>Retenues:</span>
-                            <strong>{data.total_retenu || "9 200"} Ar</strong>
-                        </div>
-
-                        <div style={{ ...styles.summaryRow, fontSize: "12px", fontWeight: "bold" }}>
-                            <span>NET À PAYER:</span>
-                            <strong>{data.net_to_pay || "520 800"} Ar</strong>
-                        </div>
-                    </div>
-                );
-
-            /* =========================
-               PAYMENT INFO
-            ========================= */
-            case WIDGET_TYPES.PAYMENT_INFO:
-                return (
-                    <div key={widget.id} style={{ ...styles.box, ...widget.style }}>
-                        <div style={styles.boxTitle}>PAIEMENT</div>
-                        <div style={styles.boxContent}>
-                            <p style={styles.line}>
-                                <strong>Mode:</strong> {data.payment_method || "Mobile Money"}
-                            </p>
-                            <p style={styles.line}>
-                                <strong>Statut:</strong> {data.payment_status || "Non payé"}
-                            </p>
-                            <p style={styles.line}>
-                                <strong>Date:</strong> {data.paid_at || "À déterminer"}
-                            </p>
-                        </div>
-                    </div>
-                );
-
-            /* =========================
-               CUSTOM TEXT
-            ========================= */
-            case WIDGET_TYPES.CUSTOM_TEXT:
-                return (
-                    <div key={widget.id} style={widget.style}>
-                        {widget.content || "Texte personnalisé"}
-                    </div>
-                );
 
             /* =========================
                SPACER
