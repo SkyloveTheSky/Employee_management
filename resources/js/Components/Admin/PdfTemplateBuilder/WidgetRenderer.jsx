@@ -1,5 +1,6 @@
 import React from "react";
 import { WIDGET_TYPES } from "./WidgetManager.jsx";
+import Container from "../Widgets/Container";
 
 /**
  * Rend les widgets du template pour l'aperçu PDF
@@ -9,6 +10,22 @@ export default function WidgetRenderer({ widgets, data = {} }) {
         if (!widget.visible) return null;
 
         switch (widget.type) {
+
+            /* =========================
+               CONTAINER (IMPORTANT)
+            ========================= */
+            case WIDGET_TYPES.CONTAINER:
+                return (
+                    <Container key={widget.id} style={widget.style}>
+                        {(widget.children || []).map((child) =>
+                            renderWidget(child)
+                        )}
+                    </Container>
+                );
+
+            /* =========================
+               COMPANY INFO
+            ========================= */
             case WIDGET_TYPES.COMPANY_INFO:
                 return (
                     <div key={widget.id} style={{ ...styles.box, ...widget.style }}>
@@ -27,6 +44,9 @@ export default function WidgetRenderer({ widgets, data = {} }) {
                     </div>
                 );
 
+            /* =========================
+               EMPLOYEE INFO
+            ========================= */
             case WIDGET_TYPES.EMPLOYEE_INFO:
                 return (
                     <div key={widget.id} style={{ ...styles.box, ...widget.style }}>
@@ -45,6 +65,9 @@ export default function WidgetRenderer({ widgets, data = {} }) {
                     </div>
                 );
 
+            /* =========================
+               EARNINGS TABLE
+            ========================= */
             case WIDGET_TYPES.EARNINGS_TABLE:
                 return (
                     <div key={widget.id} style={styles.tableContainer}>
@@ -60,25 +83,20 @@ export default function WidgetRenderer({ widgets, data = {} }) {
                             <tbody>
                                 <tr style={styles.trBody(widget.style)}>
                                     <td style={styles.td(widget.style)}>Salaire de base</td>
-                                    <td
-                                        style={{ ...styles.td(widget.style), textAlign: "right" }}
-                                    >
+                                    <td style={{ ...styles.td(widget.style), textAlign: "right" }}>
                                         {data.base_salary || "500 000"}
                                     </td>
                                 </tr>
-                                {data.prime_amount ? (
+
+                                {data.prime_amount && (
                                     <tr style={styles.trBody(widget.style)}>
                                         <td style={styles.td(widget.style)}>Prime</td>
-                                        <td
-                                            style={{
-                                                ...styles.td(widget.style),
-                                                textAlign: "right",
-                                            }}
-                                        >
+                                        <td style={{ ...styles.td(widget.style), textAlign: "right" }}>
                                             {data.prime_amount}
                                         </td>
                                     </tr>
-                                ) : null}
+                                )}
+
                                 <tr style={styles.trTotal(widget.style)}>
                                     <td colSpan="2" style={styles.tdTotal(widget.style)}>
                                         <strong>TOTAL GAINS</strong>
@@ -89,6 +107,9 @@ export default function WidgetRenderer({ widgets, data = {} }) {
                     </div>
                 );
 
+            /* =========================
+               DEDUCTIONS TABLE
+            ========================= */
             case WIDGET_TYPES.DEDUCTIONS_TABLE:
                 return (
                     <div key={widget.id} style={styles.tableContainer}>
@@ -104,23 +125,21 @@ export default function WidgetRenderer({ widgets, data = {} }) {
                             <tbody>
                                 <tr style={styles.trBody(widget.style)}>
                                     <td style={styles.td(widget.style)}>CNAPS</td>
-                                    <td
-                                        style={{ ...styles.td(widget.style), textAlign: "right" }}
-                                    >
+                                    <td style={{ ...styles.td(widget.style), textAlign: "right" }}>
                                         {data.cnaps_amount || "4 600"}
                                     </td>
                                 </tr>
+
                                 <tr style={styles.trBody(widget.style)}>
                                     <td style={styles.td(widget.style)}>Assurance</td>
-                                    <td
-                                        style={{ ...styles.td(widget.style), textAlign: "right" }}
-                                    >
+                                    <td style={{ ...styles.td(widget.style), textAlign: "right" }}>
                                         {data.assurance_amount || "4 600"}
                                     </td>
                                 </tr>
+
                                 <tr style={styles.trTotal(widget.style)}>
                                     <td colSpan="2" style={styles.tdTotal(widget.style)}>
-                                        <strong>TOTAL RETENNE</strong>
+                                        <strong>TOTAL RETENUE</strong>
                                     </td>
                                 </tr>
                             </tbody>
@@ -128,6 +147,9 @@ export default function WidgetRenderer({ widgets, data = {} }) {
                     </div>
                 );
 
+            /* =========================
+               SUMMARY
+            ========================= */
             case WIDGET_TYPES.SUMMARY_BOX:
                 return (
                     <div key={widget.id} style={{ ...styles.summaryBox, ...widget.style }}>
@@ -135,10 +157,12 @@ export default function WidgetRenderer({ widgets, data = {} }) {
                             <span>Salaire brut:</span>
                             <strong>{data.gross_salary || "530 000"} Ar</strong>
                         </div>
+
                         <div style={styles.summaryRow}>
                             <span>Retenues:</span>
                             <strong>{data.total_retenu || "9 200"} Ar</strong>
                         </div>
+
                         <div style={{ ...styles.summaryRow, fontSize: "12px", fontWeight: "bold" }}>
                             <span>NET À PAYER:</span>
                             <strong>{data.net_to_pay || "520 800"} Ar</strong>
@@ -146,6 +170,9 @@ export default function WidgetRenderer({ widgets, data = {} }) {
                     </div>
                 );
 
+            /* =========================
+               PAYMENT INFO
+            ========================= */
             case WIDGET_TYPES.PAYMENT_INFO:
                 return (
                     <div key={widget.id} style={{ ...styles.box, ...widget.style }}>
@@ -164,6 +191,9 @@ export default function WidgetRenderer({ widgets, data = {} }) {
                     </div>
                 );
 
+            /* =========================
+               CUSTOM TEXT
+            ========================= */
             case WIDGET_TYPES.CUSTOM_TEXT:
                 return (
                     <div key={widget.id} style={widget.style}>
@@ -171,8 +201,16 @@ export default function WidgetRenderer({ widgets, data = {} }) {
                     </div>
                 );
 
+            /* =========================
+               SPACER
+            ========================= */
             case WIDGET_TYPES.SPACER:
-                return <div key={widget.id} style={{ height: widget.height || "10px" }} />;
+                return (
+                    <div
+                        key={widget.id}
+                        style={{ height: widget.height || "10px" }}
+                    />
+                );
 
             default:
                 return null;
@@ -182,6 +220,9 @@ export default function WidgetRenderer({ widgets, data = {} }) {
     return <>{widgets.map(renderWidget)}</>;
 }
 
+/* =========================
+   STYLES
+========================= */
 const styles = {
     box: {
         border: "1px solid #999",

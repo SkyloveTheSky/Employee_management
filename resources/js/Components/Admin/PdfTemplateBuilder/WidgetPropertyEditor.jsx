@@ -1,10 +1,22 @@
 import React from "react";
 
 /**
- * Compose pour éditer les propriétés d'un widget
+ * Éditeur de propriétés de widget (inclut support Container)
  */
 export default function WidgetPropertyEditor({ widget, onUpdate }) {
-    const handlePropertyChange = (property, value) => {
+    const isContainer = widget.type === "container";
+
+    const handleChange = (section, property, value) => {
+        onUpdate({
+            ...widget,
+            [section]: {
+                ...widget[section],
+                [property]: value,
+            },
+        });
+    };
+
+    const handleStyleChange = (property, value) => {
         onUpdate({
             ...widget,
             style: {
@@ -20,22 +32,29 @@ export default function WidgetPropertyEditor({ widget, onUpdate }) {
         "headerBackgroundColor",
         "color",
     ];
+
     const textProperties = [
         "fontSize",
         "fontFamily",
         "fontWeight",
         "textAlign",
-        "paddingBottom",
         "padding",
-        "borderWidth",
-        "borderRadius",
+        "paddingTop",
+        "paddingBottom",
         "marginTop",
         "marginBottom",
+        "borderWidth",
+        "borderRadius",
     ];
 
     return (
         <div style={styles.container}>
             <h3 style={styles.title}>{widget.label}</h3>
+
+            {/* =========================
+                STYLE EDITOR
+            ========================= */}
+            <h4 style={styles.sectionTitle}>Style</h4>
 
             {Object.keys(widget.style || {}).map((prop) => (
                 <div key={prop} style={styles.propertyRow}>
@@ -45,13 +64,17 @@ export default function WidgetPropertyEditor({ widget, onUpdate }) {
                         <input
                             type="color"
                             value={widget.style[prop] || "#000000"}
-                            onChange={(e) => handlePropertyChange(prop, e.target.value)}
+                            onChange={(e) =>
+                                handleStyleChange(prop, e.target.value)
+                            }
                             style={styles.colorInput}
                         />
                     ) : prop === "fontWeight" ? (
                         <select
                             value={widget.style[prop] || "normal"}
-                            onChange={(e) => handlePropertyChange(prop, e.target.value)}
+                            onChange={(e) =>
+                                handleStyleChange(prop, e.target.value)
+                            }
                             style={styles.select}
                         >
                             <option value="normal">Normal</option>
@@ -62,7 +85,9 @@ export default function WidgetPropertyEditor({ widget, onUpdate }) {
                     ) : prop === "textAlign" ? (
                         <select
                             value={widget.style[prop] || "left"}
-                            onChange={(e) => handlePropertyChange(prop, e.target.value)}
+                            onChange={(e) =>
+                                handleStyleChange(prop, e.target.value)
+                            }
                             style={styles.select}
                         >
                             <option value="left">Gauche</option>
@@ -72,30 +97,125 @@ export default function WidgetPropertyEditor({ widget, onUpdate }) {
                     ) : prop === "fontFamily" ? (
                         <select
                             value={widget.style[prop] || "Liberation Sans, sans-serif"}
-                            onChange={(e) => handlePropertyChange(prop, e.target.value)}
+                            onChange={(e) =>
+                                handleStyleChange(prop, e.target.value)
+                            }
                             style={styles.select}
                         >
                             <option value="Liberation Sans, sans-serif">Liberation Sans</option>
                             <option value="DejaVu Sans, sans-serif">DejaVu Sans</option>
                             <option value="Arial, sans-serif">Arial</option>
-                            <option value="Times New Roman, serif">Times New Roman</option>
-                            <option value="Courier New, monospace">Courier New</option>
+                            <option value="Times New Roman, serif">Times</option>
+                            <option value="Courier New, monospace">Courier</option>
                         </select>
                     ) : (
                         <input
                             type="text"
                             value={widget.style[prop] || ""}
-                            onChange={(e) => handlePropertyChange(prop, e.target.value)}
+                            onChange={(e) =>
+                                handleStyleChange(prop, e.target.value)
+                            }
                             style={styles.textInput}
                             placeholder={prop}
                         />
                     )}
                 </div>
             ))}
+
+            {/* =========================
+                CONTAINER SPECIFIC
+            ========================= */}
+            {isContainer && (
+                <>
+                    <h4 style={styles.sectionTitle}>Container Layout</h4>
+
+                    {/* display */}
+                    <div style={styles.propertyRow}>
+                        <label style={styles.label}>Display</label>
+                        <select
+                            value={widget.style?.display || "flex"}
+                            onChange={(e) =>
+                                handleStyleChange("display", e.target.value)
+                            }
+                            style={styles.select}
+                        >
+                            <option value="flex">Flex</option>
+                            <option value="block">Block</option>
+                            <option value="grid">Grid</option>
+                        </select>
+                    </div>
+
+                    {/* flex direction */}
+                    <div style={styles.propertyRow}>
+                        <label style={styles.label}>Direction</label>
+                        <select
+                            value={widget.style?.flexDirection || "column"}
+                            onChange={(e) =>
+                                handleStyleChange("flexDirection", e.target.value)
+                            }
+                            style={styles.select}
+                        >
+                            <option value="column">Column</option>
+                            <option value="row">Row</option>
+                        </select>
+                    </div>
+
+                    {/* justify */}
+                    <div style={styles.propertyRow}>
+                        <label style={styles.label}>Justify</label>
+                        <select
+                            value={widget.style?.justifyContent || "flex-start"}
+                            onChange={(e) =>
+                                handleStyleChange("justifyContent", e.target.value)
+                            }
+                            style={styles.select}
+                        >
+                            <option value="flex-start">Start</option>
+                            <option value="center">Center</option>
+                            <option value="space-between">Space Between</option>
+                            <option value="space-around">Space Around</option>
+                        </select>
+                    </div>
+
+                    {/* align */}
+                    <div style={styles.propertyRow}>
+                        <label style={styles.label}>Align</label>
+                        <select
+                            value={widget.style?.alignItems || "stretch"}
+                            onChange={(e) =>
+                                handleStyleChange("alignItems", e.target.value)
+                            }
+                            style={styles.select}
+                        >
+                            <option value="flex-start">Start</option>
+                            <option value="center">Center</option>
+                            <option value="flex-end">End</option>
+                            <option value="stretch">Stretch</option>
+                        </select>
+                    </div>
+
+                    {/* gap */}
+                    <div style={styles.propertyRow}>
+                        <label style={styles.label}>Gap</label>
+                        <input
+                            type="text"
+                            value={widget.style?.gap || ""}
+                            onChange={(e) =>
+                                handleStyleChange("gap", e.target.value)
+                            }
+                            style={styles.textInput}
+                            placeholder="10px"
+                        />
+                    </div>
+                </>
+            )}
         </div>
     );
 }
 
+/* =========================
+   HELPERS
+========================= */
 function formatPropName(prop) {
     return prop
         .replace(/([A-Z])/g, " $1")
@@ -103,6 +223,9 @@ function formatPropName(prop) {
         .trim();
 }
 
+/* =========================
+   STYLES
+========================= */
 const styles = {
     container: {
         padding: "15px",
@@ -115,6 +238,13 @@ const styles = {
         fontWeight: "600",
         marginBottom: "15px",
         color: "#333",
+    },
+    sectionTitle: {
+        fontSize: "12px",
+        fontWeight: "700",
+        marginTop: "15px",
+        marginBottom: "10px",
+        color: "#444",
     },
     propertyRow: {
         marginBottom: "12px",

@@ -20,6 +20,7 @@ export const WIDGET_TYPES = {
     PAYMENT_INFO: "payment_info",
     CUSTOM_TEXT: "custom_text",
     SPACER: "spacer",
+    CONTAINER: "container",
 };
 
 export const WIDGET_DEFAULTS = {
@@ -114,6 +115,37 @@ export const WIDGET_DEFAULTS = {
         height: "10px",
         visible: true,
     },
+
+    [WIDGET_TYPES.CONTAINER]: {
+    type: WIDGET_TYPES.CONTAINER,
+    label: "Conteneur",
+    order: 100,
+    visible: true,
+
+    children: [],
+
+    style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+
+        width: "100%",
+        minHeight: "100px",
+
+        padding: "10px",
+
+        backgroundColor: "#ffffff",
+
+        borderWidth: "1px",
+        borderStyle: "dashed",
+        borderColor: "#d1d5db",
+
+        borderRadius: "6px",
+
+        marginTop: "10px",
+        marginBottom: "10px",
+    },
+}
 };
 
 export const DEFAULT_TEMPLATE = Object.values(WIDGET_TYPES).map((type) => WIDGET_DEFAULTS[type]);
