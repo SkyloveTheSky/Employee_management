@@ -27,7 +27,7 @@ export default function Chart_Users({ data = [] }) {
 
     return (
         <div style={styles.container}>
-            <h3 style={styles.title}>Évolution des utilisateurs</h3>
+            <h3 style={styles.title}>Evolution des employés</h3>
 
             <div style={{ width: "100%", height: 300 }}>
                 <ResponsiveContainer>

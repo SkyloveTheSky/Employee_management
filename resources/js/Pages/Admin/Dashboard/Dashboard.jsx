@@ -6,14 +6,13 @@ import Chart_Users from "@/Components/Admin/Charts/Chart_Users";
 
 export default function Dashboard({ admin, totalUsers }) {
     const [isOpen, setIsOpen] = useState(true);
+    const [chartData, setChartData] = useState([]);
 
     const logout = () => {
         router.post(route("admin.logout"));
     };
 
-    const [chartData, setChartData] = useState([]);
-
-     useEffect(() => {
+    useEffect(() => {
         fetch(route("admin.dashboard.chart-data"))
             .then((res) => res.json())
             .then((data) => {
@@ -24,7 +23,14 @@ export default function Dashboard({ admin, totalUsers }) {
     return (
         <>
             <Head title="Tableau de bord" />
-            <Sidebar admin={admin} currentPage="admin.dashboard" isOpen={isOpen} setIsOpen={setIsOpen} />
+
+            <Sidebar
+                admin={admin}
+                currentPage="admin.dashboard"
+                isOpen={isOpen}
+                setIsOpen={setIsOpen}
+            />
+
             <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
                 <div style={styles.header}>
                     <div style={styles.logo}>RH</div>
@@ -34,30 +40,32 @@ export default function Dashboard({ admin, totalUsers }) {
                             Bonjour, {admin.first_name_admin} {admin.name_admin}
                         </p>
                     </div>
-
                 </div>
+
+                {/* CARDS */}
                 <div style={styles.content}>
                     <div style={styles.card}>
                         <div style={styles.cardHeader}>
                             <img src="/assets/icon/user.svg" alt="Users" style={styles.cardIcon}/>
                             <p style={styles.cardLabel}>Nombre d'employés</p>
-    </div>
+                        </div>
                         <p style={styles.cardValue}>{totalUsers}</p>
                     </div>
+
                     <div style={styles.card}>
                         <p style={styles.cardLabel}>Email</p>
                         <p style={styles.cardValue}>{admin.email_admin}</p>
                     </div>
+
                     <div style={styles.card}>
                         <p style={styles.cardLabel}>Téléphone</p>
                         <p style={styles.cardValue}>{admin.number_phone_admin}</p>
                     </div>
-                    <div>
-                        <Chart_Users data={chartData} />
-                    </div>
+                </div>
+                <div style={styles.chartWrapper}>
+                    <Chart_Users data={chartData || []} />
                 </div>
             </div>
-
         </>
     );
 }
@@ -147,5 +155,12 @@ const styles = {
         width: "22px",
         height: "22px",
     },
+    chartWrapper: {
+    marginTop: "20px",
+    background: "white",
+    borderRadius: "12px",
+    padding: "20px",
+    border: "1px solid #e2e8f0",
+},
 
 };
