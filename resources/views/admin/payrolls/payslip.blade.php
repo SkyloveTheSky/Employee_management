@@ -10,11 +10,8 @@
 
     if (empty($widgetOrder)) {
         $widgetOrder = [
-            ['type' => 'company_info',   'style' => [], 'visible' => true, 'order' => 1],
-            ['type' => 'employee_info',  'style' => [], 'visible' => true, 'order' => 2],
-            ['type' => 'earnings_table', 'style' => [], 'visible' => true, 'order' => 3],
-            ['type' => 'summary_box',    'style' => [], 'visible' => true, 'order' => 4],
-            ['type' => 'payment_info',   'style' => [], 'visible' => true, 'order' => 5],
+            ['type' => 'entreprise',    'style' => [], 'visible' => true],
+            ['type' => 'employeeBlock', 'style' => [], 'visible' => true],
         ];
     }
 @endphp
@@ -24,7 +21,6 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <style>
-
         @page {
             margin-top:    {{ $margins['top'] * 3.78 }}px;
             margin-bottom: {{ $margins['bottom'] * 3.78 }}px;
@@ -46,35 +42,25 @@
 <body>
 <div class="container">
 
-    <div style="font-size: 18px; font-weight: bold; text-align: center; margin: 10px 0 8px 0;">FICHE DE PAIE</div>
-    <div style="text-align: center; font-size: 12px; margin-bottom: 12px; font-weight: bold;">
+    <div style="font-size:18px;font-weight:bold;text-align:center;margin:10px 0 8px 0;">FICHE DE PAIE</div>
+    <div style="text-align:center;font-size:12px;margin-bottom:12px;font-weight:bold;">
         Période : {{ str_pad((string)$payroll->period_month, 2, '0', STR_PAD_LEFT) }}/{{ $payroll->period_year }}
     </div>
 
+    {{-- ── WIDGETS PERSONNALISABLES (entreprise, employeeBlock, container, spacer) ── --}}
     @foreach($widgetOrder as $widget)
         @php
             $type = $widget['type'];
             $s    = isset($widget['style']) && is_array($widget['style']) ? $widget['style'] : [];
-
-            $bg                    = $s['backgroundColor']      ?? '#fafafa';
-            $rowBg                 = $s['backgroundColor']      ?? '#f0f0f0';
-            $borderWidth           = $s['borderWidth']          ?? '1px';
-            $borderColor           = $s['borderColor']          ?? '#999';
-            $padding               = $s['padding']              ?? '8px';
-            $borderRadius          = $s['borderRadius']         ?? '0px';
-            $fontFamily            = $s['fontFamily']           ?? 'Liberation Sans, sans-serif';
-            $headerBorderColor     = $s['headerBorderColor']    ?? '#999';
-            $headerBackgroundColor = $s['headerBackgroundColor']?? '#e0e0e0';
-            $headerFontSize        = $s['headerFontSize']       ?? '10px';
-            $headerFontWeight      = $s['headerFontWeight']     ?? 'bold';
-            $bodyBorderColor       = $s['bodyBorderColor']      ?? '#999';
-            $bodyFontSize          = $s['bodyFontSize']         ?? '10px';
-            $boxFontSize           = $s['fontSize']             ?? '11px';
-            $boxFontWeight         = $s['fontWeight']           ?? 'bold';
-            $marginTop             = $s['marginTop']            ?? '18px';
+            $bg          = $s['backgroundColor'] ?? '#fafafa';
+            $borderWidth = $s['borderWidth']     ?? '1px';
+            $borderColor = $s['borderColor']     ?? '#999';
+            $padding     = $s['padding']         ?? '8px';
+            $borderRadius= $s['borderRadius']    ?? '0px';
+            $fontFamily  = $s['fontFamily']      ?? 'Liberation Sans, sans-serif';
         @endphp
 
-        @if($type === 'company_info')
+        @if($type === 'entreprise')
             <div style="background-color:{{ $bg }};border:{{ $borderWidth }} solid {{ $borderColor }};padding:{{ $padding }};border-radius:{{ $borderRadius }};font-family:{{ $fontFamily }};margin-bottom:10px;">
                 <div class="box-title">ENTREPRISE</div>
                 @if($logoDataUri)
@@ -87,7 +73,7 @@
                 <div class="box-item"><span class="label">RCS:</span> {{ addslashes($settings->rcs ?? 'N/A') }}</div>
             </div>
 
-        @elseif($type === 'employee_info')
+        @elseif($type === 'employeeBlock')
             <div style="background-color:{{ $bg }};border:{{ $borderWidth }} solid {{ $borderColor }};padding:{{ $padding }};border-radius:{{ $borderRadius }};font-family:{{ $fontFamily }};margin-bottom:10px;">
                 <div class="box-title">EMPLOYÉ</div>
                 <div class="box-item"><span class="label">Nom:</span> {{ addslashes($employee->last_name ?? 'N/A') }}</div>
@@ -97,76 +83,65 @@
                 <div class="box-item"><span class="label">Embauche:</span> {{ $employee->hire_date ? $employee->hire_date->format('d/m/Y') : 'N/A' }}</div>
             </div>
 
-        @elseif($type === 'earnings_table')
-            <table style="margin-bottom:10px;">
-                <thead>
-                    <tr>
-                        <th style="width:6%;  border:1px solid {{ $headerBorderColor }};background-color:{{ $headerBackgroundColor }};font-size:{{ $headerFontSize }};font-weight:{{ $headerFontWeight }};">N</th>
-                        <th style="width:32%; border:1px solid {{ $headerBorderColor }};background-color:{{ $headerBackgroundColor }};font-size:{{ $headerFontSize }};font-weight:{{ $headerFontWeight }};">Désignation</th>
-                        <th style="width:14%; border:1px solid {{ $headerBorderColor }};background-color:{{ $headerBackgroundColor }};font-size:{{ $headerFontSize }};font-weight:{{ $headerFontWeight }};">Base</th>
-                        <th style="width:12%; border:1px solid {{ $headerBorderColor }};background-color:{{ $headerBackgroundColor }};font-size:{{ $headerFontSize }};font-weight:{{ $headerFontWeight }};">Taux</th>
-                        <th style="width:18%; border:1px solid {{ $headerBorderColor }};background-color:{{ $headerBackgroundColor }};font-size:{{ $headerFontSize }};font-weight:{{ $headerFontWeight }};">Gain (Ar)</th>
-                        <th style="width:18%; border:1px solid {{ $headerBorderColor }};background-color:{{ $headerBackgroundColor }};font-size:{{ $headerFontSize }};font-weight:{{ $headerFontWeight }};">Retenu (Ar)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($lines as $line)
-                        <tr>
-                            <td class="center" style="border:1px solid {{ $bodyBorderColor }};font-size:{{ $bodyFontSize }};">{{ $line['numero'] }}</td>
-                            <td class="left"   style="border:1px solid {{ $bodyBorderColor }};font-size:{{ $bodyFontSize }};">{{ addslashes($line['designation'] ?? '') }}</td>
-                            <td class="right"  style="border:1px solid {{ $bodyBorderColor }};font-size:{{ $bodyFontSize }};">{{ number_format((float)$line['base'], 0, '.', ' ') }}</td>
-                            <td class="center" style="border:1px solid {{ $bodyBorderColor }};font-size:{{ $bodyFontSize }};">{{ addslashes($line['taux'] ?? '-') }}</td>
-                            <td class="right"  style="border:1px solid {{ $bodyBorderColor }};font-size:{{ $bodyFontSize }};">{{ number_format((float)$line['gain'], 0, '.', ' ') }}</td>
-                            <td class="right"  style="border:1px solid {{ $bodyBorderColor }};font-size:{{ $bodyFontSize }};">{{ number_format((float)$line['retenu'], 0, '.', ' ') }}</td>
-                        </tr>
-                    @endforeach
-                    <tr style="background-color:{{ $rowBg }};font-weight:bold;">
-                        <td colspan="4" class="right" style="border:1px solid {{ $bodyBorderColor }};">Salaire Brut</td>
-                        <td class="right" style="border:1px solid {{ $bodyBorderColor }};">{{ number_format((float)$payroll->gross_salary, 0, '.', ' ') }}</td>
-                        <td class="right" style="border:1px solid {{ $bodyBorderColor }};">-</td>
-                    </tr>
-                    <tr style="background-color:{{ $rowBg }};font-weight:bold;">
-                        <td colspan="4" class="right" style="border:1px solid {{ $bodyBorderColor }};">Total Retenu</td>
-                        <td class="right" style="border:1px solid {{ $bodyBorderColor }};">-</td>
-                        <td class="right" style="border:1px solid {{ $bodyBorderColor }};">{{ number_format((float)$payroll->total_retenu, 0, '.', ' ') }}</td>
-                    </tr>
-                    <tr style="background-color:{{ $rowBg }};font-weight:bold;font-size:12px;">
-                        <td colspan="4" class="right" style="border:1px solid {{ $bodyBorderColor }};">NET À PAYER</td>
-                        <td colspan="2" class="right" style="border:1px solid {{ $bodyBorderColor }};">{{ number_format((float)$payroll->net_to_pay, 0, '.', ' ') }}</td>
-                    </tr>
-                </tbody>
-            </table>
+        @elseif($type === 'spacer')
+            <div style="height:{{ $s['height'] ?? '10px' }};"></div>
 
-        @elseif($type === 'summary_box')
-            <div style="background-color:{{ $rowBg }};padding:{{ $padding }};margin-bottom:10px;">
-                <table style="width:100%;font-size:{{ $boxFontSize }};font-weight:{{ $boxFontWeight }};">
-                    <tr>
-                        <td>Salaire Brut :</td>
-                        <td style="text-align:right;">{{ number_format((float)$payroll->gross_salary, 0, '.', ' ') }} Ar</td>
-                    </tr>
-                    <tr>
-                        <td>Total Retenu :</td>
-                        <td style="text-align:right;">{{ number_format((float)$payroll->total_retenu, 0, '.', ' ') }} Ar</td>
-                    </tr>
-                    <tr style="font-size:13px;font-weight:bold;">
-                        <td>NET À PAYER :</td>
-                        <td style="text-align:right;">{{ number_format((float)$payroll->net_to_pay, 0, '.', ' ') }} Ar</td>
-                    </tr>
-                </table>
-            </div>
-
-        @elseif($type === 'payment_info')
-            <div style="background-color:{{ $bg }};border:{{ $borderWidth }} solid {{ $borderColor }};padding:{{ $padding }};margin-top:{{ $marginTop }};">
-                <div class="box-title">INFORMATIONS DE PAIEMENT</div>
-                <div class="box-item"><span class="label">Mode :</span> {{ addslashes($payroll->payment_method ?? 'N/A') }}</div>
-                <div class="box-item"><span class="label">Statut :</span> {{ $payroll->payment_status === 'paid' ? 'PAYÉ' : 'NON PAYÉ' }}</div>
-                <div class="box-item"><span class="label">Date paiement :</span> {{ $payroll->paid_at ? $payroll->paid_at->format('d/m/Y') : 'N/A' }}</div>
-                @if($payroll->notes)
-                    <div class="box-item"><span class="label">Notes :</span> {{ addslashes($payroll->notes) }}</div>
-                @endif
+        @elseif($type === 'container')
+            <div style="background-color:{{ $bg }};border:{{ $borderWidth }} solid {{ $borderColor }};padding:{{ $padding }};border-radius:{{ $borderRadius }};margin-bottom:10px;">
             </div>
         @endif
     @endforeach
+
+    {{-- ── TABLEAU DE PAIE (fixe, non personnalisable) ── --}}
+    <table style="margin-bottom:10px;">
+        <thead>
+            <tr>
+                <th style="width:6%;  border:1px solid #999;background-color:#e0e0e0;font-size:10px;font-weight:bold;">N</th>
+                <th style="width:32%; border:1px solid #999;background-color:#e0e0e0;font-size:10px;font-weight:bold;">Désignation</th>
+                <th style="width:14%; border:1px solid #999;background-color:#e0e0e0;font-size:10px;font-weight:bold;">Base</th>
+                <th style="width:12%; border:1px solid #999;background-color:#e0e0e0;font-size:10px;font-weight:bold;">Taux</th>
+                <th style="width:18%; border:1px solid #999;background-color:#e0e0e0;font-size:10px;font-weight:bold;">Gain (Ar)</th>
+                <th style="width:18%; border:1px solid #999;background-color:#e0e0e0;font-size:10px;font-weight:bold;">Retenu (Ar)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($lines as $line)
+                <tr>
+                    <td class="center" style="border:1px solid #999;font-size:10px;">{{ $line['numero'] }}</td>
+                    <td class="left"   style="border:1px solid #999;font-size:10px;">{{ addslashes($line['designation'] ?? '') }}</td>
+                    <td class="right"  style="border:1px solid #999;font-size:10px;">{{ number_format((float)$line['base'], 0, '.', ' ') }}</td>
+                    <td class="center" style="border:1px solid #999;font-size:10px;">{{ addslashes($line['taux'] ?? '-') }}</td>
+                    <td class="right"  style="border:1px solid #999;font-size:10px;">{{ number_format((float)$line['gain'], 0, '.', ' ') }}</td>
+                    <td class="right"  style="border:1px solid #999;font-size:10px;">{{ number_format((float)$line['retenu'], 0, '.', ' ') }}</td>
+                </tr>
+            @endforeach
+            <tr style="background-color:#f0f0f0;font-weight:bold;">
+                <td colspan="4" class="right" style="border:1px solid #999;">Salaire Brut</td>
+                <td class="right" style="border:1px solid #999;">{{ number_format((float)$payroll->gross_salary, 0, '.', ' ') }}</td>
+                <td class="right" style="border:1px solid #999;">-</td>
+            </tr>
+            <tr style="background-color:#f0f0f0;font-weight:bold;">
+                <td colspan="4" class="right" style="border:1px solid #999;">Total Retenu</td>
+                <td class="right" style="border:1px solid #999;">-</td>
+                <td class="right" style="border:1px solid #999;">{{ number_format((float)$payroll->total_retenu, 0, '.', ' ') }}</td>
+            </tr>
+            <tr style="background-color:#f0f0f0;font-weight:bold;font-size:12px;">
+                <td colspan="4" class="right" style="border:1px solid #999;">NET À PAYER</td>
+                <td colspan="2" class="right" style="border:1px solid #999;">{{ number_format((float)$payroll->net_to_pay, 0, '.', ' ') }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    {{-- ── PAIEMENT (fixe) ── --}}
+    <div style="background-color:#fafafa;border:1px solid #999;padding:8px;margin-top:18px;">
+        <div class="box-title">INFORMATIONS DE PAIEMENT</div>
+        <div class="box-item"><span class="label">Mode :</span> {{ addslashes($payroll->payment_method ?? 'N/A') }}</div>
+        <div class="box-item"><span class="label">Statut :</span> {{ $payroll->payment_status === 'paid' ? 'PAYÉ' : 'NON PAYÉ' }}</div>
+        <div class="box-item"><span class="label">Date paiement :</span> {{ $payroll->paid_at ? $payroll->paid_at->format('d/m/Y') : 'N/A' }}</div>
+        @if($payroll->notes)
+            <div class="box-item"><span class="label">Notes :</span> {{ addslashes($payroll->notes) }}</div>
+        @endif
+    </div>
 
 </div>
 </body>

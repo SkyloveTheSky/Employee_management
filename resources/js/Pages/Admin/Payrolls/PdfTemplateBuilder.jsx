@@ -109,12 +109,26 @@ export default function PdfTemplateBuilder({
         dragWidgetId.current = null;
     };
 
-    const widgetIcons = {
-        entreprise:     <img src="/assets/icon/building.svg"          alt="" style={{ width: 16, height: 16 }} />,
-        employeeBlock:    <img src="/assets/icon/users.svg"             alt="" style={{ width: 16, height: 16 }} />,
-        spacer:           <img src="/assets/icon/backspace-outline.svg" alt="" style={{ width: 16, height: 16 }} />,
-        container:       <img src="/assets/icon/box.svg"              alt="" style={{ width: 16, height: 16 }} />,
-    };
+    const getWidgetIcon = (type) => {
+    const iconStyle = { width: 16, height: 16 };
+
+    switch (type) {
+        case "entreprise":
+            return <img src="/assets/icon/building.svg" alt="" style={iconStyle} />;
+
+        case "employeeBlock":
+            return <img src="/assets/icon/users.svg" alt="" style={iconStyle} />;
+
+        case "spacer":
+            return <img src="/assets/icon/backspace-outline.svg" alt="" style={iconStyle} />;
+
+        case "container":
+            return <img src="/assets/icon/box.svg" alt="" style={iconStyle} />;
+
+        default:
+            return "◻️";
+    }
+};
 
     return (
         <>
@@ -169,7 +183,7 @@ export default function PdfTemplateBuilder({
                                     style={s.addWidgetBtn}
                                     title={`Ajouter ${WIDGET_DEFAULTS[type]?.label}`}
                                 >
-                                    <span style={s.widgetIcon}>{widgetIcons[type] ?? "◻️"}</span>
+                                    <span style={s.widgetIcon}>{getWidgetIcon(type) ?? "◻️"}</span>
                                     <span style={s.widgetBtnLabel}>{WIDGET_DEFAULTS[type]?.label ?? type}</span>
                                     <span style={s.widgetPlus}>+</span>
                                 </button>
@@ -180,7 +194,7 @@ export default function PdfTemplateBuilder({
 
                         <p style={s.panelLabel}>ORDRE DES SECTIONS</p>
                         <div style={s.widgetOrderList}>
-                            {widgets.filter((w) => w.visible).map((widget, index) => (
+                            {widgets.map((widget, index) => (
                                 <div
                                     key={widget.id ?? `${widget.type}_${index}`}
                                     draggable
@@ -201,7 +215,7 @@ export default function PdfTemplateBuilder({
                                     }}
                                 >
                                     <span style={s.dragHandle}>⠿</span>
-                                    <span style={s.orderIcon}>{widgetIcons[widget.type] ?? "◻️"}</span>
+                                    <span style={s.orderIcon}>{getWidgetIcon(widget.type) ?? "◻️"}</span>
                                     <span style={s.orderLabel}>{widget.label}</span>
                                     <div style={s.orderActions}>
                                         <button
@@ -238,9 +252,9 @@ export default function PdfTemplateBuilder({
                                 <div style={s.pdfTitle}>FICHE DE PAIE</div>
                                 <div style={s.pdfPeriod}>Période : {sampleData.period}</div>
                                 <div style={s.pdfDivider} />
-                                {widgets.filter((w) => w.visible).map((widget) => (
+                                {widgets.filter((w) => w.visible).map((widget, index) => (
     <div
-        key={widget.id}
+        key={widget.id ?? `widget_${index}`}
         onClick={() => {
             setShowSettings(false);
             setSelectedWidgetId(widget.id === selectedWidgetId ? null : widget.id);
@@ -253,7 +267,7 @@ export default function PdfTemplateBuilder({
             cursor: "pointer",
         }}
     >
-        <WidgetRenderer widgets={[widget]} data={sampleData} />
+        <WidgetRenderer widget={widget} data={sampleData} />
     </div>
 ))}
                             </div>
@@ -268,9 +282,11 @@ export default function PdfTemplateBuilder({
                             <>
                                 <p style={s.panelLabel}>PROPRIÉTÉS</p>
                                 <div style={s.propWidgetName}>
-                                    <span style={s.propWidgetIcon}>{widgetIcons[selectedWidget.type] ?? "◻️"}</span>
-                                    {selectedWidget.label}
-                                </div>
+    <span style={s.propWidgetIcon}>
+        {getWidgetIcon(selectedWidget.type)}
+    </span>
+    {selectedWidget.label}
+</div>
                                 <div style={s.propScroll}>
                                     <WidgetPropertyEditor
                                         widget={selectedWidget}
