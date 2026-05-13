@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 export const WIDGET_TYPES = {
     SPACER: "spacer",
@@ -7,17 +7,12 @@ export const WIDGET_TYPES = {
     EMPLOYEE: "employeeBlock",
 };
 
-/**
- * 🔥 IMPORTANT FIX:
- * On évite les références partagées (deep clone)
- */
 const clone = (obj) =>
     typeof structuredClone === "function"
         ? structuredClone(obj)
         : JSON.parse(JSON.stringify(obj));
 
 export const WIDGET_DEFAULTS = {
-
     [WIDGET_TYPES.SPACER]: {
         type: WIDGET_TYPES.SPACER,
         label: "Espace",
@@ -44,99 +39,74 @@ export const WIDGET_DEFAULTS = {
             borderStyle: "dashed",
             borderColor: "#d1d5db",
             borderRadius: "6px",
-            marginTop: "10px",
-            marginBottom: "10px",
         },
     },
+
     [WIDGET_TYPES.ENTREPRISE]: {
         type: WIDGET_TYPES.ENTREPRISE,
-        label: "Informations Entreprise",
+        label: "Entreprise",
         order: 101,
+        visible: true,
         style: {
             backgroundColor: "#fafafa",
-            borderColor: "#999",
-            borderWidth: "1px",
+            border: "1px solid #999",
             padding: "8px",
-            borderRadius: "0px",
-            fontFamily: "Liberation Sans, sans-serif",},
-        visible: true,
+            fontFamily: "Liberation Sans, sans-serif",
+        },
     },
+
     [WIDGET_TYPES.EMPLOYEE]: {
         type: WIDGET_TYPES.EMPLOYEE,
-        label: "Bloc Employé",
+        label: "Employé",
         order: 102,
+        visible: true,
         style: {
             backgroundColor: "#fafafa",
-            borderColor: "#999",
-            borderWidth: "1px",
+            border: "1px solid #999",
             padding: "8px",
-            borderRadius: "0px",
-            fontFamily: "Liberation Sans, sans-serif",},
-        visible: true,
+            fontFamily: "Liberation Sans, sans-serif",
+        },
     },
 };
 
 /**
- * 🔥 FIX IMPORTANT:
- * Plus de référence partagée entre widgets
+ * ✅ Template propre SANS anciens widgets
  */
-export const DEFAULT_TEMPLATE = Object.values(WIDGET_TYPES).map((type) =>
-    clone(WIDGET_DEFAULTS[type])
-);
+export const DEFAULT_TEMPLATE = Object.values(WIDGET_DEFAULTS).map(clone);
 
-/**
- * Hook pour gérer les widgets du template
- */
 export const useTemplateBuilder = (initialTemplate = DEFAULT_TEMPLATE) => {
-    const [widgets, setWidgets] = useState(initialTemplate);
+    // 🔥 FILTRE DE SÉCURITÉ (TRÈS IMPORTANT)
+    const cleanTemplate = initialTemplate.filter(
+        (w) => WIDGET_DEFAULTS[w.type] !== undefined
+    );
+
+    const [widgets, setWidgets] = useState(cleanTemplate);
 
     const addWidget = (widgetType) => {
-        const newWidget = { ...WIDGET_DEFAULTS[widgetType], id: `widget_${Date.now()}` };// ID unique garanti
+        if (!WIDGET_DEFAULTS[widgetType]) return;
+
+        const newWidget = {
+            ...clone(WIDGET_DEFAULTS[widgetType]),
+            id: `widget_${Date.now()}`,
+        };
 
         setWidgets((prev) => [...prev, newWidget]);
     };
 
-    const removeWidget = (widgetId) => {
-        setWidgets((prev) => prev.filter((w) => w.id !== widgetId));
+    const removeWidget = (id) => {
+        setWidgets((prev) => prev.filter((w) => w.id !== id));
     };
 
-    const updateWidget = (widgetId, updates) => {
+    const updateWidget = (id, updates) => {
         setWidgets((prev) =>
-            prev.map((w) =>
-                w.id === widgetId ? { ...w, ...updates } : w
-            )
+            prev.map((w) => (w.id === id ? { ...w, ...updates } : w))
         );
     };
 
-    const reorderWidgets = (widgetId, direction) => {
-        setWidgets((prev) => {
-            const index = prev.findIndex((w) => w.id === widgetId);
-            if (index === -1) return prev;
-
-            const newWidgets = [...prev];
-
-            if (direction === "up" && index > 0) {
-                [newWidgets[index], newWidgets[index - 1]] = [
-                    newWidgets[index - 1],
-                    newWidgets[index],
-                ];
-            }
-
-            if (direction === "down" && index < newWidgets.length - 1) {
-                [newWidgets[index], newWidgets[index + 1]] = [
-                    newWidgets[index + 1],
-                    newWidgets[index],
-                ];
-            }
-
-            return newWidgets;
-        });
-    };
-
-    const toggleWidgetVisibility = (widgetId) => {
+    const toggleWidgetVisibility = (id) => {
         setWidgets((prev) =>
             prev.map((w) =>
-                w.id === widgetId ? { ...w, visible: !w.visible } : w
+                w.id === id ? { ...w, visible: !w.visible } : w
             )
         );
     };
@@ -147,7 +117,6 @@ export const useTemplateBuilder = (initialTemplate = DEFAULT_TEMPLATE) => {
         addWidget,
         removeWidget,
         updateWidget,
-        reorderWidgets,
         toggleWidgetVisibility,
     };
 };

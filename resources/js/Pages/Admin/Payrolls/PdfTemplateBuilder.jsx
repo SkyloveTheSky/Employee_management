@@ -60,9 +60,9 @@ export default function PdfTemplateBuilder({
     const handleSave = () => {
         // Préparer les données en supprimant les champs inutiles (id généré au runtime)
         const cleanedWidgets = widgets.map(({ id, ...widget }) => widget);
-        
+
         console.log('Envoi des styles:', { styles: cleanedWidgets, margins });
-        
+
         router.post(
             route("admin.payrolls.style.update"),
             { styles: cleanedWidgets, margins },
@@ -243,24 +243,23 @@ export default function PdfTemplateBuilder({
                                 <div style={s.pdfPeriod}>Période : {sampleData.period}</div>
                                 <div style={s.pdfDivider} />
                                 {widgets.filter((w) => w.visible).map((widget) => (
-                                    <div
-                                        key={widget.id}
-                                        onClick={() => {
-                                            setShowSettings(false);
-                                            setSelectedWidgetId(widget.id === selectedWidgetId ? null : widget.id);
-                                        }}
-                                        style={{
-                                            ...s.widgetWrapper,
-                                            outline: widget.id === selectedWidgetId ? "2px solid #0F6E56" : "2px solid transparent",
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        {widget.id === selectedWidgetId && (
-                                            <div style={s.widgetSelectedBadge}>{widget.label}</div>
-                                        )}
-                                        <WidgetRenderer widgets={[widget]} data={sampleData} />
-                                    </div>
-                                ))}
+    <div
+        key={widget.id}
+        onClick={() => {
+            setShowSettings(false);
+            setSelectedWidgetId(widget.id === selectedWidgetId ? null : widget.id);
+        }}
+        style={{
+            ...s.widgetWrapper,
+            outline: widget.id === selectedWidgetId
+                ? "2px solid #0F6E56"
+                : "2px solid transparent",
+            cursor: "pointer",
+        }}
+    >
+        <WidgetRenderer widgets={[widget]} data={sampleData} />
+    </div>
+))}
                             </div>
                         </div>
                     </main>

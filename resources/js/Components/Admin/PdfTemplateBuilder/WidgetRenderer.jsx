@@ -7,7 +7,7 @@ import Container from "../Widgets/Container";
  * Rend les widgets du template pour l'aperçu PDF
  */
 export default function WidgetRenderer({ widgets, data = {} }) {
-    const renderWidget = (widget) => {
+    const renderWidget = (widget, index) => {
         if (!widget.visible) return null;
 
         switch (widget.type) {
@@ -15,7 +15,7 @@ export default function WidgetRenderer({ widgets, data = {} }) {
 
             case WIDGET_TYPES.ENTREPRISE:
                 return (
-                    <div key={widget.id} style={{ ...styles.box, ...widget.style }}>
+                    <div key={widget.id ?? `${widget.type}_${index}`} style={{ ...styles.box, ...widget.style }}>
                         <div style={styles.boxTitle}>ENTREPRISE</div>
                         <div style={styles.boxContent}>
                             <p style={styles.line}>
@@ -32,7 +32,7 @@ export default function WidgetRenderer({ widgets, data = {} }) {
                 );
             case WIDGET_TYPES.EMPLOYEE:
                 return (
-                    <div key={widget.id} style={{ ...styles.box, ...widget.style }}>
+                    <div key={widget.id ?? `${widget.type}_${index}`} style={{ ...styles.box, ...widget.style }}>
                         <div style={styles.boxTitle}>EMPLOYE</div>
                         <div style={styles.boxContent}>
                             <p style={styles.line}>
@@ -53,9 +53,9 @@ export default function WidgetRenderer({ widgets, data = {} }) {
             ========================= */
             case WIDGET_TYPES.CONTAINER:
                 return (
-                    <Container key={widget.id} style={widget.style}>
-                        {(widget.children || []).map((child) =>
-                            renderWidget(child)
+                    <Container key={widget.id ?? `${widget.type}_${index}`} style={widget.style}>
+                        {(widget.children || []).map((child, childIndex) =>
+                            renderWidget(child, childIndex)
                         )}
                     </Container>
                 );
@@ -67,7 +67,7 @@ export default function WidgetRenderer({ widgets, data = {} }) {
             case WIDGET_TYPES.SPACER:
                 return (
                     <div
-                        key={widget.id}
+                        key={widget.id ?? `${widget.type}_${index}`}
                         style={{ height: widget.height || "10px" }}
                     />
                 );
@@ -77,8 +77,7 @@ export default function WidgetRenderer({ widgets, data = {} }) {
         }
     };
 
-    return <>{widgets.map(renderWidget)}</>;
-}
+    return <>{widgets.map((w, i) => renderWidget(w, i))}</>;}
 
 /* =========================
    STYLES
