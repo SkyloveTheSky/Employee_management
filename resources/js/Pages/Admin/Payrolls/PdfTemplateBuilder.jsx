@@ -110,14 +110,10 @@ export default function PdfTemplateBuilder({
     };
 
     const widgetIcons = {
-        company_info:     <img src="/assets/icon/building.svg"          alt="" style={{ width: 16, height: 16 }} />,
-        employee_info:    <img src="/assets/icon/users.svg"             alt="" style={{ width: 16, height: 16 }} />,
-        earnings_table:   <img src="/assets/icon/up.svg"                alt="" style={{ width: 16, height: 16 }} />,
-        deductions_table: <img src="/assets/icon/down.svg"              alt="" style={{ width: 16, height: 16 }} />,
-        summary_box:      <img src="/assets/icon/summary.svg"           alt="" style={{ width: 16, height: 16 }} />,
-        payment_info:     <img src="/assets/icon/information.svg"       alt="" style={{ width: 16, height: 16 }} />,
-        custom_text:      <img src="/assets/icon/editor.svg"            alt="" style={{ width: 16, height: 16 }} />,
+        entreprise:     <img src="/assets/icon/building.svg"          alt="" style={{ width: 16, height: 16 }} />,
+        employeeBlock:    <img src="/assets/icon/users.svg"             alt="" style={{ width: 16, height: 16 }} />,
         spacer:           <img src="/assets/icon/backspace-outline.svg" alt="" style={{ width: 16, height: 16 }} />,
+        container:       <img src="/assets/icon/box.svg"              alt="" style={{ width: 16, height: 16 }} />,
     };
 
     return (
@@ -184,9 +180,9 @@ export default function PdfTemplateBuilder({
 
                         <p style={s.panelLabel}>ORDRE DES SECTIONS</p>
                         <div style={s.widgetOrderList}>
-                            {widgets.map((widget) => (
+                            {widgets.filter((w) => w.visible).map((widget, index) => (
                                 <div
-                                    key={widget.id}
+                                    key={widget.id ?? `${widget.type}_${index}`}
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, widget.id)}
                                     onDragOver={(e) => handleDragOver(e, widget.id)}
