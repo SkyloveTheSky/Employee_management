@@ -9,6 +9,7 @@ import WidgetPropertyEditor from "../../../Components/Admin/PdfTemplateBuilder/W
 import WidgetRenderer from "../../../Components/Admin/PdfTemplateBuilder/WidgetRenderer.jsx";
 import SettingsPanel from "../../../Components/Admin/PdfTemplateBuilder/ShowSettings.jsx";
 import Selecto from "react-selecto";
+import Moveable from "react-moveable";
 
 export default function PdfTemplateBuilder({
     admin,
@@ -232,52 +233,144 @@ export default function PdfTemplateBuilder({
 
                     {/* ── CENTRE ── */}
                     <main style={s.center} className="selecto-area">
-                        <Selecto
-                            dragContainer=".selecto-area"
-                            selectableTargets={[".selectable-widget"]}
-                            hitRate={0}
-                            selectByClick={true}
-                            selectFromInside={true}
-                            toggleContinueSelect={["shift"]}
-                            ratio={0}
-                            onSelect={(e) => {
-                                const ids = e.selected.map((el) => el.dataset.widgetId);
-                                setSelectedWidgetIds(ids);
-                                setShowSettings(false);
-                            }}
-                        />
-                        <div style={s.a4Wrapper}>
-                            <div style={{
-                                ...s.a4Sheet,
-                                padding: `${margins.top}px ${margins.right}px ${margins.bottom}px ${margins.left}px`,
-                            }}>
-                                <div style={s.pdfTitle}>FICHE DE PAIE</div>
-                                <div style={s.pdfPeriod}>Période : {sampleData.period}</div>
-                                <div style={s.pdfDivider} />
 
-                                {widgets.filter((w) => w.visible).map((widget, index) => (
-                                    <div
-                                        key={widget.id ?? `widget_${index}`}
-                                        className="selectable-widget"
-                                        data-widget-id={widget.id}
-                                        onClick={() => toggleSelect(widget.id)}
-                                        style={{
-                                            ...s.widgetWrapper,
-                                            outline: isSelected(widget.id)
-                                                ? "2px solid #0F6E56"
-                                                : "2px solid transparent",
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        {isSelected(widget.id) && (
-                                            <div style={s.widgetSelectedBadge}>{widget.label}</div>
-                                        )}
-                                        <WidgetRenderer widget={widget} data={sampleData} />
-                                    </div>
-                                ))}
-                            </div>
+    {/* ========================= */}
+    {/* SELECTO */}
+    {/* ========================= */}
+    <Selecto
+        dragContainer=".selecto-area"
+        selectableTargets={[".selectable-widget"]}
+        hitRate={0}
+        selectByClick={true}
+        selectFromInside={false}
+        continueSelect={false}
+        toggleContinueSelect={["shift"]}
+        ratio={0}
+        onSelect={(e) => {
+            const ids = e.selected.map(
+                (el) => el.dataset.widgetId
+            );
+
+            setSelectedWidgetIds(ids);
+            setShowSettings(false);
+        }}
+    />
+
+    {/* ========================= */}
+    {/* MOVEABLE */}
+    {/* ========================= */}
+    <Moveable
+        target={selectedWidgetIds.map((id) =>
+            document.querySelector(
+                `[data-widget-id="${id}"]`
+            )
+        )}
+
+        draggable={true}
+        resizable={true}
+        scalable={false}
+        rotatable={false}
+        keepRatio={false}
+
+        origin={false}
+
+        snappable={true}
+        throttleDrag={0}
+        throttleResize={0}
+
+        onDrag={({ target, left, top }) => {
+            target.style.left = `${left}px`;
+            target.style.top = `${top}px`;
+        }}
+
+        onResize={({ target, width, height, drag }) => {
+
+            const beforeTranslate = drag.beforeTranslate;
+
+            target.style.width = `${width}px`;
+            target.style.height = `${height}px`;
+
+            target.style.transform =
+                `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
+        }}
+    />
+
+    {/* ========================= */}
+    {/* PAGE PDF */}
+    {/* ========================= */}
+    <div style={s.a4Wrapper}>
+        <div
+            style={{
+                ...s.a4Sheet,
+                padding: `${margins.top}px ${margins.right}px ${margins.bottom}px ${margins.left}px`,
+            }}
+        >
+
+            <div style={s.pdfTitle}>
+                FICHE DE PAIE
+            </div>
+
+            <div style={s.pdfPeriod}>
+                Période : {sampleData.period}
+            </div>
+
+            <div style={s.pdfDivider} />
+
+            {widgets
+                .filter((w) => w.visible)
+                .map((widget, index) => (
+
+                <div
+                    key={widget.id ?? `widget_${index}`}
+
+                    className="selectable-widget"
+
+                    data-widget-id={widget.id}
+
+                    onClick={(e) => {
+
+                        e.stopPropagation();
+
+                        setSelectedWidgetIds([widget.id]);
+
+                        setShowSettings(false);
+                    }}
+
+                    style={{
+                        ...s.widgetWrapper,
+
+                        position: "absolute",
+
+                        left: widget.left ?? 0,
+                        top: widget.top ?? 0,
+
+                        width: widget.width ?? "auto",
+                        height: widget.height ?? "auto",
+
+                        outline: isSelected(widget.id)
+                            ? "2px solid #0F6E56"
+                            : "2px solid transparent",
+
+                        cursor: "move",
+                    }}
+                >
+
+                    {isSelected(widget.id) && (
+                        <div style={s.widgetSelectedBadge}>
+                            {widget.label}
                         </div>
-                    </main>
+                    )}
+
+                    <WidgetRenderer
+                        widget={widget}
+                        data={sampleData}
+                    />
+
+                </div>
+            ))}
+        </div>
+    </div>
+</main>
 
                     {/* ── PANEL DROIT ── */}
                     <aside style={s.rightPanel}>
