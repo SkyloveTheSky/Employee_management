@@ -5,13 +5,21 @@ export const WIDGET_TYPES = {
     CONTAINER: "container",
     ENTREPRISE: "entreprise",
     EMPLOYEE: "employeeBlock",
-    a : "a"
 };
 
 const clone = (obj) =>
     typeof structuredClone === "function"
         ? structuredClone(obj)
         : JSON.parse(JSON.stringify(obj));
+
+/**
+ * Génère un ID unique
+ */
+const generateId = () => {
+    return crypto.randomUUID
+        ? crypto.randomUUID()
+        : `widget_${Date.now()}_${Math.random()}`;
+};
 
 export const WIDGET_DEFAULTS = {
     [WIDGET_TYPES.SPACER]: {
@@ -71,43 +79,77 @@ export const WIDGET_DEFAULTS = {
 };
 
 /**
- * ✅ Template propre SANS anciens widgets
+ * ✅ TEMPLATE PAR DÉFAUT AVEC IDS
  */
-export const DEFAULT_TEMPLATE = Object.values(WIDGET_DEFAULTS).map(clone);
+export const DEFAULT_TEMPLATE = Object.values(WIDGET_DEFAULTS).map(
+    (widget) => ({
+        ...clone(widget),
+        id: generateId(),
+    })
+);
 
-export const useTemplateBuilder = (initialTemplate = DEFAULT_TEMPLATE) => {
-    // 🔥 FILTRE DE SÉCURITÉ (TRÈS IMPORTANT)
-    const cleanTemplate = initialTemplate.filter(
-        (w) => WIDGET_DEFAULTS[w.type] !== undefined
-    );
+export const useTemplateBuilder = (
+    initialTemplate = DEFAULT_TEMPLATE
+) => {
+
+    /**
+     * ✅ Nettoyage + génération des IDs manquants
+     */
+    const cleanTemplate = initialTemplate
+        .filter((w) => WIDGET_DEFAULTS[w.type] !== undefined)
+        .map((widget) => ({
+            ...clone(widget),
+            id: widget.id || generateId(),
+        }));
 
     const [widgets, setWidgets] = useState(cleanTemplate);
 
+    /**
+     * Ajouter widget
+     */
     const addWidget = (widgetType) => {
         if (!WIDGET_DEFAULTS[widgetType]) return;
 
         const newWidget = {
             ...clone(WIDGET_DEFAULTS[widgetType]),
-            id: `widget_${Date.now()}`,
+            id: generateId(),
+            visible: true,
         };
 
         setWidgets((prev) => [...prev, newWidget]);
     };
 
+    /**
+     * Supprimer widget
+     */
     const removeWidget = (id) => {
-        setWidgets((prev) => prev.filter((w) => w.id !== id));
-    };
-
-    const updateWidget = (id, updates) => {
         setWidgets((prev) =>
-            prev.map((w) => (w.id === id ? { ...w, ...updates } : w))
+            prev.filter((w) => w.id !== id)
         );
     };
 
+    /**
+     * Mettre à jour widget
+     */
+    const updateWidget = (id, updates) => {
+        setWidgets((prev) =>
+            prev.map((w) =>
+                w.id === id
+                    ? { ...w, ...updates }
+                    : w
+            )
+        );
+    };
+
+    /**
+     * Afficher / masquer widget
+     */
     const toggleWidgetVisibility = (id) => {
         setWidgets((prev) =>
             prev.map((w) =>
-                w.id === id ? { ...w, visible: !w.visible } : w
+                w.id === id
+                    ? { ...w, visible: !w.visible }
+                    : w
             )
         );
     };
