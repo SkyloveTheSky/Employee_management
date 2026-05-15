@@ -24,6 +24,7 @@
     },
     "dependencies": {
         "react-is": "^19.2.6",
+        "react-selecto": "^1.26.3",
         "recharts": "^3.8.1"
     }
 }

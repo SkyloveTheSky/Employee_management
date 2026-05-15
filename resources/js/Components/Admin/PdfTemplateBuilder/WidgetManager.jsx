@@ -5,6 +5,7 @@ export const WIDGET_TYPES = {
     CONTAINER: "container",
     ENTREPRISE: "entreprise",
     EMPLOYEE: "employeeBlock",
+    a : "a"
 };
 
 const clone = (obj) =>

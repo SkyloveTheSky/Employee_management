@@ -253,20 +253,20 @@ export default function PdfTemplateBuilder({
                                 <div style={s.pdfPeriod}>Période : {sampleData.period}</div>
                                 <div style={s.pdfDivider} />
                                 {widgets.filter((w) => w.visible).map((widget, index) => (
-    <div
-        key={widget.id ?? `widget_${index}`}
-        onClick={() => {
-            setShowSettings(false);
-            setSelectedWidgetId(widget.id === selectedWidgetId ? null : widget.id);
-        }}
-        style={{
-            ...s.widgetWrapper,
-            outline: widget.id === selectedWidgetId
-                ? "2px solid #0F6E56"
-                : "2px solid transparent",
-            cursor: "pointer",
-        }}
-    >
+                                <div
+                                    key={widget.id ?? `widget_${index}`}
+                                    onClick={() => {
+                                        setShowSettings(false);
+                                        setSelectedWidgetId(widget.id === selectedWidgetId ? null : widget.id);
+                                    }}
+                                    style={{
+                                        ...s.widgetWrapper,
+                                        outline: widget.id === selectedWidgetId
+                                            ? "2px solid #0F6E56"
+                                            : "2px solid transparent",
+                                        cursor: "pointer",
+                                    }}
+                                >
         <WidgetRenderer widget={widget} data={sampleData} />
     </div>
 ))}
