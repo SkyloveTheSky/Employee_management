@@ -31,25 +31,30 @@ export const WIDGET_DEFAULTS = {
     },
 
     [WIDGET_TYPES.CONTAINER]: {
-        type: WIDGET_TYPES.CONTAINER,
-        label: "Conteneur",
-        order: 100,
-        visible: true,
-        children: [],
-        style: {
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px",
-            width: "100%",
-            minHeight: "100px",
-            padding: "10px",
-            backgroundColor: "#ffffff",
-            borderWidth: "1px",
-            borderStyle: "dashed",
-            borderColor: "#d1d5db",
-            borderRadius: "6px",
-        },
+    type: WIDGET_TYPES.CONTAINER,
+    label: "Conteneur",
+    order: 100,
+    visible: true,
+
+    columns: 1,
+
+    gap: 12,
+
+    direction: "row",
+
+    fullWidth: true,
+
+    children: [],
+
+    style: {
+        width: "100%",
+        minHeight: "100px",
+        padding: "16px",
+        backgroundColor: "#ffffff",
+        border: "1px dashed #d1d5db",
+        borderRadius: "8px",
     },
+},
 
     [WIDGET_TYPES.ENTREPRISE]: {
         type: WIDGET_TYPES.ENTREPRISE,
