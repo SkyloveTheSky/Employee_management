@@ -12,9 +12,15 @@ export default function EditEmployee({ admin, employee, isOpen: initialOpen = tr
         position: employee.position || "",
         hire_date: employee.hire_date || "",
         salary_base: employee.salary_base || 0,
+        password: "",
+        password_confirmation: "",
     });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [photo, setPhoto] = useState(null);
+    const [photoPreview, setPhotoPreview] = useState(
+        employee.photo_path ? `/storage/${employee.photo_path}` : null
+    );
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -22,10 +28,21 @@ export default function EditEmployee({ admin, employee, isOpen: initialOpen = tr
         if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
     };
 
+    const handlePhotoChange = (e) => {
+        const file = e.target.files?.[0] || null;
+        setPhoto(file);
+        setPhotoPreview(file ? URL.createObjectURL(file) : (employee.photo_path ? `/storage/${employee.photo_path}` : null));
+        if (errors.photo) setErrors((prev) => ({ ...prev, photo: "" }));
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         setLoading(true);
-        router.patch(route("admin.employees.update", employee.id), formData, {
+        const payload = new FormData();
+        Object.entries(formData).forEach(([key, value]) => payload.append(key, value ?? ""));
+        payload.append("_method", "PATCH");
+        if (photo) payload.append("photo", photo);
+        router.post(route("admin.employees.update", employee.id), payload, {
             onError: (validationErrors) => {
                 setErrors(validationErrors);
                 setLoading(false);
@@ -43,12 +60,18 @@ export default function EditEmployee({ admin, employee, isOpen: initialOpen = tr
                     <div style={styles.logo}>RH</div>
                     <div>
                         <h1 style={styles.title}>Modifier un Employé</h1>
-                        <p style={styles.subtitle}>Mettez à jour les informations de l'employé</p>
+                        <p style={styles.subtitle}>Mettez à jour les informations et le mot de passe de l'employé</p>
                     </div>
                 </div>
 
                 <div style={styles.formContainer}>
                     <form onSubmit={handleSubmit}>
+                        <div style={styles.formGroup}>
+                            <label style={styles.label}>Photo</label>
+                            {photoPreview && <img src={photoPreview} alt="Photo de l'employé" style={styles.photoPreview} />}
+                            <input type="file" accept="image/jpeg,image/png" onChange={handlePhotoChange} />
+                            {errors.photo && <p style={styles.error}>{errors.photo}</p>}
+                        </div>
                         <Field label="Prénom" name="first_name" value={formData.first_name} onChange={handleChange} error={errors.first_name} />
                         <Field label="Nom" name="last_name" value={formData.last_name} onChange={handleChange} error={errors.last_name} />
                         <Field label="Numéro Téléphone" name="phone" value={formData.phone} onChange={handleChange} error={errors.phone} />
@@ -80,6 +103,10 @@ export default function EditEmployee({ admin, employee, isOpen: initialOpen = tr
                             />
                             {errors.salary_base && <p style={styles.error}>{errors.salary_base}</p>}
                         </div>
+
+                        <p style={styles.sectionHint}>Mot de passe — laisser vide pour ne pas le modifier</p>
+                        <Field label="Nouveau mot de passe" name="password" type="password" value={formData.password} onChange={handleChange} error={errors.password} />
+                        <Field label="Confirmer le mot de passe" name="password_confirmation" type="password" value={formData.password_confirmation} onChange={handleChange} error={errors.password_confirmation} />
 
                         <div style={styles.formActions}>
                             <button type="button" onClick={() => router.visit(route("admin.employees"))} style={styles.cancelButton} disabled={loading}>
@@ -123,6 +150,8 @@ const styles = {
     label: { display: "block", fontSize: "13px", fontWeight: "600", color: "#1a202c", marginBottom: "8px" },
     input: { width: "100%", padding: "10px 12px", fontSize: "14px", border: "1px solid #e2e8f0", borderRadius: "8px", boxSizing: "border-box", fontFamily: "system-ui, sans-serif" },
     error: { fontSize: "12px", color: "#e53e3e", margin: "4px 0 0" },
+    photoPreview: { width: "88px", height: "88px", objectFit: "cover", borderRadius: "8px", display: "block", marginBottom: "8px", border: "1px solid #e2e8f0" },
+    sectionHint: { fontSize: "13px", fontWeight: "600", color: "#1a202c", margin: "8px 0 14px", paddingTop: "8px", borderTop: "1px solid #e2e8f0" },
     formActions: { display: "flex", gap: "12px", marginTop: "18px" },
     cancelButton: { flex: 1, padding: "10px 16px", background: "white", color: "#718096", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
     submitButton: { flex: 1, padding: "10px 16px", background: "#0F6E56", color: "white", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },

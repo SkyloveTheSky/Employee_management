@@ -47,6 +47,7 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
                     <table style={styles.table}>
                         <thead>
                             <tr>
+                                <th style={styles.th}>Photo</th>
                                 <th style={styles.th}>ID</th>
                                 <th style={styles.th}>Prénom</th>
                                 <th style={styles.th}>Nom</th>
@@ -62,6 +63,16 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
                             {employees && employees.length > 0 ? (
                                 employees.map((employee) => (
                                     <tr key={employee.id} style={styles.tr}>
+                                        <td style={styles.td}>
+                                            {employee.photo_path ? (
+                                                <img src={`/storage/${employee.photo_path}`} alt="" style={styles.photo} />
+                                            ) : (
+                                                <span style={styles.photoPlaceholder}>
+                                                    {employee.first_name?.charAt(0)}
+                                                    {employee.last_name?.charAt(0)}
+                                                </span>
+                                            )}
+                                        </td>
                                         <td style={styles.td}>{employee.id}</td>
                                         <td style={styles.td}>{employee.first_name}</td>
                                         <td style={styles.td}>{employee.last_name}</td>
@@ -88,7 +99,7 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="9" style={{ ...styles.td, textAlign: "center" }}>
+                                    <td colSpan="10" style={{ ...styles.td, textAlign: "center" }}>
                                         Aucun employé trouvé
                                     </td>
                                 </tr>
@@ -181,6 +192,25 @@ const styles = {
     td: {
         padding: "12px 16px",
         color: "#4a5568",
+    },
+    photo: {
+        width: "40px",
+        height: "40px",
+        objectFit: "cover",
+        borderRadius: "8px",
+        display: "block",
+    },
+    photoPlaceholder: {
+        width: "40px",
+        height: "40px",
+        borderRadius: "8px",
+        background: "#0F6E56",
+        color: "white",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "12px",
+        fontWeight: "600",
     },
     actionsCell: {
         padding: "12px 16px",

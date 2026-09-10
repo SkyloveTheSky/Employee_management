@@ -9,12 +9,25 @@ trait BuildsLogoDataUri
 {
     private function buildLogoDataUri(?CompanySetting $settings): ?string
     {
-        if (!$settings?->logo_path || !Storage::disk('public')->exists($settings->logo_path)) {
+        if (!$settings?->logo_path) {
             return null;
         }
 
-        $content = Storage::disk('public')->get($settings->logo_path);
-        $ext     = pathinfo($settings->logo_path, PATHINFO_EXTENSION) ?: 'png';
+        return $this->buildPublicImageDataUri($settings->logo_path);
+    }
+
+    private function buildPublicImageDataUri(?string $path): ?string
+    {
+        if (!extension_loaded('gd')) {
+            return null;
+        }
+
+        if (!$path || !Storage::disk('public')->exists($path)) {
+            return null;
+        }
+
+        $content = Storage::disk('public')->get($path);
+        $ext     = pathinfo($path, PATHINFO_EXTENSION) ?: 'png';
 
         if (strtolower($ext) === 'webp' && !function_exists('imagecreatefromwebp')) {
             return null;

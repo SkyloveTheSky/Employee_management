@@ -1,11 +1,18 @@
-import { Head, usePage } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import Sidebar from "@/Components/User/Sidebar";
 
-export default function Dashboard() {
+export default function Dashboard({ latestPayroll = null, unpaidCount = 0 }) {
     const { auth } = usePage().props;
     const user = auth?.user;
     const [isOpen, setIsOpen] = useState(true);
+
+    const formatAr = (value) => `${Number(value || 0).toLocaleString("fr-FR")} Ar`;
+    const formatMonth = (payroll) => {
+        if (!payroll) return "-";
+        const date = new Date(payroll.period_year, payroll.period_month - 1, 1);
+        return new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(date);
+    };
 
     return (
         <>
@@ -28,12 +35,24 @@ export default function Dashboard() {
                         <p style={styles.cardValue}>{user?.position || "-"}</p>
                     </div>
                     <div style={styles.card}>
-                        <p style={styles.cardLabel}>Email</p>
-                        <p style={styles.cardValue}>{user?.email || "-"}</p>
+                        <p style={styles.cardLabel}>Dernière fiche</p>
+                        <p style={styles.cardValue}>
+                            {latestPayroll
+                                ? `${formatMonth(latestPayroll)} · ${formatAr(latestPayroll.net_to_pay)}`
+                                : "Aucune fiche"}
+                        </p>
+                        {latestPayroll && (
+                            <p style={styles.cardHint}>
+                                {latestPayroll.payment_status === "paid" ? "Payée" : "Non payée"}
+                            </p>
+                        )}
                     </div>
                     <div style={styles.card}>
-                        <p style={styles.cardLabel}>Téléphone</p>
-                        <p style={styles.cardValue}>{user?.phone || "-"}</p>
+                        <p style={styles.cardLabel}>Fiches non payées</p>
+                        <p style={styles.cardValue}>{unpaidCount}</p>
+                        <Link href={route("payrolls.index")} style={styles.cardLink}>
+                            Voir mes fiches
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -104,5 +123,18 @@ const styles = {
         fontWeight: "500",
         color: "#1a202c",
         margin: 0,
+    },
+    cardHint: {
+        fontSize: "12px",
+        color: "#718096",
+        margin: "6px 0 0",
+    },
+    cardLink: {
+        display: "inline-block",
+        marginTop: "8px",
+        fontSize: "13px",
+        color: "#0F6E56",
+        fontWeight: 600,
+        textDecoration: "none",
     },
 };

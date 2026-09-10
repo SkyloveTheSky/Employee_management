@@ -6,8 +6,9 @@ export default function Sidebar({ user, currentPage, isOpen, setIsOpen }) {
     };
 
     const menuItems = [
-        { label: "Tableau de bord", route: "dashboard", icon: "📊" },
-        { label: "Paramètres", route: "profile.edit", icon: "⚙️" },
+        { label: "Tableau de bord", route: "dashboard", icon: "/assets/icon/dashboard.svg" },
+        { label: "Mes fiches de paie", route: "payrolls.index", icon: "/assets/icon/payroll.svg" },
+        { label: "Paramètres", route: "profile.edit", icon: "/assets/icon/gear.svg" },
     ];
 
     return (
@@ -38,7 +39,7 @@ export default function Sidebar({ user, currentPage, isOpen, setIsOpen }) {
                                         : "4px solid transparent",
                             }}
                         >
-                            <span style={styles.icon}>{item.icon}</span>
+                            <img src={item.icon} alt={item.label} style={styles.iconImg} />
                             {item.label}
                         </Link>
                     ))}
@@ -47,8 +48,14 @@ export default function Sidebar({ user, currentPage, isOpen, setIsOpen }) {
                 <div style={styles.userSection}>
                     <div style={styles.userCard}>
                         <div style={styles.userAvatar}>
-                            {user?.first_name?.charAt(0)}
-                            {user?.last_name?.charAt(0)}
+                            {user?.photo_path ? (
+                                <img src={`/storage/${user.photo_path}`} alt="" style={styles.userAvatarImg} />
+                            ) : (
+                                <>
+                                    {user?.first_name?.charAt(0)}
+                                    {user?.last_name?.charAt(0)}
+                                </>
+                            )}
                         </div>
                         <div style={styles.userInfo}>
                             <p style={styles.userName}>
@@ -150,8 +157,11 @@ const styles = {
         transition: "all 0.2s",
         marginBottom: "4px",
     },
-    icon: {
-        fontSize: "18px",
+    iconImg: {
+        width: "20px",
+        height: "20px",
+        filter: "invert(1)",
+        flexShrink: 0,
     },
     userSection: {
         paddingTop: "20px",
@@ -178,6 +188,13 @@ const styles = {
         fontWeight: "600",
         fontSize: "14px",
         flexShrink: 0,
+        overflow: "hidden",
+    },
+    userAvatarImg: {
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        display: "block",
     },
     userInfo: {
         flex: 1,

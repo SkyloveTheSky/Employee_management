@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 
@@ -72,6 +74,7 @@ class AuthController extends Controller
             'hire_date' => 'nullable|date',
             'salary_base' => 'required|numeric|min:0',
             'password' => 'required|string|min:6',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ], [
             'first_name.required' => 'Le prénom est obligatoire.',
             'last_name.required' => 'Le nom est obligatoire.',
@@ -84,9 +87,12 @@ class AuthController extends Controller
             'salary_base.min' => 'Le salaire de base doit être positif.',
             'password.required' => 'Le mot de passe est obligatoire.',
             'password.min' => 'Le mot de passe doit contenir au moins 6 caractères.',
+            'photo.image' => 'La photo doit être une image.',
+            'photo.mimes' => 'La photo doit être au format jpg ou png.',
+            'photo.max' => 'La photo ne doit pas dépasser 2 Mo.',
         ]);
 
-        \App\Models\User::create([
+        $employee = User::create([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'phone' => $request->phone,
@@ -96,6 +102,10 @@ class AuthController extends Controller
             'salary_base' => $request->salary_base,
             'password' => Hash::make($request->password),
         ]);
+
+        if ($request->hasFile('photo')) {
+            $this->storeEmployeePhoto($employee, $request->file('photo'));
+        }
 
         return redirect()->route('admin.employees')->with('success', 'Employé créé avec succès');
     }
@@ -123,6 +133,8 @@ class AuthController extends Controller
             'position' => 'required|string|max:255',
             'hire_date' => 'nullable|date',
             'salary_base' => 'required|numeric|min:0',
+            'password' => 'nullable|string|min:6|confirmed',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ], [
             'first_name.required' => 'Le prénom est obligatoire.',
             'last_name.required' => 'Le nom est obligatoire.',
@@ -133,9 +145,14 @@ class AuthController extends Controller
             'hire_date.date' => 'La date d\'embauche est invalide.',
             'salary_base.required' => 'Le salaire de base est obligatoire.',
             'salary_base.min' => 'Le salaire de base doit être positif.',
+            'password.min' => 'Le mot de passe doit contenir au moins 6 caractères.',
+            'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
+            'photo.image' => 'La photo doit être une image.',
+            'photo.mimes' => 'La photo doit être au format jpg ou png.',
+            'photo.max' => 'La photo ne doit pas dépasser 2 Mo.',
         ]);
 
-        $employee->update([
+        $payload = [
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'phone' => $request->phone,
@@ -143,7 +160,17 @@ class AuthController extends Controller
             'position' => $request->position,
             'hire_date' => $request->hire_date,
             'salary_base' => $request->salary_base,
-        ]);
+        ];
+
+        if ($request->filled('password')) {
+            $payload['password'] = $request->password;
+        }
+
+        $employee->update($payload);
+
+        if ($request->hasFile('photo')) {
+            $this->storeEmployeePhoto($employee, $request->file('photo'));
+        }
 
         return redirect()->route('admin.employees')->with('success', 'Employé modifié avec succès');
     }
@@ -162,4 +189,17 @@ class AuthController extends Controller
         return redirect()->route('admin.login');
     }
 
+    private function storeEmployeePhoto(User $employee, UploadedFile $file): void
+    {
+        $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'jpg');
+        $directory = $employee->employeeFolder().'/images';
+        Storage::disk('public')->makeDirectory($directory);
+
+        if ($employee->photo_path) {
+            Storage::disk('public')->delete($employee->photo_path);
+        }
+
+        $path = $file->storeAs($directory, $employee->photoFileName($extension), 'public');
+        $employee->update(['photo_path' => $path]);
+    }
 }

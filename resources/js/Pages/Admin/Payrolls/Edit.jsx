@@ -1,8 +1,10 @@
-import { Head, router, useForm } from "@inertiajs/react";
+import { Head, router, useForm, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import Sidebar from "../../../Components/Admin/Sidebar";
 
 export default function Edit({ admin, payroll, employees }) {
+    const { flash } = usePage().props;
+    const warnings = flash?.payroll_warnings || [];
     const [isOpen, setIsOpen] = useState(true);
     const monthYear = `${payroll.period_year}-${String(payroll.period_month).padStart(2, '0')}`;
     const { data, setData, patch, processing, errors } = useForm({
@@ -16,6 +18,7 @@ export default function Edit({ admin, payroll, employees }) {
         payment_status: payroll.payment_status || "unpaid",
         paid_at: payroll.paid_at ? String(payroll.paid_at).slice(0, 10) : "",
         notes: payroll.notes || "",
+        confirm_anomalies: false,
     });
 
     const submit = (e) => {
@@ -130,18 +133,57 @@ export default function Edit({ admin, payroll, employees }) {
                         </div>
                         <div>
                             <label style={styles.label}>Statut</label>
-                            <select value={data.payment_status} onChange={(e) => setData("payment_status", e.target.value)} style={styles.input}>
+                            <select
+                                value={data.payment_status}
+                                onChange={(e) => {
+                                    const status = e.target.value;
+                                    setData({
+                                        ...data,
+                                        payment_status: status,
+                                        paid_at: status === "paid"
+                                            ? (data.paid_at || new Date().toISOString().slice(0, 10))
+                                            : "",
+                                    });
+                                }}
+                                style={styles.input}
+                            >
                                 <option value="unpaid">Non payé</option>
                                 <option value="paid">Payé</option>
                             </select>
                             {errors.payment_status && <p style={styles.error}>{errors.payment_status}</p>}
                         </div>
-                        <div>
-                            <label style={styles.label}>Date de paiement</label>
-                            <input type="date" value={data.paid_at} onChange={(e) => setData("paid_at", e.target.value)} style={styles.input} />
-                            {errors.paid_at && <p style={styles.error}>{errors.paid_at}</p>}
-                        </div>
+                        {data.payment_status === "paid" ? (
+                            <div>
+                                <label style={styles.label}>Date de paiement</label>
+                                <input type="date" value={data.paid_at} onChange={(e) => setData("paid_at", e.target.value)} style={styles.input} />
+                                {errors.paid_at && <p style={styles.error}>{errors.paid_at}</p>}
+                            </div>
+                        ) : (
+                            <div>
+                                <label style={styles.label}>Date de paiement</label>
+                                <p style={{ margin: 0, fontSize: "13px", color: "#718096" }}>Disponible uniquement lorsque le statut est Payé.</p>
+                            </div>
+                        )}
                     </div>
+
+                    {warnings.length > 0 && (
+                        <div style={{ background: "#fffaf0", border: "1px solid #f6ad55", borderRadius: "8px", padding: "12px", marginBottom: "14px" }}>
+                            <p style={{ margin: "0 0 8px", fontWeight: 600, color: "#9c4221", fontSize: "13px" }}>Contrôle d’anomalies</p>
+                            <ul style={{ margin: "0 0 10px", paddingLeft: "18px", color: "#9c4221", fontSize: "13px" }}>
+                                {warnings.map((warning, index) => (
+                                    <li key={`${warning.code}-${index}`}>{warning.message}</li>
+                                ))}
+                            </ul>
+                            <label style={{ display: "flex", gap: "8px", fontSize: "13px" }}>
+                                <input
+                                    type="checkbox"
+                                    checked={!!data.confirm_anomalies}
+                                    onChange={(e) => setData("confirm_anomalies", e.target.checked)}
+                                />
+                                J’ai lu les alertes, enregistrer quand même
+                            </label>
+                        </div>
+                    )}
 
                     <div style={styles.actions}>
                         <button type="button" style={styles.cancelButton} onClick={() => router.visit(route("admin.payrolls.index"))}>

@@ -3,7 +3,8 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\PayrollController;
-use App\Http\Controllers\Admin\PayrollStyleController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\User\PayrollController as UserPayrollController;
 use App\Http\Controllers\Admin\CompanySettingsController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -21,14 +22,14 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/payrolls', [UserPayrollController::class, 'index'])->name('payrolls.index');
+    Route::get('/payrolls/{id}/pdf', [UserPayrollController::class, 'pdf'])->name('payrolls.pdf');
 });
 
 // Routes admin
@@ -61,12 +62,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Payrolls — statiques EN PREMIER, dynamiques après
         Route::get('/payrolls', [PayrollController::class, 'index'])->name('payrolls.index');
         Route::post('/payrolls', [PayrollController::class, 'store'])->name('payrolls.store');
-        Route::get('/payrolls/style/edit', [PayrollStyleController::class, 'edit'])->name('payrolls.style.edit');
-        Route::post('/payrolls/style/update', [PayrollStyleController::class, 'update'])->name('payrolls.style.update');
+        Route::post('/payrolls/assistant', [PayrollController::class, 'assistant'])->name('payrolls.assistant');
+        Route::post('/payrolls/generate-missing', [PayrollController::class, 'generateMissing'])->name('payrolls.generate-missing');
         Route::get('/payrolls/{id}/edit', [PayrollController::class, 'edit'])->name('payrolls.edit');
         Route::patch('/payrolls/{id}', [PayrollController::class, 'update'])->name('payrolls.update');
+        Route::patch('/payrolls/{id}/payment', [PayrollController::class, 'markPayment'])->name('payrolls.payment');
         Route::delete('/payrolls/{id}', [PayrollController::class, 'destroy'])->name('payrolls.delete');
-        Route::get('/payrolls/{id}/pdf', [PayrollStyleController::class, 'pdf'])->name('payrolls.pdf');
+        Route::get('/payrolls/{id}/pdf', [PayrollController::class, 'pdf'])->name('payrolls.pdf');
 
         // Settings
         Route::get('/settings/company', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');

@@ -16,6 +16,8 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
     });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [photo, setPhoto] = useState(null);
+    const [photoPreview, setPhotoPreview] = useState(null);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -31,11 +33,22 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
         }
     };
 
+    const handlePhotoChange = (e) => {
+        const file = e.target.files?.[0] || null;
+        setPhoto(file);
+        setPhotoPreview(file ? URL.createObjectURL(file) : null);
+        if (errors.photo) setErrors((prev) => ({ ...prev, photo: "" }));
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         setLoading(true);
 
-        router.post(route('admin.employees.store'), formData, {
+        const payload = new FormData();
+        Object.entries(formData).forEach(([key, value]) => payload.append(key, value ?? ""));
+        if (photo) payload.append("photo", photo);
+
+        router.post(route("admin.employees.store"), payload, {
             onError: (errors) => {
                 setErrors(errors);
                 setLoading(false);
@@ -63,6 +76,12 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
 
                 <div style={styles.formContainer}>
                     <form onSubmit={handleSubmit}>
+                        <div style={styles.formGroup}>
+                            <label style={styles.label}>Photo</label>
+                            {photoPreview && <img src={photoPreview} alt="Aperçu" style={styles.photoPreview} />}
+                            <input type="file" accept="image/jpeg,image/png" onChange={handlePhotoChange} />
+                            {errors.photo && <p style={styles.error}>{errors.photo}</p>}
+                        </div>
                         <div style={styles.formGroup}>
                             <label style={styles.label}>Prénom</label>
                             <input
@@ -288,6 +307,15 @@ const styles = {
         color: "#e53e3e",
         marginTop: "4px",
         margin: "4px 0 0 0",
+    },
+    photoPreview: {
+        width: "88px",
+        height: "88px",
+        objectFit: "cover",
+        borderRadius: "8px",
+        display: "block",
+        marginBottom: "8px",
+        border: "1px solid #e2e8f0",
     },
     formActions: {
         display: "flex",
