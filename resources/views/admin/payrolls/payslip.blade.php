@@ -15,7 +15,8 @@
         .box-title { font-size: 12px; font-weight: bold; border-bottom: 1px solid #ccc; padding-bottom: 3px; margin-bottom: 4px; }
         .box-item { margin: 2px 0; font-size: 10px; }
         .label { font-weight: bold; }
-        .logo { max-height: 40px; max-width: 100px; margin-bottom: 4px; }
+        .header-logo { text-align: center; margin-bottom: 10px; }
+        .header-logo img { max-height: 56px; max-width: 180px; }
         table.lines { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
         table.lines th { border: 1px solid #999; background-color: #e0e0e0; font-size: 10px; font-weight: bold; padding: 5px 4px; }
         table.lines td { border: 1px solid #999; font-size: 10px; padding: 4px; }
@@ -28,6 +29,11 @@
     </style>
 </head>
 <body>
+    @if(!empty($logoDataUri))
+        <div class="header-logo">
+            <img src="{{ $logoDataUri }}" alt="Logo">
+        </div>
+    @endif
     <div class="title">FICHE DE PAIE</div>
     <div class="period">
         Période : {{ str_pad((string) $payroll->period_month, 2, '0', STR_PAD_LEFT) }}/{{ $payroll->period_year }}
@@ -38,9 +44,6 @@
             <td>
                 <div class="box">
                     <div class="box-title">ENTREPRISE</div>
-                    @if($logoDataUri)
-                        <img class="logo" src="{{ $logoDataUri }}" alt="Logo">
-                    @endif
                     <div class="box-item"><span class="label">Nom :</span> {{ $settings->company_name ?? 'N/A' }}</div>
                     <div class="box-item"><span class="label">Propriétaire :</span> {{ $settings->owner_name ?? 'N/A' }}</div>
                     <div class="box-item"><span class="label">NIF :</span> {{ $settings->nif ?? 'N/A' }}</div>

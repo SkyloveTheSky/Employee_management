@@ -73,9 +73,9 @@ function Field({ label, value, onChange, error }) {
 }
 
 const styles = {
-    page: { minHeight: "100vh", background: "#f0f4f8", fontFamily: "system-ui, sans-serif", padding: "24px", transition: "margin-left 0.3s ease" },
+    page: { minHeight: "100vh", background: "#ffffff", fontFamily: "system-ui, sans-serif", padding: "24px", transition: "margin-left 0.3s ease" },
     header: { display: "flex", alignItems: "center", gap: "16px", background: "white", padding: "20px 24px", borderRadius: "12px", marginBottom: "24px", border: "1px solid #e2e8f0" },
-    logo: { width: "44px", height: "44px", background: "#0F6E56", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "16px", flexShrink: 0 },
+    logo: { width: "44px", height: "44px", background: "#261FB3", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "16px", flexShrink: 0 },
     title: { fontSize: "18px", fontWeight: "600", color: "#1a202c", margin: 0 },
     subtitle: { fontSize: "13px", color: "#718096", margin: 0 },
     card: { background: "white", borderRadius: "12px", padding: "24px", border: "1px solid #e2e8f0", maxWidth: "720px" },
@@ -83,6 +83,6 @@ const styles = {
     label: { display: "block", fontSize: "13px", fontWeight: "600", color: "#1a202c", marginBottom: "8px" },
     input: { width: "100%", padding: "10px 12px", fontSize: "14px", border: "1px solid #e2e8f0", borderRadius: "8px", boxSizing: "border-box", fontFamily: "system-ui, sans-serif" },
     error: { fontSize: "12px", color: "#e53e3e", margin: "4px 0 0" },
-    button: { padding: "10px 16px", background: "#0F6E56", color: "white", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
+    button: { padding: "10px 16px", background: "#0d6efd", color: "white", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
 };
 

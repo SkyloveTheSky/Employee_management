@@ -18,21 +18,27 @@ trait BuildsLogoDataUri
 
     private function buildPublicImageDataUri(?string $path): ?string
     {
-        if (!extension_loaded('gd')) {
-            return null;
-        }
-
         if (!$path || !Storage::disk('public')->exists($path)) {
             return null;
         }
 
         $content = Storage::disk('public')->get($path);
-        $ext     = pathinfo($path, PATHINFO_EXTENSION) ?: 'png';
-
-        if (strtolower($ext) === 'webp' && !function_exists('imagecreatefromwebp')) {
+        if (!$content) {
             return null;
         }
 
-        return 'data:image/' . $ext . ';base64,' . base64_encode($content);
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION) ?: 'png');
+        $mime = match ($ext) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            default => 'image/png',
+        };
+
+        if ($mime === 'image/webp') {
+            return null;
+        }
+
+        return 'data:' . $mime . ';base64,' . base64_encode($content);
     }
 }

@@ -29,11 +29,15 @@ trait GeneratesPayslipPdf
             ['numero' => 5, 'designation' => 'Assurance',              'base' => $payroll->gross_salary, 'taux' => $payroll->assurance_rate . '%', 'gain' => 0,                         'retenu' => $payroll->assurance_amount],
         ];
 
+        $logoDataUri = function_exists('imagecreatetruecolor')
+            ? $this->buildLogoDataUri($settings)
+            : null;
+
         $pdf = Pdf::loadView('admin.payrolls.payslip', [
             'payroll'     => $payroll,
             'employee'    => $payroll->user,
             'settings'    => $settings,
-            'logoDataUri' => $this->buildLogoDataUri($settings),
+            'logoDataUri' => $logoDataUri,
             'lines'       => $lines,
         ])
             ->setPaper('a4')

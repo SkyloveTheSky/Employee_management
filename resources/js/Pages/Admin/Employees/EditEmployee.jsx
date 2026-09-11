@@ -140,9 +140,9 @@ function Field({ label, name, value, onChange, error, type = "text" }) {
 }
 
 const styles = {
-    page: { minHeight: "100vh", background: "#f0f4f8", fontFamily: "system-ui, sans-serif", padding: "24px", transition: "margin-left 0.3s ease" },
+    page: { minHeight: "100vh", background: "#ffffff", fontFamily: "system-ui, sans-serif", padding: "24px", transition: "margin-left 0.3s ease" },
     header: { display: "flex", alignItems: "center", gap: "16px", background: "white", padding: "20px 24px", borderRadius: "12px", marginBottom: "24px", border: "1px solid #e2e8f0" },
-    logo: { width: "44px", height: "44px", background: "#0F6E56", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "16px", flexShrink: 0 },
+    logo: { width: "44px", height: "44px", background: "#261FB3", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "16px", flexShrink: 0 },
     title: { fontSize: "18px", fontWeight: "600", color: "#1a202c", margin: 0 },
     subtitle: { fontSize: "13px", color: "#718096", margin: 0 },
     formContainer: { background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", padding: "24px", maxWidth: "520px" },
@@ -154,6 +154,6 @@ const styles = {
     sectionHint: { fontSize: "13px", fontWeight: "600", color: "#1a202c", margin: "8px 0 14px", paddingTop: "8px", borderTop: "1px solid #e2e8f0" },
     formActions: { display: "flex", gap: "12px", marginTop: "18px" },
     cancelButton: { flex: 1, padding: "10px 16px", background: "white", color: "#718096", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
-    submitButton: { flex: 1, padding: "10px 16px", background: "#0F6E56", color: "white", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
+    submitButton: { flex: 1, padding: "10px 16px", background: "#0d6efd", color: "white", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
 };
 

@@ -100,12 +100,12 @@ const styles = {
         padding: "20px",
     },
     card: {
-        background: colors.primary,
-        borderRadius: "16px",
+        background: colors.surface,
+        borderRadius: "12px",
         padding: "40px",
         width: "100%",
         maxWidth: "420px",
-        border: "1px solid #e2e8f0",
+        border: `1px solid ${colors.border}`,
     },
     header: {
         textAlign: "center",
@@ -114,7 +114,7 @@ const styles = {
     logo: {
         width: "56px",
         height: "56px",
-        background: colors.primaryDark,
+        background: colors.primary,
         borderRadius: "14px",
         display: "flex",
         alignItems: "center",
@@ -127,12 +127,12 @@ const styles = {
     title: {
         fontSize: "22px",
         fontWeight: "600",
-        color: colors.white,
+        color: colors.dark,
         margin: "0 0 8px",
     },
     subtitle: {
         fontSize: "14px",
-        color: colors.white,
+        color: colors.muted,
         margin: 0,
     },
     form: {
@@ -148,7 +148,7 @@ const styles = {
     label: {
         fontSize: "13px",
         fontWeight: "500",
-        color: colors.white,
+        color: colors.dark,
     },
     input: {
         padding: "10px 14px",
@@ -168,7 +168,7 @@ const styles = {
     },
     button: {
         padding: "12px",
-        background: colors.primaryDark,
+        background: colors.btnPrimary,
         color: "white",
         border: "none",
         borderRadius: "8px",
@@ -179,7 +179,7 @@ const styles = {
         transition: "background 0.2s",
     },
     buttonDisabled: {
-        background: "#9FE1CB",
+        background: colors.btnSecondary,
         cursor: "not-allowed",
     },
 };

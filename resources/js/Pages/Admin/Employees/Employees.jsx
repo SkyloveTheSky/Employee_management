@@ -115,7 +115,7 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
 const styles = {
     page: {
         minHeight: "100vh",
-        background: "#f0f4f8",
+        background: "#ffffff",
         fontFamily: "system-ui, sans-serif",
         padding: "24px",
         transition: "margin-left 0.3s ease",
@@ -133,7 +133,7 @@ const styles = {
     logo: {
         width: "44px",
         height: "44px",
-        background: "#0F6E56",
+        background: "#261FB3",
         borderRadius: "10px",
         display: "flex",
         alignItems: "center",
@@ -157,7 +157,7 @@ const styles = {
     createButton: {
         marginLeft: "auto",
         padding: "10px 16px",
-        background: "#0F6E56",
+        background: "#0d6efd",
         color: "white",
         border: "none",
         borderRadius: "8px",
@@ -204,7 +204,7 @@ const styles = {
         width: "40px",
         height: "40px",
         borderRadius: "8px",
-        background: "#0F6E56",
+        background: "#261FB3",
         color: "white",
         display: "flex",
         alignItems: "center",
@@ -220,7 +220,7 @@ const styles = {
     },
     editButton: {
         padding: "6px 12px",
-        background: "#3182ce",
+        background: "#6c757d",
         color: "white",
         border: "none",
         borderRadius: "6px",
@@ -231,7 +231,7 @@ const styles = {
     },
     deleteButton: {
         padding: "6px 12px",
-        background: "#e53e3e",
+        background: "#dc3545",
         color: "white",
         border: "none",
         borderRadius: "6px",

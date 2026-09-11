@@ -93,7 +93,7 @@ export default function Container({
 
                 ...(isSelected
                     ? {
-                        outline: "2px solid #0F6E56",
+                        outline: "2px solid #261FB3",
                         outlineOffset: "2px",
                     }
                     : {}),
@@ -113,7 +113,7 @@ export default function Container({
                         top: "-10px",
                         left: "8px",
 
-                        background: "#0F6E56",
+                        background: "#261FB3",
                         color: "#fff",
 
                         fontSize: "10px",

@@ -1,7 +1,7 @@
 import { Head, router } from "@inertiajs/react";
 import Sidebar from "../../../Components/Admin/Sidebar";
 import { useState, useEffect } from "react";
-import { colors, gradients } from "@/config/colors";
+import { colors } from "@/config/colors";
 import Chart_Users from "@/Components/Admin/Charts/Chart_Users";
 
 export default function Dashboard({ admin, totalUsers }) {
@@ -82,16 +82,16 @@ const styles = {
         display: "flex",
         alignItems: "center",
         gap: "16px",
-        background: gradients.primary,
+        background: colors.surface,
         padding: "20px 24px",
-        borderRadius: "8px",
+        borderRadius: "12px",
         marginBottom: "24px",
-        border: `1px solid ${colors.primaryLight}`,
+        border: `1px solid ${colors.border}`,
     },
     logo: {
         width: "44px",
         height: "44px",
-        background: colors.primaryDark,
+        background: colors.primary,
         borderRadius: "10px",
         display: "flex",
         alignItems: "center",
@@ -109,7 +109,7 @@ const styles = {
     },
     subtitle: {
         fontSize: "13px",
-        color: colors.white,
+        color: colors.muted,
         margin: 0,
     },
     logout: {

@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CompanySetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -29,10 +31,18 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $settings = CompanySetting::query()->first();
+
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+            ],
+            'company' => [
+                'name' => $settings?->company_name,
+                'logo_url' => $settings?->logo_path && Storage::disk('public')->exists($settings->logo_path)
+                    ? Storage::url($settings->logo_path)
+                    : null,
             ],
             'flash' => [
                 'success' => $request->session()->get('success'),

@@ -1,5 +1,5 @@
 import { Link, router } from "@inertiajs/react";
-import { colors, gradients } from "@/config/colors";
+import { colors } from "@/config/colors";
 
 export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
 
@@ -51,7 +51,7 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
                                         : colors.light,
                                 borderLeft:
                                     currentPage === item.route
-                                        ? `4px solid ${colors.accent}`
+                                        ? `4px solid ${colors.primaryLight}`
                                         : "4px solid transparent",
                             }}
                         >
@@ -196,7 +196,7 @@ const styles = {
         gap: "12px",
         marginBottom: "16px",
         padding: "12px",
-        background: gradients.primary,
+        background: colors.sidebarElevated,
         borderRadius: "8px",
     },
     userAvatar: {
@@ -236,7 +236,7 @@ const styles = {
     logoutButton: {
         width: "100%",
         padding: "10px 12px",
-        background: "#e53e3e",
+        background: "#dc3545",
         color: colors.white,
         border: "1px solid #c53030",
         borderRadius: "8px",

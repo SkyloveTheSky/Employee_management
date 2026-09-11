@@ -1,22 +1,38 @@
 export const colors = {
-  primary: '#7F00FF',      // Violet principal
-  primaryLight: '#B163FF', // Violet clair
-  primaryDark: '#17153B',
-  background: '#F7FAFC',   // Fond clair
-
-  dark: '#2d3748',         // Texte foncé
-  light: '#cbd5e0',        // Texte clair
-  white: '#ffffff',        // Blanc
-
-  success: '#10B981',      // Succès
-  error: '#EF4444',        // Erreurs
-  warning: '#F59E0B',      // Avertissements
-
-  border: '#E5E7EB',       // Bordures (plus neutre)
+  primary: '#261FB3',
+  secondary: '#161179',
+  tertiary: '#0C0950',
+  primaryHover: '#161179',
+  primaryLight: '#D4D2F5',
+  primaryDark: '#0C0950',
+  accent: '#261FB3',
+  background: '#FFFFFF',
+  surface: '#FFFFFF',
+  sidebarElevated: '#161179',
+  dark: '#1A202C',
+  muted: '#718096',
+  light: '#CBD5E0',
+  white: '#ffffff',
+  success: '#198754',
+  successBg: '#C6F6D5',
+  error: '#dc3545',
+  warning: '#ffc107',
+  warningBg: '#FFF3CD',
+  border: '#E2E8F0',
+  neutral: '#212529',
+  btnPrimary: '#0d6efd',
+  btnPrimaryHover: '#0b5ed7',
+  btnSecondary: '#6c757d',
+  btnSuccess: '#198754',
+  btnDanger: '#dc3545',
+  btnWarning: '#ffc107',
+  btnWarningText: '#212529',
+  btnInfo: '#0dcaf0',
+  btnDark: '#212529',
 };
 
 export const gradients = {
-  primary: 'linear-gradient(135deg, #7F00FF 0%, #B163FF 100%)',
-  primaryReverse: 'linear-gradient(135deg, #B163FF 0%, #7F00FF 100%)',
-  vertical: 'linear-gradient(180deg, #7F00FF 0%, #2B0057 100%)',
+  primary: colors.secondary,
+  primaryReverse: colors.primary,
+  vertical: colors.tertiary,
 };

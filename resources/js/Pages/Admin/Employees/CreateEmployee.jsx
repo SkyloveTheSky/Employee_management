@@ -237,7 +237,7 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
 const styles = {
     page: {
         minHeight: "100vh",
-        background: "#f0f4f8",
+        background: "#ffffff",
         fontFamily: "system-ui, sans-serif",
         padding: "24px",
         transition: "margin-left 0.3s ease",
@@ -255,7 +255,7 @@ const styles = {
     logo: {
         width: "44px",
         height: "44px",
-        background: "#0F6E56",
+        background: "#261FB3",
         borderRadius: "10px",
         display: "flex",
         alignItems: "center",
@@ -337,7 +337,7 @@ const styles = {
     submitButton: {
         flex: 1,
         padding: "10px 16px",
-        background: "#0F6E56",
+        background: "#0d6efd",
         color: "white",
         border: "none",
         borderRadius: "8px",

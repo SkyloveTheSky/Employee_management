@@ -39,7 +39,7 @@ export default function Chart_Users({ data = [] }) {
                         <Line
                             type="monotone"
                             dataKey="total"
-                            stroke="#4f46e5"
+                            stroke="#261FB3"
                             strokeWidth={3}
                             dot={{ r: 4 }}
                         />
