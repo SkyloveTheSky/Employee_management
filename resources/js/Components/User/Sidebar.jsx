@@ -1,5 +1,7 @@
 import { Link, router } from "@inertiajs/react";
 import { colors } from "@/config/colors";
+import BrandMark from "@/Components/BrandMark";
+import ThemeSync from "@/Components/ThemeSync";
 
 export default function Sidebar({ user, currentPage, isOpen, setIsOpen }) {
     const logout = () => {
@@ -14,13 +16,14 @@ export default function Sidebar({ user, currentPage, isOpen, setIsOpen }) {
 
     return (
         <>
+            <ThemeSync />
             <button onClick={() => setIsOpen(!isOpen)} style={styles.toggleButton}>
                 {isOpen ? "✕" : "☰"}
             </button>
 
             <div style={{ ...styles.sidebar, left: isOpen ? "0" : "-280px" }}>
                 <div style={styles.logoSection}>
-                    <div style={styles.logo}>RH</div>
+                    <BrandMark />
                     <h2 style={styles.appName}>Espace Utilisateur</h2>
                 </div>
 

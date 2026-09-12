@@ -1,6 +1,7 @@
 import { Head, Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import Sidebar from "@/Components/User/Sidebar";
+import BrandMark from "@/Components/BrandMark";
 
 export default function Dashboard({ latestPayroll = null, unpaidCount = 0 }) {
     const { auth } = usePage().props;
@@ -20,7 +21,7 @@ export default function Dashboard({ latestPayroll = null, unpaidCount = 0 }) {
             <Sidebar user={user} currentPage="dashboard" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
                 <div style={styles.header}>
-                    <div style={styles.logo}>RH</div>
+                    <BrandMark />
                     <div>
                         <h1 style={styles.title}>Tableau de bord</h1>
                         <p style={styles.subtitle}>
@@ -81,7 +82,7 @@ const styles = {
     logo: {
         width: "44px",
         height: "44px",
-        background: "#261FB3",
+        background: "var(--color-primary)",
         borderRadius: "10px",
         display: "flex",
         alignItems: "center",
@@ -133,7 +134,7 @@ const styles = {
         display: "inline-block",
         marginTop: "8px",
         fontSize: "13px",
-        color: "#261FB3",
+        color: "var(--color-primary)",
         fontWeight: 600,
         textDecoration: "none",
     },

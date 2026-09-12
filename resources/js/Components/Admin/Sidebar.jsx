@@ -1,5 +1,7 @@
 import { Link, router } from "@inertiajs/react";
 import { colors } from "@/config/colors";
+import BrandMark from "@/Components/BrandMark";
+import ThemeSync from "@/Components/ThemeSync";
 
 export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
 
@@ -12,10 +14,12 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
         { label: "Employés",        route: "admin.employees",              icon: "/assets/icon/users.svg", isSvg: true },
         { label: "Paie",        route: "admin.payrolls.index",         icon: "/assets/icon/payroll.svg", isSvg: true },
         { label: "Entreprise",      route: "admin.settings.company.edit",  icon: "/assets/icon/building.svg", isSvg: true },
+        { label: "Paramètres",      route: "admin.settings.edit",          icon: "/assets/icon/gear.svg", isSvg: true },
     ];
 
     return (
         <>
+            <ThemeSync />
             {/* Toggle Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
@@ -28,7 +32,7 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
             <div style={{ ...styles.sidebar, left: isOpen ? "0" : "-280px" }}>
                 {/* Logo Section */}
                 <div style={styles.logoSection}>
-                    <div style={styles.logo}>RH</div>
+                    <BrandMark />
                     <h2 style={styles.appName}>Management</h2>
                 </div>
 

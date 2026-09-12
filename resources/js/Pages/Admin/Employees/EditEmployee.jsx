@@ -1,5 +1,6 @@
 import { Head, router } from "@inertiajs/react";
 import Sidebar from "../../../Components/Admin/Sidebar";
+import BrandMark from "@/Components/BrandMark";
 import { useState } from "react";
 
 export default function EditEmployee({ admin, employee, isOpen: initialOpen = true }) {
@@ -57,7 +58,7 @@ export default function EditEmployee({ admin, employee, isOpen: initialOpen = tr
             <Sidebar admin={admin} currentPage="admin.employees" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
                 <div style={styles.header}>
-                    <div style={styles.logo}>RH</div>
+                    <BrandMark />
                     <div>
                         <h1 style={styles.title}>Modifier un Employé</h1>
                         <p style={styles.subtitle}>Mettez à jour les informations et le mot de passe de l'employé</p>
@@ -142,7 +143,7 @@ function Field({ label, name, value, onChange, error, type = "text" }) {
 const styles = {
     page: { minHeight: "100vh", background: "#ffffff", fontFamily: "system-ui, sans-serif", padding: "24px", transition: "margin-left 0.3s ease" },
     header: { display: "flex", alignItems: "center", gap: "16px", background: "white", padding: "20px 24px", borderRadius: "12px", marginBottom: "24px", border: "1px solid #e2e8f0" },
-    logo: { width: "44px", height: "44px", background: "#261FB3", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "16px", flexShrink: 0 },
+    logo: { width: "44px", height: "44px", background: "var(--color-primary)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "16px", flexShrink: 0 },
     title: { fontSize: "18px", fontWeight: "600", color: "#1a202c", margin: 0 },
     subtitle: { fontSize: "13px", color: "#718096", margin: 0 },
     formContainer: { background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", padding: "24px", maxWidth: "520px" },

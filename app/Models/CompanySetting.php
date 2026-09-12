@@ -13,6 +13,14 @@ class CompanySetting extends Model
         'stat',
         'rcs',
         'logo_path',
+        'display_theme',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'display_theme' => 'array',
+        ];
+    }
 }
 

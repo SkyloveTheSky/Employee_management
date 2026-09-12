@@ -4,11 +4,15 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\CompanySetting;
+use App\Models\Payroll;
 use App\Models\User;
+use App\Support\Theme;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -47,7 +51,32 @@ class AuthController extends Controller
     {
         $admin = Admin::findOrFail(session('admin_id'));
         $totalUsers = User::count();
-        return Inertia::render('Admin/Dashboard/Dashboard', ['admin' => $admin, 'totalUsers' => $totalUsers]);
+
+        $month = (int) now()->month;
+        $year = (int) now()->year;
+        $payrollMass = 0;
+        $unpaidCount = 0;
+        $unpaidAmount = 0;
+
+        if (Schema::hasTable('payrolls')) {
+            $monthQuery = Payroll::query()
+                ->where('period_month', $month)
+                ->where('period_year', $year);
+
+            $payrollMass = (float) (clone $monthQuery)->sum('net_to_pay');
+            $unpaidCount = (clone $monthQuery)->where('payment_status', 'unpaid')->count();
+            $unpaidAmount = (float) (clone $monthQuery)->where('payment_status', 'unpaid')->sum('net_to_pay');
+        }
+
+        return Inertia::render('Admin/Dashboard/Dashboard', [
+            'admin' => $admin,
+            'totalUsers' => $totalUsers,
+            'payrollMass' => $payrollMass,
+            'unpaidCount' => $unpaidCount,
+            'unpaidAmount' => $unpaidAmount,
+            'periodMonth' => $month,
+            'periodYear' => $year,
+        ]);
     }
 
     public function employees()
@@ -110,7 +139,7 @@ class AuthController extends Controller
         return redirect()->route('admin.employees')->with('success', 'Employé créé avec succès');
     }
 
-    public function showEditEmployee($id)
+    public function showEditEmployee(int $id)
     {
         $admin = Admin::findOrFail(session('admin_id'));
         $employee = \App\Models\User::findOrFail($id);
@@ -121,7 +150,7 @@ class AuthController extends Controller
         ]);
     }
 
-    public function updateEmployee(Request $request, $id)
+    public function updateEmployee(Request $request, int $id)
     {
         $employee = \App\Models\User::findOrFail($id);
 
@@ -175,12 +204,75 @@ class AuthController extends Controller
         return redirect()->route('admin.employees')->with('success', 'Employé modifié avec succès');
     }
 
-    public function deleteEmployee($id)
+    public function deleteEmployee(int $id)
     {
         $employee = \App\Models\User::findOrFail($id);
         $employee->delete();
 
         return redirect()->route('admin.employees')->with('success', 'Employé supprimé avec succès');
+    }
+
+    public function showSettings()
+    {
+        $admin = Admin::findOrFail(session('admin_id'));
+
+        return Inertia::render('Admin/Settings/Account', [
+            'admin' => $admin,
+        ]);
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $admin = Admin::findOrFail(session('admin_id'));
+
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+        ], [
+            'current_password.required' => 'Le mot de passe actuel est obligatoire.',
+            'password.required' => 'Le nouveau mot de passe est obligatoire.',
+            'password.min' => 'Le mot de passe doit contenir au moins 6 caractères.',
+            'password.confirmed' => 'La confirmation ne correspond pas.',
+        ]);
+
+        if (! $admin->checkPassword($validated['current_password'])) {
+            return back()->withErrors([
+                'current_password' => 'Le mot de passe actuel est incorrect.',
+            ]);
+        }
+
+        $admin->password_admin = $validated['password'];
+        $admin->save();
+
+        return back()->with('success', 'Mot de passe mis à jour.');
+    }
+
+    public function updateTheme(Request $request)
+    {
+        $hex = ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'];
+
+        $validated = $request->validate([
+            'primary' => $hex,
+            'secondary' => $hex,
+            'tertiary' => $hex,
+            'background' => $hex,
+        ], [
+            'primary.regex' => 'La couleur primaire doit être un code hexadécimal (#RRGGBB).',
+            'secondary.regex' => 'La couleur secondaire doit être un code hexadécimal (#RRGGBB).',
+            'tertiary.regex' => 'La couleur tertiaire doit être un code hexadécimal (#RRGGBB).',
+            'background.regex' => 'La couleur de fond doit être un code hexadécimal (#RRGGBB).',
+        ]);
+
+        $settings = CompanySetting::query()->first() ?? new CompanySetting();
+        if (! Schema::hasColumn('company_settings', 'display_theme')) {
+            return back()->withErrors([
+                'primary' => 'Exécutez les migrations pour activer l’affichage (colonne display_theme).',
+            ]);
+        }
+        $settings->display_theme = Theme::merge($validated);
+        $settings->save();
+
+        return back()->with('success', 'Charte graphique enregistrée.');
     }
 
     public function logout()

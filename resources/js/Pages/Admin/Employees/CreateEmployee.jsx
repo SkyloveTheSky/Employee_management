@@ -1,5 +1,6 @@
 import { Head, router } from "@inertiajs/react";
 import Sidebar from "../../../Components/Admin/Sidebar";
+import BrandMark from "@/Components/BrandMark";
 import { useState } from "react";
 
 export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
@@ -65,7 +66,7 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
             <Sidebar admin={admin} currentPage="admin.employees" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
                 <div style={styles.header}>
-                    <div style={styles.logo}>RH</div>
+                    <BrandMark />
                     <div>
                         <h1 style={styles.title}>Créer un Nouvel Employé</h1>
                         <p style={styles.subtitle}>
@@ -255,7 +256,7 @@ const styles = {
     logo: {
         width: "44px",
         height: "44px",
-        background: "#261FB3",
+        background: "var(--color-primary)",
         borderRadius: "10px",
         display: "flex",
         alignItems: "center",

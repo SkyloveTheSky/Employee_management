@@ -1,6 +1,7 @@
 import { Head, router, useForm, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import Sidebar from "../../../Components/Admin/Sidebar";
+import BrandMark from "@/Components/BrandMark";
 
 export default function Edit({ admin, payroll, employees }) {
     const { flash } = usePage().props;
@@ -56,7 +57,7 @@ export default function Edit({ admin, payroll, employees }) {
             <Sidebar admin={admin} currentPage="admin.payrolls.index" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
                 <div style={styles.header}>
-                    <div style={styles.logo}>RH</div>
+                    <BrandMark />
                     <div>
                         <h1 style={styles.title}>Modifier une fiche</h1>
                         <p style={styles.subtitle}>Mettre à jour les montants et le paiement</p>
@@ -202,7 +203,7 @@ export default function Edit({ admin, payroll, employees }) {
 const styles = {
     page: { minHeight: "100vh", background: "#ffffff", fontFamily: "system-ui, sans-serif", padding: "24px", transition: "margin-left 0.3s ease" },
     header: { display: "flex", alignItems: "center", gap: "16px", background: "white", padding: "20px 24px", borderRadius: "12px", marginBottom: "24px", border: "1px solid #e2e8f0" },
-    logo: { width: "44px", height: "44px", background: "#261FB3", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "16px", flexShrink: 0 },
+    logo: { width: "44px", height: "44px", background: "var(--color-primary)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "16px", flexShrink: 0 },
     title: { fontSize: "18px", fontWeight: "600", color: "#1a202c", margin: 0 },
     subtitle: { fontSize: "13px", color: "#718096", margin: 0 },
     formCard: { background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", padding: "20px" },

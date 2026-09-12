@@ -1,6 +1,7 @@
 import { Head, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import Sidebar from "@/Components/User/Sidebar";
+import BrandMark from "@/Components/BrandMark";
 import UpdatePasswordForm from "./Partials/UpdatePasswordForm";
 
 export default function Edit() {
@@ -14,7 +15,7 @@ export default function Edit() {
             <Sidebar user={user} currentPage="profile.edit" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
                 <div style={styles.header}>
-                    <div style={styles.logo}>RH</div>
+                    <BrandMark />
                     <div>
                         <h1 style={styles.title}>Paramètres</h1>
                         <p style={styles.subtitle}>Modifier uniquement votre mot de passe</p>
@@ -50,7 +51,7 @@ const styles = {
     logo: {
         width: "44px",
         height: "44px",
-        background: "#261FB3",
+        background: "var(--color-primary)",
         borderRadius: "10px",
         display: "flex",
         alignItems: "center",

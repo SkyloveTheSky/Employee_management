@@ -71,6 +71,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/payrolls/{id}/pdf', [PayrollController::class, 'pdf'])->name('payrolls.pdf');
 
         // Settings
+        Route::get('/settings', [AuthController::class, 'showSettings'])->name('settings.edit');
+        Route::patch('/settings/password', [AuthController::class, 'updatePassword'])->name('settings.password');
+        Route::patch('/settings/theme', [AuthController::class, 'updateTheme'])->name('settings.theme');
         Route::get('/settings/company', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');
         Route::post('/settings/company', [CompanySettingsController::class, 'update'])->name('settings.company.update');
 

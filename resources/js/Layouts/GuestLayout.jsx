@@ -1,4 +1,5 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import ThemeSync from '@/Components/ThemeSync';
 import { Link, usePage } from '@inertiajs/react';
 
 export default function GuestLayout({ children }) {
@@ -7,7 +8,8 @@ export default function GuestLayout({ children }) {
     const companyName = company?.name || 'Entreprise';
 
     return (
-        <div className="flex min-h-screen flex-col items-center bg-white pt-6 sm:justify-center sm:pt-0">
+        <div className="flex min-h-screen flex-col items-center pt-6 sm:justify-center sm:pt-0" style={{ background: "var(--color-background)" }}>
+            <ThemeSync />
             <div>
                 <Link href="/" className="inline-flex items-center justify-center">
                     {logoUrl ? (

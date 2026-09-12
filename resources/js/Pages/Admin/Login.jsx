@@ -1,5 +1,7 @@
 import { useForm, Head } from "@inertiajs/react";
 import { colors } from "@/config/colors";
+import BrandMark from "@/Components/BrandMark";
+import ThemeSync from "@/Components/ThemeSync";
 
 export default function Login() {
     const { data, setData, post, processing, errors } = useForm({
@@ -15,10 +17,11 @@ export default function Login() {
     return (
         <>
             <Head title="Connexion Admin" />
+            <ThemeSync />
             <div style={styles.page}>
                 <div style={styles.card}>
                     <div style={styles.header}>
-                        <div style={styles.logo}>RH</div>
+                        <BrandMark size={56} />
                         <h1 style={styles.title}>Espace Administrateur</h1>
                         <p style={styles.subtitle}>
                             Connectez-vous pour accéder au tableau de bord

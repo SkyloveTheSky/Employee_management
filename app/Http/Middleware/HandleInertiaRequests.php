@@ -3,7 +3,9 @@
 namespace App\Http\Middleware;
 
 use App\Models\CompanySetting;
+use App\Support\Theme;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
@@ -44,6 +46,11 @@ class HandleInertiaRequests extends Middleware
                     ? Storage::url($settings->logo_path)
                     : null,
             ],
+            'theme' => Theme::merge(
+                $settings && Schema::hasColumn('company_settings', 'display_theme')
+                    ? $settings->display_theme
+                    : null
+            ),
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'payroll_warnings' => $request->session()->get('payroll_warnings'),

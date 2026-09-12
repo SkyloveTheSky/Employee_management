@@ -1,22 +1,43 @@
-import { Head, router } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
+import BrandMark from "@/Components/BrandMark";
 import Sidebar from "../../../Components/Admin/Sidebar";
 import { useState, useEffect } from "react";
 import { colors } from "@/config/colors";
 import Chart_Users from "@/Components/Admin/Charts/Chart_Users";
+import Chart_Payroll from "@/Components/Admin/Charts/Chart_Payroll";
 
-export default function Dashboard({ admin, totalUsers }) {
+export default function Dashboard({
+    admin,
+    totalUsers,
+    payrollMass = 0,
+    unpaidCount = 0,
+    unpaidAmount = 0,
+    periodMonth,
+    periodYear,
+}) {
     const [isOpen, setIsOpen] = useState(true);
     const [chartData, setChartData] = useState([]);
+    const [payrollChartData, setPayrollChartData] = useState([]);
 
     const logout = () => {
         router.post(route("admin.logout"));
     };
+
+    const formatAr = (value) =>
+        `${Number(value || 0).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} Ar`;
+    const periodLabel =
+        periodMonth && periodYear
+            ? new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(
+                  new Date(periodYear, periodMonth - 1, 1)
+              )
+            : "";
 
     useEffect(() => {
         fetch(route("admin.dashboard.chart-data"))
             .then((res) => res.json())
             .then((data) => {
                 setChartData(data.users_per_month);
+                setPayrollChartData(data.payroll_per_month || []);
             });
     }, []);
 
@@ -33,7 +54,7 @@ export default function Dashboard({ admin, totalUsers }) {
 
             <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
                 <div style={styles.header}>
-                    <div style={styles.logo}>RH</div>
+                    <BrandMark />
                     <div>
                         <h1 style={styles.title}>Tableau de bord</h1>
                         <p style={styles.subtitle}>
@@ -53,17 +74,30 @@ export default function Dashboard({ admin, totalUsers }) {
                     </div>
 
                     <div style={styles.card}>
-                        <p style={styles.cardLabel}>Email</p>
-                        <p style={styles.cardValue}>{admin.email_admin}</p>
+                        <p style={styles.cardLabel}>Masse salariale{periodLabel ? ` · ${periodLabel}` : ""}</p>
+                        <p style={styles.cardValue}>{formatAr(payrollMass)}</p>
+                        <p style={styles.cardHint}>Nets à payer du mois</p>
                     </div>
 
                     <div style={styles.card}>
-                        <p style={styles.cardLabel}>Téléphone</p>
-                        <p style={styles.cardValue}>{admin.number_phone_admin}</p>
+                        <p style={styles.cardLabel}>Fiches non payées{periodLabel ? ` · ${periodLabel}` : ""}</p>
+                        <p style={{ ...styles.cardValue, color: unpaidCount > 0 ? "#9c4221" : "#1a202c" }}>
+                            {unpaidCount}
+                        </p>
+                        <p style={styles.cardHint}>{formatAr(unpaidAmount)} en attente</p>
+                        <Link
+                            href={route("admin.payrolls.index", { filter_status: "unpaid" })}
+                            style={styles.cardLink}
+                        >
+                            Voir le suivi
+                        </Link>
                     </div>
                 </div>
                 <div style={styles.chartWrapper}>
                     <Chart_Users data={chartData || []} />
+                </div>
+                <div style={styles.chartWrapper}>
+                    <Chart_Payroll data={payrollChartData || []} />
                 </div>
             </div>
         </>
@@ -139,10 +173,24 @@ const styles = {
         margin: "0 0 6px",
     },
     cardValue: {
-        fontSize: "24px",
+        fontSize: "22px",
         fontWeight: "500",
         color: "#1a202c",
         margin: 0,
+        wordBreak: "break-word",
+    },
+    cardHint: {
+        fontSize: "12px",
+        color: "#718096",
+        margin: "6px 0 0",
+    },
+    cardLink: {
+        display: "inline-block",
+        marginTop: "8px",
+        fontSize: "13px",
+        color: colors.primary,
+        fontWeight: 600,
+        textDecoration: "none",
     },
     cardHeader: {
         display: "flex",

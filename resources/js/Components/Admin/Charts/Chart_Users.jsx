@@ -1,7 +1,8 @@
 import React from "react";
+import { usePage } from "@inertiajs/react";
 import {
-    LineChart,
-    Line,
+    BarChart,
+    Bar,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -9,41 +10,53 @@ import {
     ResponsiveContainer,
 } from "recharts";
 
-/**
- * Chart des utilisateurs par mois
- * data format attendu :
- * [
- *   { month: 1, total: 10 },
- *   { month: 2, total: 25 },
- * ]
- */
+const MONTHS_SHORT = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+const MONTHS_FULL = [
+    "Janvier",
+    "Février",
+    "Mars",
+    "Avril",
+    "Mai",
+    "Juin",
+    "Juillet",
+    "Août",
+    "Septembre",
+    "Octobre",
+    "Novembre",
+    "Décembre",
+];
 
 export default function Chart_Users({ data = [] }) {
-    // Convertir mois numérique en label lisible
-    const formattedData = data.map((item) => ({
-        ...item,
-        monthLabel: `Mois ${item.month}`,
+    const fill = usePage().props.theme?.primary || "#261FB3";
+    const totalsByMonth = new Map(
+        data.map((item) => [Number(item.month), Number(item.total) || 0])
+    );
+
+    const formattedData = MONTHS_SHORT.map((monthLabel, index) => ({
+        month: index + 1,
+        monthLabel,
+        monthFull: MONTHS_FULL[index],
+        total: totalsByMonth.get(index + 1) || 0,
     }));
 
     return (
         <div style={styles.container}>
-            <h3 style={styles.title}>Evolution des employés</h3>
+            <h3 style={styles.title}>Employés par mois</h3>
+            <p style={styles.subtitle}>Nombre d’embauches classé par mois de l’année en cours</p>
 
             <div style={{ width: "100%", height: 300 }}>
                 <ResponsiveContainer>
-                    <LineChart data={formattedData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="monthLabel" />
-                        <YAxis />
-                        <Tooltip />
-                        <Line
-                            type="monotone"
-                            dataKey="total"
-                            stroke="#261FB3"
-                            strokeWidth={3}
-                            dot={{ r: 4 }}
+                    <BarChart data={formattedData} barCategoryGap="28%">
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                        <XAxis dataKey="monthLabel" tick={{ fontSize: 11, fill: "#718096" }} interval={0} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#718096" }} />
+                        <Tooltip
+                            formatter={(value) => [`${value} employé${value > 1 ? "s" : ""}`, "Effectif"]}
+                            labelFormatter={(_, payload) => payload?.[0]?.payload?.monthFull || ""}
+                            labelStyle={{ color: "#1A202C" }}
                         />
-                    </LineChart>
+                        <Bar dataKey="total" name="Employés" fill={fill} radius={[4, 4, 0, 0]} maxBarSize={42} />
+                    </BarChart>
                 </ResponsiveContainer>
             </div>
         </div>
@@ -55,12 +68,16 @@ const styles = {
         backgroundColor: "#fff",
         padding: "15px",
         borderRadius: "10px",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
     },
     title: {
         fontSize: "14px",
         fontWeight: "600",
-        marginBottom: "10px",
-        color: "#333",
+        marginBottom: "4px",
+        color: "#1A202C",
+    },
+    subtitle: {
+        fontSize: "12px",
+        color: "#718096",
+        margin: "0 0 12px",
     },
 };
