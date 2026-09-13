@@ -1,12 +1,14 @@
 import { Head, Link, usePage } from "@inertiajs/react";
-import { useState } from "react";
 import Sidebar from "@/Components/User/Sidebar";
 import BrandMark from "@/Components/BrandMark";
+import HeaderTools from "@/Components/HeaderTools";
+import { colors } from "@/config/colors";
+import { useSidebar } from "@/hooks/useSidebar";
 
 export default function Dashboard({ latestPayroll = null, unpaidCount = 0 }) {
     const { auth } = usePage().props;
     const user = auth?.user;
-    const [isOpen, setIsOpen] = useState(true);
+    const { isOpen, setIsOpen, offset } = useSidebar();
 
     const formatAr = (value) => `${Number(value || 0).toLocaleString("fr-FR")} Ar`;
     const formatMonth = (payroll) => {
@@ -19,8 +21,8 @@ export default function Dashboard({ latestPayroll = null, unpaidCount = 0 }) {
         <>
             <Head title="Tableau de bord" />
             <Sidebar user={user} currentPage="dashboard" isOpen={isOpen} setIsOpen={setIsOpen} />
-            <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
-                <div style={styles.header}>
+            <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
+                <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
                         <h1 style={styles.title}>Tableau de bord</h1>
@@ -28,9 +30,10 @@ export default function Dashboard({ latestPayroll = null, unpaidCount = 0 }) {
                             Bonjour, {user?.first_name} {user?.last_name}
                         </p>
                     </div>
+                    <HeaderTools />
                 </div>
 
-                <div style={styles.content}>
+                <div className="app-cards" style={styles.content}>
                     <div style={styles.card}>
                         <p style={styles.cardLabel}>Poste</p>
                         <p style={styles.cardValue}>{user?.position || "-"}</p>
@@ -64,7 +67,7 @@ export default function Dashboard({ latestPayroll = null, unpaidCount = 0 }) {
 const styles = {
     page: {
         minHeight: "100vh",
-        background: "#ffffff",
+        background: "var(--color-background)",
         fontFamily: "system-ui, sans-serif",
         padding: "24px",
         transition: "margin-left 0.3s ease",
@@ -73,11 +76,11 @@ const styles = {
         display: "flex",
         alignItems: "center",
         gap: "16px",
-        background: "white",
+        background: colors.surface,
         padding: "20px 24px",
         borderRadius: "12px",
         marginBottom: "24px",
-        border: "1px solid #e2e8f0",
+        border: `1px solid ${colors.border}`,
     },
     logo: {
         width: "44px",
@@ -95,12 +98,12 @@ const styles = {
     title: {
         fontSize: "18px",
         fontWeight: "600",
-        color: "#1a202c",
+        color: colors.dark,
         margin: 0,
     },
     subtitle: {
         fontSize: "13px",
-        color: "#718096",
+        color: colors.muted,
         margin: 0,
     },
     content: {
@@ -109,25 +112,25 @@ const styles = {
         gap: "16px",
     },
     card: {
-        background: "white",
+        background: colors.surface,
         borderRadius: "12px",
         padding: "20px",
-        border: "1px solid #e2e8f0",
+        border: `1px solid ${colors.border}`,
     },
     cardLabel: {
         fontSize: "12px",
-        color: "#718096",
+        color: colors.muted,
         margin: "0 0 6px",
     },
     cardValue: {
         fontSize: "15px",
         fontWeight: "500",
-        color: "#1a202c",
+        color: colors.dark,
         margin: 0,
     },
     cardHint: {
         fontSize: "12px",
-        color: "#718096",
+        color: colors.muted,
         margin: "6px 0 0",
     },
     cardLink: {

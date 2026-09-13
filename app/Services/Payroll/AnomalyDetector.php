@@ -13,8 +13,7 @@ class AnomalyDetector
         ?User $employee,
         array $periods,
         float $primeAmount = 0,
-        float $overtimeAmount = 0,
-        float $cnapsRate = 1,
+        float $overtimeHours = 0,
         float $assuranceRate = 1,
         ?int $ignorePayrollId = null,
     ): array {
@@ -28,8 +27,9 @@ class AnomalyDetector
             ]];
         }
 
-        $amounts = PayrollCalculator::compute($employee, $primeAmount, $overtimeAmount, $cnapsRate, $assuranceRate);
+        $amounts = PayrollCalculator::compute($employee, $primeAmount, $overtimeHours, $assuranceRate);
         $base    = $amounts['base_salary'];
+        $overtimeAmount = (float) ($amounts['overtime_amount'] ?? 0);
 
         if ($base <= 0) {
             $anomalies[] = [
@@ -59,19 +59,12 @@ class AnomalyDetector
             $anomalies[] = [
                 'code'     => 'overtime_elevated',
                 'severity' => 'warning',
-                'message'  => 'Heures supplémentaires élevées : '.$this->formatAr($overtimeAmount).' par rapport au salaire de base.',
+                'message'  => 'Heures supplémentaires élevées : '.$overtimeHours.' h ('.$this->formatAr($overtimeAmount).') par rapport au salaire de base.',
             ];
         }
 
         $rateMin = (float) config('payroll.rate_min', 0.5);
         $rateMax = (float) config('payroll.rate_max', 5);
-        if ($cnapsRate < $rateMin || $cnapsRate > $rateMax) {
-            $anomalies[] = [
-                'code'     => 'cnaps_rate',
-                'severity' => 'warning',
-                'message'  => 'Taux CNAPS inhabituel ('.$cnapsRate.' %). Plage attendue : '.$rateMin.'–'.$rateMax.' %.',
-            ];
-        }
         if ($assuranceRate < $rateMin || $assuranceRate > $rateMax) {
             $anomalies[] = [
                 'code'     => 'assurance_rate',

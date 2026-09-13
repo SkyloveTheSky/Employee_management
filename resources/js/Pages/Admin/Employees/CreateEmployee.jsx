@@ -1,10 +1,12 @@
 import { Head, router } from "@inertiajs/react";
 import Sidebar from "../../../Components/Admin/Sidebar";
 import BrandMark from "@/Components/BrandMark";
+import HeaderTools from "@/Components/HeaderTools";
 import { useState } from "react";
+import { useSidebar } from "@/hooks/useSidebar";
 
 export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
-    const [isOpen, setIsOpen] = useState(initialOpen);
+    const { isOpen, setIsOpen, offset } = useSidebar();
     const [formData, setFormData] = useState({
         first_name: "",
         last_name: "",
@@ -64,8 +66,8 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
         <>
             <Head title="Créer un Employé" />
             <Sidebar admin={admin} currentPage="admin.employees" isOpen={isOpen} setIsOpen={setIsOpen} />
-            <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
-                <div style={styles.header}>
+            <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
+                <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
                         <h1 style={styles.title}>Créer un Nouvel Employé</h1>
@@ -73,6 +75,7 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
                             Ajoutez un nouvel employé à votre plateforme
                         </p>
                     </div>
+                    <HeaderTools />
                 </div>
 
                 <div style={styles.formContainer}>
@@ -238,7 +241,7 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
 const styles = {
     page: {
         minHeight: "100vh",
-        background: "#ffffff",
+        background: "var(--color-background)",
         fontFamily: "system-ui, sans-serif",
         padding: "24px",
         transition: "margin-left 0.3s ease",
@@ -283,6 +286,8 @@ const styles = {
         border: "1px solid #e2e8f0",
         padding: "24px",
         maxWidth: "500px",
+        width: "100%",
+        boxSizing: "border-box",
     },
     formGroup: {
         marginBottom: "20px",
@@ -338,7 +343,7 @@ const styles = {
     submitButton: {
         flex: 1,
         padding: "10px 16px",
-        background: "#0d6efd",
+        background: "var(--color-primary)",
         color: "white",
         border: "none",
         borderRadius: "8px",

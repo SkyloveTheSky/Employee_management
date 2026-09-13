@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\Payroll;
 use App\Models\User;
+use App\Services\Inbox\Inbox;
 use App\Services\Payroll\AnomalyDetector;
 use App\Services\Payroll\PayrollAssistant;
 use App\Services\Payroll\PayrollCalculator;
@@ -104,8 +105,7 @@ class PayrollController extends Controller
             'period_month_years'   => ['required', 'array', 'min:1'],
             'period_month_years.*' => ['required', 'date_format:Y-m', 'distinct'],
             'prime_amount'         => ['nullable', 'numeric', 'min:0'],
-            'overtime_amount'      => ['nullable', 'numeric', 'min:0'],
-            'cnaps_rate'           => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'overtime_hours'       => ['nullable', 'numeric', 'min:0', 'max:400'],
             'assurance_rate'       => ['nullable', 'numeric', 'min:0', 'max:100'],
             'payment_method'       => ['required', 'in:virement,especes,mobile_money,cheque,autre'],
             'payment_status'       => ['nullable', 'in:unpaid,paid'],
@@ -124,8 +124,7 @@ class PayrollController extends Controller
             $employee,
             $periods->all(),
             (float) ($validated['prime_amount'] ?? 0),
-            (float) ($validated['overtime_amount'] ?? 0),
-            (float) ($validated['cnaps_rate'] ?? 1),
+            (float) ($validated['overtime_hours'] ?? 0),
             (float) ($validated['assurance_rate'] ?? 1),
         );
 
@@ -168,8 +167,7 @@ class PayrollController extends Controller
         $amounts = PayrollCalculator::compute(
             $employee,
             (float) ($validated['prime_amount'] ?? 0),
-            (float) ($validated['overtime_amount'] ?? 0),
-            (float) ($validated['cnaps_rate'] ?? 1),
+            (float) ($validated['overtime_hours'] ?? 0),
             (float) ($validated['assurance_rate'] ?? 1),
         );
 
@@ -200,6 +198,27 @@ class PayrollController extends Controller
             $message .= ' Déjà existantes : '.implode(', ', $existingLabels).'.';
         }
 
+        $periodText = $toCreate->map(fn (string $period) => $this->formatPeriodLabel($period))->implode(', ');
+        app(Inbox::class)->notifyUser(
+            (int) $validated['user_id'],
+            'payroll_created',
+            $createdCount > 1 ? 'Nouvelles fiches de paie' : 'Nouvelle fiche de paie',
+            $createdCount > 1
+                ? "{$createdCount} fiches ont été ajoutées ({$periodText})."
+                : "Votre fiche {$periodText} est disponible.",
+            route('payrolls.index', absolute: false),
+        );
+
+        if (($validated['payment_status'] ?? 'unpaid') === 'paid') {
+            app(Inbox::class)->notifyUser(
+                (int) $validated['user_id'],
+                'payroll_paid',
+                'Paiement confirmé',
+                'Une ou plusieurs fiches viennent d’être marquées comme payées.',
+                route('payrolls.index', absolute: false),
+            );
+        }
+
         return back()->with('success', $message);
     }
 
@@ -210,7 +229,7 @@ class PayrollController extends Controller
             ->translatedFormat('F Y');
     }
 
-    public function edit($id): Response
+    public function edit(int $id): Response
     {
         $admin     = Admin::findOrFail(session('admin_id'));
         $employees = User::query()
@@ -220,6 +239,20 @@ class PayrollController extends Controller
             ->get();
 
         $payroll = Payroll::findOrFail($id);
+        $hours = (float) ($payroll->overtime_hours ?? 0);
+        $amount = (float) ($payroll->overtime_amount ?? 0);
+        if ($hours <= 0 && $amount > 0) {
+            $rules = PayrollCalculator::overtimeRules(
+                $payroll->overtime_divisor !== null ? (float) $payroll->overtime_divisor : null,
+                $payroll->overtime_coefficient !== null ? (float) $payroll->overtime_coefficient : null,
+            );
+            $payroll->overtime_hours = PayrollCalculator::hoursFromAmount(
+                (float) $payroll->base_salary,
+                $amount,
+                $rules['divisor'],
+                $rules['coefficient'],
+            );
+        }
 
         return Inertia::render('Admin/Payrolls/Edit', [
             'admin'     => $admin,
@@ -228,15 +261,14 @@ class PayrollController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id): RedirectResponse
+    public function update(Request $request, int $id): RedirectResponse
     {
         $payroll   = Payroll::findOrFail($id);
         $validated = $request->validate([
             'user_id'           => ['required', 'exists:users,id'],
             'period_month_year' => ['required', 'date_format:Y-m'],
             'prime_amount'      => ['nullable', 'numeric', 'min:0'],
-            'overtime_amount'   => ['nullable', 'numeric', 'min:0'],
-            'cnaps_rate'        => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'overtime_hours'    => ['nullable', 'numeric', 'min:0', 'max:400'],
             'assurance_rate'    => ['nullable', 'numeric', 'min:0', 'max:100'],
             'payment_method'    => ['required', 'in:virement,especes,mobile_money,cheque,autre'],
             'payment_status'    => ['nullable', 'in:unpaid,paid'],
@@ -269,8 +301,7 @@ class PayrollController extends Controller
             $employee,
             [$validated['period_month_year']],
             (float) ($validated['prime_amount'] ?? 0),
-            (float) ($validated['overtime_amount'] ?? 0),
-            (float) ($validated['cnaps_rate'] ?? 1),
+            (float) ($validated['overtime_hours'] ?? 0),
             (float) ($validated['assurance_rate'] ?? 1),
             $payroll->id,
         );
@@ -290,10 +321,11 @@ class PayrollController extends Controller
         $amounts = PayrollCalculator::compute(
             $employee,
             (float) ($validated['prime_amount'] ?? 0),
-            (float) ($validated['overtime_amount'] ?? 0),
-            (float) ($validated['cnaps_rate'] ?? 1),
+            (float) ($validated['overtime_hours'] ?? 0),
             (float) ($validated['assurance_rate'] ?? 1),
         );
+
+        $becamePaid = $payroll->payment_status !== 'paid' && ($validated['payment_status'] ?? 'unpaid') === 'paid';
 
         $payroll->update([
             'user_id'          => $validated['user_id'],
@@ -306,10 +338,21 @@ class PayrollController extends Controller
             'notes'            => $validated['notes'] ?? null,
         ]);
 
+        if ($becamePaid) {
+            $label = $this->formatPeriodLabel(sprintf('%04d-%02d', (int) $period_year, (int) $period_month));
+            app(Inbox::class)->notifyUser(
+                (int) $validated['user_id'],
+                'payroll_paid',
+                'Paiement confirmé',
+                "Votre fiche {$label} a été marquée comme payée.",
+                route('payrolls.index', absolute: false),
+            );
+        }
+
         return redirect()->route('admin.payrolls.index')->with('success', 'Fiche de paie modifiée avec succès.');
     }
 
-    public function destroy($id): RedirectResponse
+    public function destroy(int $id): RedirectResponse
     {
         $payroll = Payroll::findOrFail($id);
         $payroll->delete();
@@ -317,7 +360,7 @@ class PayrollController extends Controller
         return redirect()->route('admin.payrolls.index')->with('success', 'Fiche de paie supprimée avec succès.');
     }
 
-    public function markPayment(Request $request, $id): RedirectResponse
+    public function markPayment(Request $request, int $id): RedirectResponse
     {
         $payroll   = Payroll::findOrFail($id);
         $validated = $request->validate([
@@ -333,6 +376,17 @@ class PayrollController extends Controller
         $message = $validated['payment_status'] === 'paid'
             ? 'Fiche marquée comme payée.'
             : 'Fiche marquée comme non payée.';
+
+        if ($validated['payment_status'] === 'paid') {
+            $label = $this->formatPeriodLabel(sprintf('%04d-%02d', $payroll->period_year, $payroll->period_month));
+            app(Inbox::class)->notifyUser(
+                (int) $payroll->user_id,
+                'payroll_paid',
+                'Paiement confirmé',
+                "Votre fiche {$label} a été marquée comme payée.",
+                route('payrolls.index', absolute: false),
+            );
+        }
 
         return back()->with('success', $message);
     }
@@ -366,7 +420,9 @@ class PayrollController extends Controller
         [$year, $month] = explode('-', $validated['period']);
         $created        = 0;
 
-        DB::transaction(function () use ($validated, $year, $month, &$created) {
+        $notified = [];
+
+        DB::transaction(function () use ($validated, $year, $month, &$created, &$notified) {
             foreach ($validated['user_ids'] as $userId) {
                 $exists = Payroll::query()
                     ->where('user_id', $userId)
@@ -397,17 +453,28 @@ class PayrollController extends Controller
                     'notes'                 => null,
                 ]);
                 $created++;
+                $notified[] = $employee->id;
             }
         });
 
         $label = app(AnomalyDetector::class)->periodLabel($validated['period']);
+        $inbox = app(Inbox::class);
+        foreach (array_unique($notified) as $userId) {
+            $inbox->notifyUser(
+                (int) $userId,
+                'payroll_created',
+                'Nouvelle fiche de paie',
+                'Votre fiche '.$label.' est disponible.',
+                route('payrolls.index', absolute: false),
+            );
+        }
 
         return back()->with('success', $created > 0
             ? $created.' fiche(s) générée(s) pour '.$label.'. Statut : non payé.'
             : 'Aucune nouvelle fiche à générer pour '.$label.'.');
     }
 
-    public function pdf($id)
+    public function pdf(int $id)
     {
         $payroll = Payroll::query()->with('user')->findOrFail($id);
 

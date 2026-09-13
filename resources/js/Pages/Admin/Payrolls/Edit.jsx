@@ -2,18 +2,21 @@ import { Head, router, useForm, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import Sidebar from "../../../Components/Admin/Sidebar";
 import BrandMark from "@/Components/BrandMark";
+import HeaderTools from "@/Components/HeaderTools";
+import ScientificCalculator from "@/Components/Admin/ScientificCalculator";
+import { useSidebar } from "@/hooks/useSidebar";
 
 export default function Edit({ admin, payroll, employees }) {
     const { flash } = usePage().props;
     const warnings = flash?.payroll_warnings || [];
-    const [isOpen, setIsOpen] = useState(true);
+    const { isOpen, setIsOpen, offset } = useSidebar();
+    const [calculatorOpen, setCalculatorOpen] = useState(false);
     const monthYear = `${payroll.period_year}-${String(payroll.period_month).padStart(2, '0')}`;
     const { data, setData, patch, processing, errors } = useForm({
         user_id: payroll.user_id || "",
         period_month_year: monthYear,
         prime_amount: Number(payroll.prime_amount || 0),
-        overtime_amount: Number(payroll.overtime_amount || 0),
-        cnaps_rate: Number(payroll.cnaps_rate || 1),
+        overtime_hours: Number(payroll.overtime_hours || 0),
         assurance_rate: Number(payroll.assurance_rate || 1),
         payment_method: payroll.payment_method || "virement",
         payment_status: payroll.payment_status || "unpaid",
@@ -55,17 +58,22 @@ export default function Edit({ admin, payroll, employees }) {
         <>
             <Head title="Modifier une fiche de paie" />
             <Sidebar admin={admin} currentPage="admin.payrolls.index" isOpen={isOpen} setIsOpen={setIsOpen} />
-            <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
-                <div style={styles.header}>
+            <div className="app-page" style={{
+                ...styles.page,
+                marginLeft: offset,
+                paddingBottom: calculatorOpen ? "280px" : "24px",
+            }}>
+                <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
                         <h1 style={styles.title}>Modifier une fiche</h1>
                         <p style={styles.subtitle}>Mettre à jour les montants et le paiement</p>
                     </div>
+                    <HeaderTools />
                 </div>
 
                 <form onSubmit={submit} style={styles.formCard}>
-                    <div style={styles.grid}>
+                    <div className="app-grid-3" style={styles.grid}>
                         <div>
                             <label style={styles.label}>Employé</label>
                             <select value={data.user_id} onChange={(e) => setData("user_id", e.target.value)} style={styles.input}>
@@ -107,14 +115,9 @@ export default function Edit({ admin, payroll, employees }) {
                             {errors.prime_amount && <p style={styles.error}>{errors.prime_amount}</p>}
                         </div>
                         <div>
-                            <label style={styles.label}>Heures supplémentaires (Ar)</label>
-                            <input type="number" min="0" step="1" value={data.overtime_amount} onChange={(e) => setData("overtime_amount", e.target.value)} style={styles.input} />
-                            {errors.overtime_amount && <p style={styles.error}>{errors.overtime_amount}</p>}
-                        </div>
-                        <div>
-                            <label style={styles.label}>Taux CNAPS (%)</label>
-                            <input type="number" min="0" max="100" step="0.01" value={data.cnaps_rate} onChange={(e) => setData("cnaps_rate", e.target.value)} style={styles.input} />
-                            {errors.cnaps_rate && <p style={styles.error}>{errors.cnaps_rate}</p>}
+                            <label style={styles.label}>Heures supplémentaires (h)</label>
+                            <input type="number" min="0" step="0.25" value={data.overtime_hours} onChange={(e) => setData("overtime_hours", e.target.value)} style={styles.input} />
+                            {errors.overtime_hours && <p style={styles.error}>{errors.overtime_hours}</p>}
                         </div>
                         <div>
                             <label style={styles.label}>Taux Assurance (%)</label>
@@ -196,12 +199,28 @@ export default function Edit({ admin, payroll, employees }) {
                     </div>
                 </form>
             </div>
+
+            <div className="app-tools-dock" style={styles.toolsDock}>
+                {calculatorOpen ? (
+                    <ScientificCalculator onClose={() => setCalculatorOpen(false)} />
+                ) : (
+                    <button
+                        type="button"
+                        onClick={() => setCalculatorOpen(true)}
+                        style={styles.iconToggle}
+                        aria-label="Ouvrir la calculatrice"
+                        title="Calculatrice"
+                    >
+                        <img src="/assets/icon/calculator.svg" alt="" style={styles.toggleIcon} />
+                    </button>
+                )}
+            </div>
         </>
     );
 }
 
 const styles = {
-    page: { minHeight: "100vh", background: "#ffffff", fontFamily: "system-ui, sans-serif", padding: "24px", transition: "margin-left 0.3s ease" },
+    page: { minHeight: "100vh", background: "var(--color-background)", fontFamily: "system-ui, sans-serif", padding: "24px", transition: "margin-left 0.3s ease" },
     header: { display: "flex", alignItems: "center", gap: "16px", background: "white", padding: "20px 24px", borderRadius: "12px", marginBottom: "24px", border: "1px solid #e2e8f0" },
     logo: { width: "44px", height: "44px", background: "var(--color-primary)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "16px", flexShrink: 0 },
     title: { fontSize: "18px", fontWeight: "600", color: "#1a202c", margin: 0 },
@@ -213,6 +232,33 @@ const styles = {
     error: { marginTop: "4px", marginBottom: 0, color: "#e53e3e", fontSize: "12px" },
     actions: { display: "flex", gap: "12px", marginTop: "10px" },
     cancelButton: { padding: "10px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "white", cursor: "pointer" },
-    submitButton: { background: "#0d6efd", color: "white", border: "none", borderRadius: "8px", padding: "10px 14px", fontSize: "13px", cursor: "pointer" },
+    submitButton: { background: "var(--color-primary)", color: "white", border: "none", borderRadius: "8px", padding: "10px 14px", fontSize: "13px", cursor: "pointer" },
+    toolsDock: {
+        position: "fixed",
+        bottom: "16px",
+        right: "16px",
+        zIndex: 1200,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-end",
+        gap: "10px",
+    },
+    iconToggle: {
+        width: "44px",
+        height: "44px",
+        borderRadius: "999px",
+        border: "none",
+        background: "#2d3748",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+    },
+    toggleIcon: {
+        width: "22px",
+        height: "22px",
+        filter: "invert(1)",
+    },
 };
 

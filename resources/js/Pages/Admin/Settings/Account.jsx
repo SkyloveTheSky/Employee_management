@@ -1,8 +1,9 @@
 import { Head, router, useForm, usePage } from "@inertiajs/react";
-import { useState } from "react";
 import BrandMark from "@/Components/BrandMark";
+import HeaderTools from "@/Components/HeaderTools";
 import Sidebar from "../../../Components/Admin/Sidebar";
 import { colors } from "@/config/colors";
+import { useSidebar } from "@/hooks/useSidebar";
 
 const DEFAULT_THEME = {
     primary: "#261FB3",
@@ -12,7 +13,7 @@ const DEFAULT_THEME = {
 };
 
 export default function Account({ admin }) {
-    const [isOpen, setIsOpen] = useState(true);
+    const { isOpen, setIsOpen, offset } = useSidebar();
     const { flash, theme } = usePage().props;
     const passwordForm = useForm({
         current_password: "",
@@ -52,13 +53,14 @@ export default function Account({ admin }) {
         <>
             <Head title="Paramètres" />
             <Sidebar admin={admin} currentPage="admin.settings.edit" isOpen={isOpen} setIsOpen={setIsOpen} />
-            <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
-                <div style={styles.header}>
+            <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
+                <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
                         <h1 style={styles.title}>Paramètres</h1>
                         <p style={styles.subtitle}>Compte administrateur et affichage de la plateforme</p>
                     </div>
+                    <HeaderTools />
                 </div>
 
                 {flash?.success && <p style={styles.success}>{flash.success}</p>}

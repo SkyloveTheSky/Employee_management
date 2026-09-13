@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Fiche de paie{{ !empty($settings?->company_name) ? ' · '.$settings->company_name : '' }}</title>
     <style>
         @page { margin: 18mm 16mm; }
         body { font-family: Liberation Sans, DejaVu Sans, sans-serif; font-size: 11px; color: #1a1a1a; line-height: 1.4; }

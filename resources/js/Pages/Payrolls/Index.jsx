@@ -1,12 +1,14 @@
 import { Head, usePage } from "@inertiajs/react";
-import { useState } from "react";
 import Sidebar from "@/Components/User/Sidebar";
 import BrandMark from "@/Components/BrandMark";
+import HeaderTools from "@/Components/HeaderTools";
+import { colors } from "@/config/colors";
+import { useSidebar } from "@/hooks/useSidebar";
 
 export default function Index({ payrolls }) {
     const { auth } = usePage().props;
     const user = auth?.user;
-    const [isOpen, setIsOpen] = useState(true);
+    const { isOpen, setIsOpen, offset } = useSidebar();
 
     const formatAr = (value) => `${Number(value || 0).toLocaleString("fr-FR")} Ar`;
     const formatDate = (value) => {
@@ -26,16 +28,17 @@ export default function Index({ payrolls }) {
         <>
             <Head title="Mes fiches de paie" />
             <Sidebar user={user} currentPage="payrolls.index" isOpen={isOpen} setIsOpen={setIsOpen} />
-            <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
-                <div style={styles.header}>
+            <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
+                <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
                         <h1 style={styles.title}>Mes fiches de paie</h1>
                         <p style={styles.subtitle}>Consultation et téléchargement de vos bulletins</p>
                     </div>
+                    <HeaderTools />
                 </div>
 
-                <div style={styles.tableContainer}>
+                <div className="app-table-wrap" style={styles.tableContainer}>
                     <table style={styles.table}>
                         <thead>
                             <tr>
@@ -90,16 +93,16 @@ export default function Index({ payrolls }) {
 }
 
 const styles = {
-    page: { minHeight: "100vh", background: "#ffffff", fontFamily: "system-ui, sans-serif", padding: "24px", transition: "margin-left 0.3s ease" },
-    header: { display: "flex", alignItems: "center", gap: "16px", background: "white", padding: "20px 24px", borderRadius: "12px", marginBottom: "24px", border: "1px solid #e2e8f0" },
+    page: { minHeight: "100vh", background: "var(--color-background)", fontFamily: "system-ui, sans-serif", padding: "24px", transition: "margin-left 0.3s ease" },
+    header: { display: "flex", alignItems: "center", gap: "16px", background: colors.surface, padding: "20px 24px", borderRadius: "12px", marginBottom: "24px", border: `1px solid ${colors.border}` },
     logo: { width: "44px", height: "44px", background: "var(--color-primary)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "16px", flexShrink: 0 },
-    title: { fontSize: "18px", fontWeight: "600", color: "#1a202c", margin: 0 },
-    subtitle: { fontSize: "13px", color: "#718096", margin: 0 },
-    tableContainer: { background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", overflow: "auto", padding: "20px" },
+    title: { fontSize: "18px", fontWeight: "600", color: colors.dark, margin: 0 },
+    subtitle: { fontSize: "13px", color: colors.muted, margin: 0 },
+    tableContainer: { background: colors.surface, borderRadius: "12px", border: `1px solid ${colors.border}`, overflow: "auto", padding: "20px" },
     table: { width: "100%", borderCollapse: "collapse", fontSize: "14px" },
-    th: { background: "#f7fafc", padding: "12px 16px", textAlign: "left", fontWeight: "600", color: "#1a202c", borderBottom: "1px solid #e2e8f0" },
-    td: { padding: "12px 16px", color: "#4a5568", borderBottom: "1px solid #e2e8f0" },
+    th: { background: "#f7fafc", padding: "12px 16px", textAlign: "left", fontWeight: "600", color: colors.dark, borderBottom: `1px solid ${colors.border}` },
+    td: { padding: "12px 16px", color: "#4a5568", borderBottom: `1px solid ${colors.border}` },
     paidBadge: { display: "inline-block", padding: "4px 8px", borderRadius: "999px", background: "#c6f6d5", color: "#276749", fontSize: "12px", fontWeight: 600 },
     unpaidBadge: { display: "inline-block", padding: "4px 8px", borderRadius: "999px", background: "#feebc8", color: "#9c4221", fontSize: "12px", fontWeight: 600 },
-    pdfButton: { padding: "6px 12px", background: "#212529", color: "white", border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
+    pdfButton: { padding: "6px 12px", background: "var(--color-primary)", color: "white", border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
 };

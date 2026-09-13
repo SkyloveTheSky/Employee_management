@@ -1,40 +1,84 @@
-import { Link, router } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import { colors } from "@/config/colors";
+import { SIDEBAR_COLLAPSED, SIDEBAR_WIDTH } from "@/config/layout";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import BrandMark from "@/Components/BrandMark";
 import ThemeSync from "@/Components/ThemeSync";
 
 export default function Sidebar({ user, currentPage, isOpen, setIsOpen }) {
+    const { company } = usePage().props;
+    const companyName = company?.name || "Espace employé";
+    const isMobile = useIsMobile();
+    const expanded = isMobile ? true : isOpen;
+
     const logout = () => {
         router.post(route("logout"));
     };
 
+    const closeIfMobile = () => {
+        if (isMobile) {
+            setIsOpen(false);
+        }
+    };
+
     const menuItems = [
-        { label: "Tableau de bord", route: "dashboard", icon: "/assets/icon/dashboard.svg" },
-        { label: "Mes fiches de paie", route: "payrolls.index", icon: "/assets/icon/payroll.svg" },
-        { label: "Paramètres", route: "profile.edit", icon: "/assets/icon/gear.svg" },
+        { label: "Tableau de bord", route: "dashboard", path: "/dashboard", icon: "/assets/icon/dashboard.svg" },
+        { label: "Mes fiches de paie", route: "payrolls.index", path: "/payrolls", icon: "/assets/icon/payroll.svg" },
+        { label: "Mes fichiers", route: "files.index", path: "/files", icon: "/assets/icon/file-manager.svg" },
+        { label: "Messages", route: "messages.index", path: "/messages", icon: "/assets/icon/message.svg" },
+        { label: "Paramètres", route: "profile.edit", path: "/profile", icon: "/assets/icon/gear.svg" },
     ];
 
     return (
         <>
             <ThemeSync />
-            <button onClick={() => setIsOpen(!isOpen)} style={styles.toggleButton}>
-                {isOpen ? "✕" : "☰"}
-            </button>
-
-            <div style={{ ...styles.sidebar, left: isOpen ? "0" : "-280px" }}>
-                <div style={styles.logoSection}>
-                    <BrandMark />
-                    <h2 style={styles.appName}>Espace Utilisateur</h2>
+            {isMobile && !isOpen && (
+                <button type="button" className="app-menu-fab" onClick={() => setIsOpen(true)} aria-label="Ouvrir le menu">
+                    ☰
+                </button>
+            )}
+            {isMobile && isOpen && (
+                <div className="app-sidebar-overlay" onClick={() => setIsOpen(false)} />
+            )}
+            <aside
+                style={{
+                    ...styles.sidebar,
+                    width: isMobile || isOpen ? SIDEBAR_WIDTH : SIDEBAR_COLLAPSED,
+                    padding: expanded ? "24px 16px" : "20px 10px",
+                    transform: isMobile && !isOpen ? "translateX(-110%)" : "translateX(0)",
+                }}
+            >
+                <div style={{
+                    ...styles.logoSection,
+                    flexDirection: expanded ? "row" : "column",
+                    justifyContent: expanded ? "space-between" : "center",
+                }}>
+                    <div style={styles.brandRow}>
+                        <BrandMark size={expanded ? 44 : 40} />
+                        {expanded && <h2 style={styles.appName}>{companyName}</h2>}
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setIsOpen(!isOpen)}
+                        style={styles.toggleButton}
+                        aria-label={isOpen ? "Fermer le menu" : "Ouvrir le menu"}
+                    >
+                        {isMobile ? "✕" : isOpen ? "‹" : "›"}
+                    </button>
                 </div>
 
                 <nav style={styles.nav}>
-                    <p style={styles.sectionTitle}>Menu Principal</p>
+                    {expanded && <p style={styles.sectionTitle}>Menu Principal</p>}
                     {menuItems.map((item) => (
                         <Link
                             key={item.route}
-                            href={route(item.route)}
+                            href={item.path}
+                            title={item.label}
+                            onClick={closeIfMobile}
                             style={{
                                 ...styles.navItem,
+                                justifyContent: expanded ? "flex-start" : "center",
+                                padding: expanded ? "12px 12px" : "12px 8px",
                                 background: currentPage === item.route ? colors.primary : "transparent",
                                 color: currentPage === item.route ? colors.white : colors.light,
                                 borderLeft:
@@ -43,14 +87,18 @@ export default function Sidebar({ user, currentPage, isOpen, setIsOpen }) {
                                         : "4px solid transparent",
                             }}
                         >
-                            <img src={item.icon} alt={item.label} style={styles.iconImg} />
-                            {item.label}
+                            <img src={item.icon} alt="" style={styles.iconImg} />
+                            {expanded && item.label}
                         </Link>
                     ))}
                 </nav>
 
                 <div style={styles.userSection}>
-                    <div style={styles.userCard}>
+                    <div style={{
+                        ...styles.userCard,
+                        justifyContent: expanded ? "flex-start" : "center",
+                        padding: expanded ? "12px" : "8px",
+                    }}>
                         <div style={styles.userAvatar}>
                             {user?.photo_path ? (
                                 <img src={`/storage/${user.photo_path}`} alt="" style={styles.userAvatarImg} />
@@ -61,79 +109,72 @@ export default function Sidebar({ user, currentPage, isOpen, setIsOpen }) {
                                 </>
                             )}
                         </div>
-                        <div style={styles.userInfo}>
-                            <p style={styles.userName}>
-                                {user?.first_name} {user?.last_name}
-                            </p>
-                            <p style={styles.userRole}>{user?.position || "Utilisateur"}</p>
-                        </div>
+                        {expanded && (
+                            <div style={styles.userInfo}>
+                                <p style={styles.userName}>
+                                    {user?.first_name} {user?.last_name}
+                                </p>
+                                <p style={styles.userRole}>{user?.position || "Utilisateur"}</p>
+                            </div>
+                        )}
                     </div>
 
-                    <button onClick={logout} style={styles.logoutButton}>
-                        Se déconnecter
+                    <button onClick={logout} style={styles.logoutButton} title="Se déconnecter">
+                        {expanded ? "Se déconnecter" : "⎋"}
                     </button>
                 </div>
-            </div>
+            </aside>
         </>
     );
 }
 
 const styles = {
     toggleButton: {
-        position: "fixed",
-        top: "16px",
-        left: "16px",
-        zIndex: 1001,
         background: colors.primary,
         border: "none",
-        padding: "10px 14px",
+        padding: "6px 10px",
         borderRadius: "8px",
         cursor: "pointer",
-        fontSize: "20px",
+        fontSize: "18px",
         color: colors.white,
         fontWeight: "bold",
+        lineHeight: 1,
+        flexShrink: 0,
     },
     sidebar: {
         display: "flex",
         flexDirection: "column",
-        width: "280px",
         height: "100vh",
         background: colors.primaryDark,
         borderRight: `1px solid ${colors.dark}`,
-        padding: "24px 16px",
         boxSizing: "border-box",
         position: "fixed",
         top: 0,
         left: 0,
-        transition: "left 0.3s ease",
+        transition: "width 0.3s ease, padding 0.3s ease, transform 0.3s ease",
         zIndex: 1000,
+        overflow: "hidden",
     },
     logoSection: {
         display: "flex",
         alignItems: "center",
-        gap: "12px",
-        marginBottom: "32px",
-        paddingBottom: "20px",
+        gap: "8px",
+        marginBottom: "24px",
+        paddingBottom: "16px",
         borderBottom: `1px solid ${colors.sidebarElevated}`,
     },
-    logo: {
-        width: "44px",
-        height: "44px",
-        background: colors.primary,
-        borderRadius: "10px",
+    brandRow: {
         display: "flex",
         alignItems: "center",
-        justifyContent: "center",
-        color: colors.white,
-        fontWeight: "700",
-        fontSize: "16px",
-        flexShrink: 0,
+        gap: "12px",
+        minWidth: 0,
     },
     appName: {
         fontSize: "16px",
         fontWeight: "600",
         color: colors.white,
         margin: 0,
+        whiteSpace: "nowrap",
     },
     nav: {
         flex: 1,
@@ -146,20 +187,20 @@ const styles = {
         textTransform: "uppercase",
         margin: "0 0 12px",
         paddingLeft: "12px",
+        whiteSpace: "nowrap",
     },
     navItem: {
         display: "flex",
         alignItems: "center",
         gap: "12px",
-        padding: "12px 12px",
         borderRadius: "8px",
         textDecoration: "none",
-        color: colors.light,
         fontSize: "14px",
         fontWeight: "500",
         cursor: "pointer",
         transition: "all 0.2s",
         marginBottom: "4px",
+        whiteSpace: "nowrap",
     },
     iconImg: {
         width: "20px",
@@ -168,15 +209,14 @@ const styles = {
         flexShrink: 0,
     },
     userSection: {
-        paddingTop: "20px",
+        paddingTop: "16px",
         borderTop: `1px solid ${colors.sidebarElevated}`,
     },
     userCard: {
         display: "flex",
         alignItems: "center",
         gap: "12px",
-        marginBottom: "16px",
-        padding: "12px",
+        marginBottom: "12px",
         background: colors.sidebarElevated,
         borderRadius: "8px",
     },
@@ -223,7 +263,7 @@ const styles = {
     },
     logoutButton: {
         width: "100%",
-        padding: "10px 12px",
+        padding: "10px 8px",
         background: colors.error,
         color: colors.white,
         border: "1px solid #c53030",

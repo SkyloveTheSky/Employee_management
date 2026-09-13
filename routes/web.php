@@ -4,9 +4,17 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\PayrollController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\User\FileManagerController as UserFileManagerController;
+use App\Http\Controllers\User\InboxController as UserInboxController;
+use App\Http\Controllers\User\NotificationController as UserNotificationController;
 use App\Http\Controllers\User\PayrollController as UserPayrollController;
 use App\Http\Controllers\Admin\CompanySettingsController;
-use Illuminate\Foundation\Application;
+use App\Http\Controllers\Admin\AgendaController;
+use App\Http\Controllers\Admin\ChargeController;
+use App\Http\Controllers\Admin\FileManagerController;
+use App\Http\Controllers\Admin\InboxController as AdminInboxController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardChartController;
 use App\Http\Controllers\Admin\EntrepriseWidgetController;
@@ -15,11 +23,15 @@ use App\Http\Controllers\Admin\EmployeWidgetController;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    if (session('admin_logged_in')) {
+        return redirect()->route('admin.dashboard');
+    }
+
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+
+    return Inertia::render('Welcome');
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
@@ -30,6 +42,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/payrolls', [UserPayrollController::class, 'index'])->name('payrolls.index');
     Route::get('/payrolls/{id}/pdf', [UserPayrollController::class, 'pdf'])->name('payrolls.pdf');
+    Route::get('/files', [UserFileManagerController::class, 'index'])->name('files.index');
+    Route::post('/files/mkdir', [UserFileManagerController::class, 'mkdir'])->name('files.mkdir');
+    Route::post('/files/upload', [UserFileManagerController::class, 'upload'])->name('files.upload');
+    Route::delete('/files', [UserFileManagerController::class, 'destroy'])->name('files.destroy');
+    Route::get('/files/download', [UserFileManagerController::class, 'download'])->name('files.download');
+    Route::get('/messages', [UserInboxController::class, 'index'])->name('messages.index');
+    Route::post('/messages', [UserInboxController::class, 'store'])->name('messages.store');
+    Route::get('/messages/{id}/attachments/{index}', [UserInboxController::class, 'attachment'])->name('messages.attachments');
+    Route::post('/notifications/read-all', [UserNotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::post('/notifications/{id}/read', [UserNotificationController::class, 'read'])->name('notifications.read');
 });
 
 // Routes admin
@@ -70,12 +92,29 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/payrolls/{id}', [PayrollController::class, 'destroy'])->name('payrolls.delete');
         Route::get('/payrolls/{id}/pdf', [PayrollController::class, 'pdf'])->name('payrolls.pdf');
 
+        Route::get('/charges', [ChargeController::class, 'index'])->name('charges.index');
+
         // Settings
         Route::get('/settings', [AuthController::class, 'showSettings'])->name('settings.edit');
         Route::patch('/settings/password', [AuthController::class, 'updatePassword'])->name('settings.password');
         Route::patch('/settings/theme', [AuthController::class, 'updateTheme'])->name('settings.theme');
         Route::get('/settings/company', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');
         Route::post('/settings/company', [CompanySettingsController::class, 'update'])->name('settings.company.update');
+        Route::get('/messages', [AdminInboxController::class, 'index'])->name('messages.index');
+        Route::get('/messages/attachments/{id}/{index}', [AdminInboxController::class, 'attachment'])->name('messages.attachments');
+        Route::get('/messages/{id}', [AdminInboxController::class, 'show'])->name('messages.show');
+        Route::post('/messages/{id}', [AdminInboxController::class, 'store'])->name('messages.store');
+        Route::post('/notifications/read-all', [AdminNotificationController::class, 'readAll'])->name('notifications.read-all');
+        Route::post('/notifications/{id}/read', [AdminNotificationController::class, 'read'])->name('notifications.read');
+        Route::get('/files', [FileManagerController::class, 'index'])->name('files.index');
+        Route::post('/files/mkdir', [FileManagerController::class, 'mkdir'])->name('files.mkdir');
+        Route::post('/files/upload', [FileManagerController::class, 'upload'])->name('files.upload');
+        Route::delete('/files', [FileManagerController::class, 'destroy'])->name('files.destroy');
+        Route::get('/files/download', [FileManagerController::class, 'download'])->name('files.download');
+        Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda');
+        Route::post('/agenda/notes', [AgendaController::class, 'store'])->name('agenda.store');
+        Route::patch('/agenda/notes/{agendaNote}', [AgendaController::class, 'update'])->name('agenda.update');
+        Route::delete('/agenda/notes/{agendaNote}', [AgendaController::class, 'destroy'])->name('agenda.destroy');
 
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     });

@@ -24,9 +24,10 @@ trait GeneratesPayslipPdf
         $lines = [
             ['numero' => 1, 'designation' => 'Salaire de base',        'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->base_salary,     'retenu' => 0],
             ['numero' => 2, 'designation' => 'Prime',                  'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->prime_amount,    'retenu' => 0],
-            ['numero' => 3, 'designation' => 'Heures supplémentaires', 'base' => $payroll->base_salary,  'taux' => null,                           'gain' => $payroll->overtime_amount, 'retenu' => 0],
+            ['numero' => 3, 'designation' => 'Heures supplémentaires', 'base' => $payroll->base_salary,  'taux' => self::overtimeRateLabel($payroll), 'gain' => $payroll->overtime_amount, 'retenu' => 0],
             ['numero' => 4, 'designation' => 'CNAPS',                  'base' => $payroll->gross_salary, 'taux' => $payroll->cnaps_rate . '%',     'gain' => 0,                         'retenu' => $payroll->cnaps_amount],
             ['numero' => 5, 'designation' => 'Assurance',              'base' => $payroll->gross_salary, 'taux' => $payroll->assurance_rate . '%', 'gain' => 0,                         'retenu' => $payroll->assurance_amount],
+            ['numero' => 6, 'designation' => 'IRSA',                   'base' => max(0, (float) $payroll->gross_salary - (float) $payroll->cnaps_amount), 'taux' => 'Barème', 'gain' => 0, 'retenu' => $payroll->irsa_amount ?? 0],
         ];
 
         $logoDataUri = function_exists('imagecreatetruecolor')
@@ -48,5 +49,21 @@ trait GeneratesPayslipPdf
         Storage::disk('public')->put($path, $pdf->output());
 
         return $pdf->download($filename);
+    }
+
+    private static function overtimeRateLabel(Payroll $payroll): ?string
+    {
+        $hours = (float) ($payroll->overtime_hours ?? 0);
+        if ($hours <= 0) {
+            return null;
+        }
+
+        $hoursLabel = rtrim(rtrim(number_format($hours, 2, ',', ' '), '0'), ',').' h';
+        $coefficient = (float) ($payroll->overtime_coefficient ?? 0);
+        if ($coefficient <= 0) {
+            return $hoursLabel;
+        }
+
+        return $hoursLabel.' × '.rtrim(rtrim(number_format($coefficient, 2, ',', ' '), '0'), ',');
     }
 }

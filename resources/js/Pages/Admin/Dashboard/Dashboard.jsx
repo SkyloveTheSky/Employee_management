@@ -1,8 +1,10 @@
 import { Head, Link, router } from "@inertiajs/react";
 import BrandMark from "@/Components/BrandMark";
+import HeaderTools from "@/Components/HeaderTools";
 import Sidebar from "../../../Components/Admin/Sidebar";
 import { useState, useEffect } from "react";
 import { colors } from "@/config/colors";
+import { useSidebar } from "@/hooks/useSidebar";
 import Chart_Users from "@/Components/Admin/Charts/Chart_Users";
 import Chart_Payroll from "@/Components/Admin/Charts/Chart_Payroll";
 
@@ -15,7 +17,7 @@ export default function Dashboard({
     periodMonth,
     periodYear,
 }) {
-    const [isOpen, setIsOpen] = useState(true);
+    const { isOpen, setIsOpen, offset } = useSidebar();
     const [chartData, setChartData] = useState([]);
     const [payrollChartData, setPayrollChartData] = useState([]);
 
@@ -52,8 +54,8 @@ export default function Dashboard({
                 setIsOpen={setIsOpen}
             />
 
-            <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
-                <div style={styles.header}>
+            <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
+                <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
                         <h1 style={styles.title}>Tableau de bord</h1>
@@ -61,10 +63,11 @@ export default function Dashboard({
                             Bonjour, {admin.first_name_admin} {admin.name_admin}
                         </p>
                     </div>
+                    <HeaderTools />
                 </div>
 
                 {/* CARDS */}
-                <div style={styles.content}>
+                    <div className="app-cards" style={styles.content}>
                     <div style={styles.card}>
                         <div style={styles.cardHeader}>
                             <img src="/assets/icon/user.svg" alt="Users" style={styles.cardIcon}/>
@@ -204,11 +207,14 @@ const styles = {
         height: "22px",
     },
     chartWrapper: {
-    marginTop: "20px",
-    background: "white",
-    borderRadius: "12px",
-    padding: "20px",
-    border: "1px solid #e2e8f0",
-},
+        marginTop: "20px",
+        background: "white",
+        borderRadius: "12px",
+        padding: "20px",
+        border: "1px solid #e2e8f0",
+        width: "100%",
+        minWidth: 0,
+        overflowX: "auto",
+    },
 
 };

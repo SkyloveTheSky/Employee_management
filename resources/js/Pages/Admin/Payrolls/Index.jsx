@@ -3,16 +3,36 @@ import { Fragment, useState } from "react";
 import axios from "axios";
 import Sidebar from "../../../Components/Admin/Sidebar";
 import BrandMark from "@/Components/BrandMark";
+import ConfirmDialog from "@/Components/ConfirmDialog";
+import HeaderTools from "@/Components/HeaderTools";
+import ScientificCalculator from "@/Components/Admin/ScientificCalculator";
+import { useSidebar } from "@/hooks/useSidebar";
 
 export default function Index({ admin, payrolls, employees, filters = {}, insights = { unpaid: [], missing: [] } }) {
     const { flash } = usePage().props;
     const warnings = flash?.payroll_warnings || [];
-    const [isOpen, setIsOpen] = useState(true);
+    const { isOpen, setIsOpen, offset } = useSidebar();
     const [expandedId, setExpandedId] = useState(null);
     const [question, setQuestion] = useState("");
     const [assistant, setAssistant] = useState(null);
     const [asking, setAsking] = useState(false);
-    const [assistantOpen, setAssistantOpen] = useState(true);
+    const [assistantOpen, setAssistantOpen] = useState(false);
+    const [assistantGreeted, setAssistantGreeted] = useState(false);
+    const [calculatorOpen, setCalculatorOpen] = useState(false);
+    const [pendingDelete, setPendingDelete] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+    const assistantWelcome = {
+        reply: "Bonjour. Comment puis-je vous aider pour la paie aujourd’hui ?",
+        actions: [],
+    };
+
+    const openAssistant = () => {
+        setAssistantOpen(true);
+        if (!assistantGreeted) {
+            setAssistant(assistantWelcome);
+            setAssistantGreeted(true);
+        }
+    };
     const currentDate = new Date();
     const currentMonth = String(currentDate.getFullYear()).padStart(4, '0') + '-' +
                          String(currentDate.getMonth() + 1).padStart(2, '0');
@@ -27,8 +47,7 @@ export default function Index({ admin, payrolls, employees, filters = {}, insigh
         user_id: "",
         period_month_years: [currentMonth],
         prime_amount: 0,
-        overtime_amount: 0,
-        cnaps_rate: 1,
+        overtime_hours: 0,
         assurance_rate: 1,
         payment_method: "virement",
         payment_status: "unpaid",
@@ -40,7 +59,7 @@ export default function Index({ admin, payrolls, employees, filters = {}, insigh
     const submit = (e) => {
         e.preventDefault();
         post(route("admin.payrolls.store"), {
-            onSuccess: () => reset("prime_amount", "overtime_amount", "cnaps_rate", "assurance_rate", "paid_at", "notes", "user_id"),
+            onSuccess: () => reset("prime_amount", "overtime_hours", "assurance_rate", "paid_at", "notes", "user_id"),
         });
     };
 
@@ -129,33 +148,43 @@ export default function Index({ admin, payrolls, employees, filters = {}, insigh
         }, { preserveState: true, preserveScroll: true, replace: true });
     };
 
+    const overtimeRate = (payroll) => {
+        const hours = Number(payroll.overtime_hours || 0);
+        if (hours <= 0) return "-";
+        const hoursLabel = `${hours.toLocaleString("fr-FR")} h`;
+        const coefficient = Number(payroll.overtime_coefficient || 0);
+        return coefficient > 0 ? `${hoursLabel} × ${coefficient.toLocaleString("fr-FR")}` : hoursLabel;
+    };
+
     const buildLines = (payroll) => [
         { numero: 1, designation: "Salaire de base", base: payroll.base_salary, taux: "-", gain: payroll.base_salary, retenu: 0 },
         { numero: 2, designation: "Prime", base: payroll.base_salary, taux: "-", gain: payroll.prime_amount || 0, retenu: 0 },
-        { numero: 3, designation: "Heures supplémentaires", base: payroll.base_salary, taux: "-", gain: payroll.overtime_amount || 0, retenu: 0 },
-        { numero: 4, designation: "CNAPS", base: payroll.gross_salary, taux: `${Number(payroll.cnaps_rate || 1).toFixed(2)}%`, gain: 0, retenu: payroll.cnaps_amount || 0 },
-        { numero: 5, designation: "Assurance", base: payroll.gross_salary, taux: `${Number(payroll.assurance_rate || 1).toFixed(2)}%`, gain: 0, retenu: payroll.assurance_amount || 0 },
+        { numero: 3, designation: "Heures supplémentaires", base: payroll.base_salary, taux: overtimeRate(payroll), gain: payroll.overtime_amount || 0, retenu: 0 },
+        { numero: 4, designation: "CNAPS", base: payroll.gross_salary, taux: `${Number(payroll.cnaps_rate || 0).toFixed(2)}%`, gain: 0, retenu: payroll.cnaps_amount || 0 },
+        { numero: 5, designation: "Assurance", base: payroll.gross_salary, taux: `${Number(payroll.assurance_rate || 0).toFixed(2)}%`, gain: 0, retenu: payroll.assurance_amount || 0 },
+        { numero: 6, designation: "IRSA", base: Math.max(0, Number(payroll.gross_salary || 0) - Number(payroll.cnaps_amount || 0)), taux: "Barème", gain: 0, retenu: payroll.irsa_amount || 0 },
     ];
 
     return (
         <>
-            <Head title="Payrolls" />
+            <Head title="Paie" />
             <Sidebar admin={admin} currentPage="admin.payrolls.index" isOpen={isOpen} setIsOpen={setIsOpen} />
-            <div style={{
+            <div className="app-page" style={{
                 ...styles.page,
-                marginLeft: isOpen ? "280px" : "0px",
-                paddingBottom: assistantOpen ? (assistant?.reply ? "220px" : "120px") : "24px",
+                marginLeft: offset,
+                paddingBottom: assistantOpen || calculatorOpen ? "280px" : "24px",
             }}>
-                <div style={styles.header}>
+                <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
                         <h1 style={styles.title}>Fiches de paie</h1>
                         <p style={styles.subtitle}>Génération semi-automatique et suivi de paiement</p>
                     </div>
+                    <HeaderTools />
                 </div>
 
                 {((insights.unpaid || []).length > 0 || (insights.missing || []).length > 0) && (
-                    <div style={styles.insightGrid}>
+                    <div className="app-grid-2" style={styles.insightGrid}>
                         <div style={styles.insightCard}>
                             <p style={styles.insightLabel}>Non payés (période du contrôle)</p>
                             <p style={styles.insightValue}>{(insights.unpaid || []).length}</p>
@@ -173,7 +202,7 @@ export default function Index({ admin, payrolls, employees, filters = {}, insigh
 
                 <form onSubmit={submit} style={styles.formCard}>
                     <h2 style={styles.sectionTitle}>Générer une ou plusieurs fiches</h2>
-                    <div style={styles.grid}>
+                    <div className="app-grid-3" style={styles.grid}>
                         <div>
                             <label style={styles.label}>Employé</label>
                             <select value={data.user_id} onChange={(e) => setData("user_id", e.target.value)} style={styles.input}>
@@ -188,7 +217,7 @@ export default function Index({ admin, payrolls, employees, filters = {}, insigh
                         </div>
                         <div style={{ gridColumn: "span 2" }}>
                             <label style={styles.label}>Périodes (un ou plusieurs mois)</label>
-                            <div style={styles.monthList}>
+                            <div className="app-month-list" style={styles.monthList}>
                                 {monthsList.map((month) => (
                                     <label key={month.value} style={styles.monthItem}>
                                         <input
@@ -221,14 +250,9 @@ export default function Index({ admin, payrolls, employees, filters = {}, insigh
                             {errors.prime_amount && <p style={styles.error}>{errors.prime_amount}</p>}
                         </div>
                         <div>
-                            <label style={styles.label}>Heures supplémentaires (Ar)</label>
-                            <input type="number" min="0" step="1" value={data.overtime_amount} onChange={(e) => setData("overtime_amount", e.target.value)} style={styles.input} />
-                            {errors.overtime_amount && <p style={styles.error}>{errors.overtime_amount}</p>}
-                        </div>
-                        <div>
-                            <label style={styles.label}>Taux CNAPS (%)</label>
-                            <input type="number" min="0" max="100" step="0.01" value={data.cnaps_rate} onChange={(e) => setData("cnaps_rate", e.target.value)} style={styles.input} />
-                            {errors.cnaps_rate && <p style={styles.error}>{errors.cnaps_rate}</p>}
+                            <label style={styles.label}>Heures supplémentaires (h)</label>
+                            <input type="number" min="0" step="0.25" value={data.overtime_hours} onChange={(e) => setData("overtime_hours", e.target.value)} style={styles.input} />
+                            {errors.overtime_hours && <p style={styles.error}>{errors.overtime_hours}</p>}
                         </div>
                         <div>
                             <label style={styles.label}>Taux Assurance (%)</label>
@@ -276,9 +300,9 @@ export default function Index({ admin, payrolls, employees, filters = {}, insigh
                     </button>
                 </form>
 
-                <div style={styles.tableContainer}>
+                <div className="app-table-wrap" style={styles.tableContainer}>
                     <h2 style={styles.sectionTitle}>Suivi des paiements</h2>
-                    <div style={styles.filterGrid}>
+                    <div className="app-filter-grid" style={styles.filterGrid}>
                         <div>
                             <label style={styles.label}>Période</label>
                             <select
@@ -368,9 +392,7 @@ export default function Index({ admin, payrolls, employees, filters = {}, insigh
                                                 <button onClick={() => router.visit(route("admin.payrolls.edit", payroll.id))} style={styles.editButton}>Modifier</button>
                                                 <button onClick={() => window.open(route("admin.payrolls.pdf", payroll.id), "_blank")} style={styles.pdfButton}>PDF</button>
                                                 <button
-                                                    onClick={() => {
-                                                        if (confirm("Supprimer cette fiche de paie ?")) router.delete(route("admin.payrolls.delete", payroll.id));
-                                                    }}
+                                                    onClick={() => setPendingDelete(payroll)}
                                                     style={styles.deleteButton}
                                                 >
                                                     Supprimer
@@ -438,53 +460,90 @@ export default function Index({ admin, payrolls, employees, filters = {}, insigh
                 </div>
             </div>
 
-            {assistantOpen ? (
-                <div style={{
-                    ...styles.floatBar,
-                    left: isOpen ? "300px" : "16px",
-                }}>
-                    <div style={styles.floatHeader}>
-                        <span style={styles.floatLabel}>Assistant paie</span>
-                        <button type="button" onClick={() => setAssistantOpen(false)} style={styles.floatClose} aria-label="Fermer l'assistant">
-                            Fermer
-                        </button>
-                    </div>
-                    {assistant?.reply && (
-                        <div style={styles.floatReply}>
-                            <p style={styles.assistantReply}>{assistant.reply}</p>
-                            {(assistant.actions || []).map((action) => (
-                                <button key={action.label} type="button" style={styles.suggestButton} onClick={() => runAssistantAction(action)}>
-                                    {action.label}
-                                </button>
-                            ))}
+            <div className="app-tools-dock" style={styles.toolsDock}>
+                {calculatorOpen && (
+                    <ScientificCalculator onClose={() => setCalculatorOpen(false)} />
+                )}
+                {assistantOpen && (
+                    <div style={styles.floatBar}>
+                        <div style={styles.floatHeader}>
+                            <img src="/assets/icon/bot.svg" alt="" style={styles.headerBotIcon} />
+                            <button type="button" onClick={() => setAssistantOpen(false)} style={styles.floatClose} aria-label="Fermer l'assistant">
+                                Fermer
+                            </button>
                         </div>
-                    )}
-                    <form onSubmit={askAssistant} style={styles.assistantRow}>
-                        <input
-                            value={question}
-                            onChange={(e) => setQuestion(e.target.value)}
-                            placeholder="Ex. Génère mars pour ceux sans fiche / Qui n’est pas payé ce mois-ci ?"
-                            style={styles.floatInput}
-                        />
-                        <button type="submit" disabled={asking} style={styles.button}>{asking ? "Analyse..." : "Demander"}</button>
-                    </form>
-                </div>
-            ) : (
-                <button
-                    type="button"
-                    onClick={() => setAssistantOpen(true)}
-                    style={styles.floatToggle}
-                    aria-label="Ouvrir l'assistant paie"
-                >
-                    Assistant paie
-                </button>
-            )}
+                        {assistant?.reply && (
+                            <div style={styles.floatReply}>
+                                <p style={styles.assistantReply}>{assistant.reply}</p>
+                                {(assistant.actions || []).map((action) => (
+                                    <button key={action.label} type="button" style={styles.suggestButton} onClick={() => runAssistantAction(action)}>
+                                        {action.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        <form onSubmit={askAssistant} style={styles.assistantRow}>
+                            <input
+                                value={question}
+                                onChange={(e) => setQuestion(e.target.value)}
+                                placeholder="Ex. Génère mars pour ceux sans fiche / Qui n’est pas payé ce mois-ci ?"
+                                style={styles.floatInput}
+                            />
+                            <button type="submit" disabled={asking} style={styles.button}>{asking ? "Analyse..." : "Demander"}</button>
+                        </form>
+                    </div>
+                )}
+                {(!calculatorOpen || !assistantOpen) && (
+                    <div style={styles.floatToggles}>
+                        {!calculatorOpen && (
+                            <button
+                                type="button"
+                                onClick={() => setCalculatorOpen(true)}
+                                style={styles.iconToggle}
+                                aria-label="Ouvrir la calculatrice"
+                                title="Calculatrice"
+                            >
+                                <img src="/assets/icon/calculator.svg" alt="" style={styles.toggleIcon} />
+                            </button>
+                        )}
+                        {!assistantOpen && (
+                            <button
+                                type="button"
+                                onClick={openAssistant}
+                                style={styles.iconToggle}
+                                aria-label="Ouvrir l'assistant paie"
+                                title="Assistant paie"
+                            >
+                                <img src="/assets/icon/bot.svg" alt="" style={styles.toggleIcon} />
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
+            <ConfirmDialog
+                show={!!pendingDelete}
+                title="Supprimer cette fiche de paie ?"
+                message="La fiche sera définitivement retirée. Cette action est irréversible."
+                processing={deleting}
+                onConfirm={() => {
+                    if (!pendingDelete) return;
+                    setDeleting(true);
+                    router.delete(route("admin.payrolls.delete", pendingDelete.id), {
+                        preserveScroll: true,
+                        onFinish: () => {
+                            setDeleting(false);
+                            setPendingDelete(null);
+                        },
+                    });
+                }}
+                onClose={() => !deleting && setPendingDelete(null)}
+            />
         </>
     );
 }
 
 const styles = {
-    page: { minHeight: "100vh", background: "#ffffff", fontFamily: "system-ui, sans-serif", padding: "24px", transition: "margin-left 0.3s ease" },
+    page: { minHeight: "100vh", background: "var(--color-background)", fontFamily: "system-ui, sans-serif", padding: "24px", transition: "margin-left 0.3s ease" },
     header: { display: "flex", alignItems: "center", gap: "16px", background: "white", padding: "20px 24px", borderRadius: "12px", marginBottom: "24px", border: "1px solid #e2e8f0" },
     logo: { width: "44px", height: "44px", background: "var(--color-primary)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "16px", flexShrink: 0 },
     title: { fontSize: "18px", fontWeight: "600", color: "#1a202c", margin: 0 },
@@ -495,36 +554,50 @@ const styles = {
     assistantReply: { margin: "0 0 8px", fontSize: "13px", color: "#e2e8f0", lineHeight: 1.45 },
     suggestButton: { marginRight: "8px", marginTop: "4px", padding: "6px 10px", background: "#2d3748", color: "white", border: "1px solid #4a5568", borderRadius: "8px", cursor: "pointer", fontSize: "12px" },
     floatBar: {
-        position: "fixed",
-        bottom: "16px",
-        right: "16px",
-        zIndex: 1200,
         background: "#1a202c",
         border: "1px solid #2d3748",
         borderRadius: "12px",
         padding: "12px 14px",
         boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
-        maxWidth: "none",
-        width: "auto",
+        width: "min(520px, calc(100vw - 48px))",
     },
-    floatLabel: { color: "white", fontSize: "12px", fontWeight: 600, whiteSpace: "nowrap" },
-    floatHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" },
-    floatClose: { background: "transparent", color: "#a0aec0", border: "1px solid #4a5568", borderRadius: "6px", padding: "4px 8px", fontSize: "12px", cursor: "pointer" },
-    floatToggle: {
+    toolsDock: {
         position: "fixed",
         bottom: "16px",
         right: "16px",
         zIndex: 1200,
-        background: "#0d6efd",
-        color: "white",
-        border: "none",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-end",
+        gap: "10px",
+        maxWidth: "min(520px, calc(100vw - 32px))",
+    },
+    floatToggles: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-end",
+        gap: "8px",
+    },
+    iconToggle: {
+        width: "44px",
+        height: "44px",
         borderRadius: "999px",
-        padding: "12px 16px",
-        fontSize: "13px",
-        fontWeight: 600,
+        border: "none",
+        background: "#2d3748",
         cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
     },
+    toggleIcon: {
+        width: "22px",
+        height: "22px",
+        filter: "invert(1)",
+    },
+    headerBotIcon: { width: "22px", height: "22px", filter: "invert(1)" },
+    floatHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" },
+    floatClose: { background: "transparent", color: "#a0aec0", border: "1px solid #4a5568", borderRadius: "6px", padding: "4px 8px", fontSize: "12px", cursor: "pointer" },
     floatInput: { flex: 1, border: "1px solid #4a5568", background: "#2d3748", color: "white", borderRadius: "8px", padding: "9px 10px", fontSize: "13px", boxSizing: "border-box" },
     floatReply: { marginBottom: "10px", paddingBottom: "10px", borderBottom: "1px solid #2d3748" },
     insightGrid: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "12px", marginBottom: "24px" },
@@ -539,7 +612,7 @@ const styles = {
     grid: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "12px", marginBottom: "14px" },
     label: { display: "block", fontSize: "12px", marginBottom: "6px", color: "#4a5568" },
     input: { width: "100%", border: "1px solid #cbd5e0", borderRadius: "8px", padding: "9px 10px", fontSize: "13px", boxSizing: "border-box" },
-    button: { background: "#0d6efd", color: "white", border: "none", borderRadius: "8px", padding: "10px 14px", fontSize: "13px", cursor: "pointer" },
+    button: { background: "var(--color-primary)", color: "white", border: "none", borderRadius: "8px", padding: "10px 14px", fontSize: "13px", cursor: "pointer" },
     error: { marginTop: "4px", marginBottom: 0, color: "#e53e3e", fontSize: "12px" },
     monthList: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "6px", maxHeight: "180px", overflow: "auto", border: "1px solid #cbd5e0", borderRadius: "8px", padding: "10px" },
     monthItem: { display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#2d3748", cursor: "pointer" },
@@ -562,7 +635,7 @@ const styles = {
     detailToggle: { border: "1px solid #e2e8f0", background: "white", borderRadius: "6px", width: "28px", height: "28px", cursor: "pointer", fontSize: "12px" },
     pagination: { display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "16px" },
     pageBtn: { padding: "6px 10px", border: "1px solid #e2e8f0", background: "white", borderRadius: "6px", cursor: "pointer", fontSize: "12px" },
-    pageActive: { padding: "6px 10px", border: "1px solid #0d6efd", background: "#0d6efd", color: "white", borderRadius: "6px", cursor: "pointer", fontSize: "12px" },
+    pageActive: { padding: "6px 10px", border: "1px solid var(--color-primary)", background: "var(--color-primary)", color: "white", borderRadius: "6px", cursor: "pointer", fontSize: "12px" },
     pageInfo: { fontSize: "12px", color: "#718096", margin: "10px 0 0" },
 };
 

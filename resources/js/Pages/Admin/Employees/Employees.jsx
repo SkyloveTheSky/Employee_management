@@ -1,10 +1,15 @@
 import { Head, router } from "@inertiajs/react";
-import BrandMark from "@/Components/BrandMark";
-import Sidebar from "../../../Components/Admin/Sidebar";
 import { useState } from "react";
+import BrandMark from "@/Components/BrandMark";
+import ConfirmDialog from "@/Components/ConfirmDialog";
+import HeaderTools from "@/Components/HeaderTools";
+import Sidebar from "../../../Components/Admin/Sidebar";
+import { useSidebar } from "@/hooks/useSidebar";
 
 export default function Employees({ admin, employees, isOpen: initialOpen = true }) {
-    const [isOpen, setIsOpen] = useState(initialOpen);
+    const { isOpen, setIsOpen, offset } = useSidebar();
+    const [pendingDelete, setPendingDelete] = useState(null);
+    const [deleting, setDeleting] = useState(false);
     const formatDate = (value) => {
         if (!value) return "-";
         const date = new Date(value);
@@ -17,18 +22,23 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
     };
     const formatAr = (value) => `${Number(value || 0).toLocaleString("fr-FR")} Ar`;
 
-    const handleDelete = (id, name) => {
-        if (confirm(`Êtes-vous sûr de vouloir supprimer ${name} ?`)) {
-            router.delete(route('admin.employees.delete', id));
-        }
+    const confirmDelete = () => {
+        if (!pendingDelete) return;
+        setDeleting(true);
+        router.delete(route("admin.employees.delete", pendingDelete.id), {
+            onFinish: () => {
+                setDeleting(false);
+                setPendingDelete(null);
+            },
+        });
     };
 
     return (
         <>
             <Head title="Employés" />
             <Sidebar admin={admin} currentPage="admin.employees" isOpen={isOpen} setIsOpen={setIsOpen} />
-            <div style={{ ...styles.page, marginLeft: isOpen ? "280px" : "0px" }}>
-                <div style={styles.header}>
+            <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
+                <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
                         <h1 style={styles.title}>Gestion des Employés</h1>
@@ -36,15 +46,23 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
                             Gérez et consultez la liste des employés
                         </p>
                     </div>
+                    <HeaderTools />
+                </div>
+
+                <div style={styles.toolbar}>
+                    <p style={styles.toolbarHint}>
+                        {employees?.length || 0} employé{(employees?.length || 0) > 1 ? "s" : ""}
+                    </p>
                     <button
-                        onClick={() => router.visit(route('admin.employees.create'))}
+                        type="button"
+                        onClick={() => router.visit(route("admin.employees.create"))}
                         style={styles.createButton}
                     >
-                        + Créer un Employé
+                        + Créer un employé
                     </button>
                 </div>
 
-                <div style={styles.tableContainer}>
+                <div className="app-table-wrap" style={styles.tableContainer}>
                     <table style={styles.table}>
                         <thead>
                             <tr>
@@ -90,7 +108,12 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
                                                 Modifier
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(employee.id, `${employee.first_name} ${employee.last_name}`)}
+                                                onClick={() =>
+                                                    setPendingDelete({
+                                                        id: employee.id,
+                                                        name: `${employee.first_name} ${employee.last_name}`,
+                                                    })
+                                                }
                                                 style={styles.deleteButton}
                                             >
                                                 Supprimer
@@ -109,6 +132,18 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
                     </table>
                 </div>
             </div>
+            <ConfirmDialog
+                show={!!pendingDelete}
+                title="Supprimer cet employé ?"
+                message={
+                    pendingDelete
+                        ? `Voulez-vous vraiment supprimer ${pendingDelete.name} ? Cette action est irréversible.`
+                        : ""
+                }
+                processing={deleting}
+                onConfirm={confirmDelete}
+                onClose={() => !deleting && setPendingDelete(null)}
+            />
         </>
     );
 }
@@ -116,7 +151,7 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
 const styles = {
     page: {
         minHeight: "100vh",
-        background: "#ffffff",
+        background: "var(--color-background)",
         fontFamily: "system-ui, sans-serif",
         padding: "24px",
         transition: "margin-left 0.3s ease",
@@ -156,9 +191,8 @@ const styles = {
         margin: 0,
     },
     createButton: {
-        marginLeft: "auto",
         padding: "10px 16px",
-        background: "#0d6efd",
+        background: "var(--color-primary)",
         color: "white",
         border: "none",
         borderRadius: "8px",
@@ -166,6 +200,20 @@ const styles = {
         fontWeight: "600",
         cursor: "pointer",
         transition: "all 0.2s",
+    },
+    toolbar: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "12px",
+        marginBottom: "16px",
+        flexWrap: "wrap",
+    },
+    toolbarHint: {
+        margin: 0,
+        fontSize: "13px",
+        color: "#718096",
+        fontWeight: 600,
     },
     tableContainer: {
         background: "white",

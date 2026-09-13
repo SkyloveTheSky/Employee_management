@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Models\CompanySetting;
+use App\Services\Inbox\Inbox;
+use App\Services\Payroll\IrsaScale;
 use App\Support\Theme;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -43,7 +45,33 @@ class HandleInertiaRequests extends Middleware
             'company' => [
                 'name' => $settings?->company_name,
                 'logo_url' => $settings?->logo_path && Storage::disk('public')->exists($settings->logo_path)
-                    ? Storage::url($settings->logo_path)
+                    ? '/storage/'.ltrim($settings->logo_path, '/')
+                    : null,
+                'overtime' => Schema::hasColumn('company_settings', 'overtime_divisor')
+                    ? [
+                        'hours_per_day' => $settings?->overtime_hours_per_day,
+                        'weekly_goal' => $settings?->overtime_weekly_goal,
+                        'divisor' => $settings?->overtime_divisor,
+                        'coefficient' => $settings?->overtime_coefficient,
+                    ]
+                    : null,
+                'contributions' => Schema::hasColumn('company_settings', 'cnaps_percent')
+                    ? [
+                        'cnaps' => Schema::hasColumn('company_settings', 'cnaps_employee_percent')
+                            && $settings?->cnaps_employee_percent !== null
+                            ? $settings->cnaps_employee_percent
+                            : $settings?->cnaps_percent,
+                        'cnaps_employer' => Schema::hasColumn('company_settings', 'cnaps_employer_percent')
+                            ? $settings?->cnaps_employer_percent
+                            : null,
+                        'cnaps_employee' => Schema::hasColumn('company_settings', 'cnaps_employee_percent')
+                            ? $settings?->cnaps_employee_percent
+                            : $settings?->cnaps_percent,
+                        'irsa' => $settings?->irsa_percent,
+                        'irsa_brackets' => Schema::hasColumn('company_settings', 'irsa_brackets')
+                            ? IrsaScale::normalize($settings?->irsa_brackets)
+                            : IrsaScale::defaults(),
+                    ]
                     : null,
             ],
             'theme' => Theme::merge(
@@ -51,6 +79,7 @@ class HandleInertiaRequests extends Middleware
                     ? $settings->display_theme
                     : null
             ),
+            'inbox' => app(Inbox::class)->payload($request),
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'payroll_warnings' => $request->session()->get('payroll_warnings'),

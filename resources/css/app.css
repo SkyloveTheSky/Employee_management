@@ -8,3 +8,126 @@
     --color-tertiary: #0c0950;
     --color-background: #ffffff;
 }
+
+html,
+body,
+#app {
+    max-width: 100%;
+    background: var(--color-background);
+}
+
+#nprogress .bar {
+    background: var(--color-primary) !important;
+}
+
+img,
+svg,
+video {
+    max-width: 100%;
+    height: auto;
+}
+
+.app-page {
+    box-sizing: border-box;
+    min-width: 0;
+    width: auto;
+    background: var(--color-background);
+}
+
+.app-header {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.app-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.app-menu-fab {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 1102;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 10px;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgb(0 0 0 / 0.2);
+}
+
+.app-sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgb(0 0 0 / 0.45);
+    z-index: 999;
+}
+
+@media (max-width: 767px) {
+    html,
+    body,
+    #app {
+        overflow-x: hidden;
+    }
+
+    .app-page {
+        padding: 16px !important;
+        padding-top: 64px !important;
+    }
+
+    .app-header {
+        flex-wrap: wrap !important;
+        padding: 14px 16px !important;
+        gap: 12px !important;
+    }
+
+    .app-cards,
+    .app-grid-3,
+    .app-grid-2,
+    .app-filter-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .app-month-list {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    .app-agenda-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-inline: -8px;
+        padding-inline: 8px;
+    }
+
+    .app-agenda-grid,
+    .app-agenda-head {
+        min-width: 560px;
+    }
+
+    .app-tools-dock {
+        right: 12px !important;
+        left: auto !important;
+        max-width: calc(100vw - 24px) !important;
+    }
+
+    .app-toolbar {
+        justify-content: center;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+    .app-cards,
+    .app-grid-3,
+    .app-filter-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
