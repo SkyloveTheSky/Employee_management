@@ -1,6 +1,9 @@
 import { useForm, usePage } from "@inertiajs/react";
 import { useEffect, useRef, useState } from "react";
+import ConfirmDialog from "@/Components/ConfirmDialog";
 import { colors } from "@/config/colors";
+import useInboxLive from "@/hooks/useInboxLive";
+import { inboxDelete } from "@/lib/inboxRequest";
 
 const EMOJI_GROUPS = [
     {
@@ -45,14 +48,26 @@ function formatSize(bytes) {
 }
 
 export default function MessageThread({
-    messages = [],
+    messages: initialMessages = [],
     me = "user",
     otherLabel = "RH",
     otherIcon = "/assets/icon/building.svg",
     storeUrl,
+    pollUrl,
+    deleteUrl,
+    clearUrl,
     emptyText = "Aucun message.",
 }) {
     const { errors } = usePage().props;
+    const { data: live, refresh } = useInboxLive(pollUrl, { enabled: Boolean(pollUrl) });
+    const liveMessages = Array.isArray(live?.messages) ? live.messages : null;
+    const lastInitial = Number(initialMessages[initialMessages.length - 1]?.id || 0);
+    const lastLive = Number(liveMessages?.[liveMessages.length - 1]?.id || 0);
+    const [hiddenIds, setHiddenIds] = useState([]);
+    const [pending, setPending] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+    const source = liveMessages && lastLive >= lastInitial ? liveMessages : initialMessages;
+    const messages = source.filter((message) => !hiddenIds.includes(message.id));
     const { data, setData, post, processing, reset } = useForm({
         body: "",
         attachments: [],
@@ -96,6 +111,8 @@ export default function MessageThread({
         post(storeUrl, {
             forceFormData: true,
             preserveScroll: true,
+            preserveState: true,
+            only: ["messages", "inbox", "errors"],
             onSuccess: () => {
                 reset("body", "attachments");
                 if (fileInput.current) fileInput.current.value = "";
@@ -131,8 +148,41 @@ export default function MessageThread({
         });
     };
 
+    const runDelete = async () => {
+        if (!pending?.url) return;
+        setDeleting(true);
+        try {
+            await inboxDelete(pending.url);
+            if (pending.type === "one") {
+                setHiddenIds((current) => [...current, pending.id]);
+            } else {
+                setHiddenIds(source.map((message) => message.id));
+            }
+            setPending(null);
+            await refresh();
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     return (
         <div style={styles.card}>
+            {clearUrl && messages.length > 0 && (
+                <div style={styles.threadTools}>
+                    <button
+                        type="button"
+                        style={styles.clearBtn}
+                        onClick={() => setPending({
+                            type: "all",
+                            url: clearUrl,
+                            title: "Vider la conversation ?",
+                            message: "Tous les messages de cette conversation seront supprimés.",
+                        })}
+                    >
+                        Vider la conversation
+                    </button>
+                </div>
+            )}
             <div style={styles.thread}>
                 {messages.length === 0 ? (
                     <p style={styles.empty}>{emptyText}</p>
@@ -165,7 +215,29 @@ export default function MessageThread({
                                         color: mine ? "white" : colors.dark,
                                     }}
                                 >
-                                    <p style={styles.bubbleAuthor}>{mine ? "Vous" : otherLabel}</p>
+                                    <p style={{ ...styles.bubbleAuthor, display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
+                                        <span>{mine ? "Vous" : otherLabel}</span>
+                                        {deleteUrl && (
+                                            <button
+                                                type="button"
+                                                style={{
+                                                    ...styles.bubbleDelete,
+                                                    color: mine ? "rgba(255,255,255,0.85)" : colors.muted,
+                                                }}
+                                                title="Supprimer"
+                                                aria-label="Supprimer ce message"
+                                                onClick={() => setPending({
+                                                    type: "one",
+                                                    id: message.id,
+                                                    url: deleteUrl(message.id),
+                                                    title: "Supprimer ce message ?",
+                                                    message: "Le message sera retiré définitivement.",
+                                                })}
+                                            >
+                                                ×
+                                            </button>
+                                        )}
+                                    </p>
                                     {message.body ? <p style={styles.bubbleBody}>{message.body}</p> : null}
                                     {(message.attachments || []).length > 0 && (
                                         <div style={styles.files}>
@@ -300,6 +372,14 @@ export default function MessageThread({
                     <img src="/assets/icon/send.svg" alt="" style={styles.sendIcon} />
                 </button>
             </form>
+            <ConfirmDialog
+                show={!!pending}
+                title={pending?.title}
+                message={pending?.message}
+                processing={deleting}
+                onConfirm={runDelete}
+                onClose={() => !deleting && setPending(null)}
+            />
         </div>
     );
 }
@@ -307,6 +387,9 @@ export default function MessageThread({
 const styles = {
     card: { background: "white", borderRadius: "12px", border: `1px solid ${colors.border}`, padding: "16px", display: "flex", flexDirection: "column", minHeight: "60vh" },
     thread: { flex: 1, display: "flex", flexDirection: "column", gap: "12px", overflow: "auto", padding: "8px 4px 16px" },
+    threadTools: { display: "flex", justifyContent: "flex-end", marginBottom: "8px" },
+    clearBtn: { border: "none", background: "transparent", color: colors.error, fontSize: "12px", fontWeight: 600, cursor: "pointer", padding: 0 },
+    bubbleDelete: { border: "none", background: "transparent", cursor: "pointer", fontSize: "16px", lineHeight: 1, padding: 0 },
     empty: { margin: "auto", color: colors.muted, fontSize: "14px" },
     row: { display: "flex", alignItems: "flex-end", gap: "8px", maxWidth: "100%" },
     avatar: { width: "32px", height: "32px", borderRadius: "50%", padding: "6px", boxSizing: "border-box", flexShrink: 0 },

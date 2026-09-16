@@ -1,9 +1,13 @@
 import { Head, Link } from "@inertiajs/react";
+import { useState } from "react";
 import BrandMark from "@/Components/BrandMark";
+import ConfirmDialog from "@/Components/ConfirmDialog";
 import HeaderTools from "@/Components/HeaderTools";
 import Sidebar from "@/Components/Admin/Sidebar";
 import { colors } from "@/config/colors";
+import useInboxLive from "@/hooks/useInboxLive";
 import { useSidebar } from "@/hooks/useSidebar";
+import { inboxDelete } from "@/lib/inboxRequest";
 
 function formatWhen(value) {
     if (!value) return "Aucun message";
@@ -17,8 +21,24 @@ function formatWhen(value) {
     }).format(date);
 }
 
-export default function Index({ admin, threads = [] }) {
+export default function Index({ admin, threads: initialThreads = [] }) {
     const { isOpen, setIsOpen, offset } = useSidebar();
+    const { data: live, refresh } = useInboxLive(`${route("admin.messages.live")}?threads=1`);
+    const threads = Array.isArray(live?.threads) ? live.threads : initialThreads;
+    const [pending, setPending] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const runDelete = async () => {
+        if (!pending) return;
+        setDeleting(true);
+        try {
+            await inboxDelete(route("admin.messages.destroy-thread", pending.id));
+            setPending(null);
+            await refresh();
+        } finally {
+            setDeleting(false);
+        }
+    };
 
     return (
         <>
@@ -39,30 +59,51 @@ export default function Index({ admin, threads = [] }) {
                         <p style={styles.empty}>Aucun employé pour le moment.</p>
                     ) : (
                         threads.map((thread) => (
-                            <Link key={thread.id} href={route("admin.messages.show", thread.id)} style={styles.row}>
-                                <div style={styles.avatar}>
-                                    {thread.photo_path ? (
-                                        <img src={`/storage/${thread.photo_path}`} alt="" style={styles.avatarImg} />
-                                    ) : (
-                                        thread.name?.slice(0, 2).toUpperCase()
-                                    )}
-                                </div>
-                                <div style={styles.meta}>
-                                    <p style={styles.name}>
-                                        {thread.name}
-                                        {thread.unread > 0 && <span style={styles.unread}>{thread.unread}</span>}
-                                    </p>
-                                    <p style={styles.preview}>
-                                        {thread.last_author === "admin" ? "Vous : " : ""}
-                                        {thread.last_body || "Aucun message"}
-                                    </p>
-                                </div>
-                                <span style={styles.when}>{formatWhen(thread.last_at)}</span>
-                            </Link>
+                            <div key={thread.id} style={styles.rowWrap}>
+                                <Link href={route("admin.messages.show", thread.id)} style={styles.row}>
+                                    <div style={styles.avatar}>
+                                        {thread.photo_path ? (
+                                            <img src={`/storage/${thread.photo_path}`} alt="" style={styles.avatarImg} />
+                                        ) : (
+                                            thread.name?.slice(0, 2).toUpperCase()
+                                        )}
+                                    </div>
+                                    <div style={styles.meta}>
+                                        <p style={styles.name}>
+                                            {thread.name}
+                                            {thread.unread > 0 && <span style={styles.unread}>{thread.unread}</span>}
+                                        </p>
+                                        <p style={styles.preview}>
+                                            {thread.last_author === "admin" ? "Vous : " : ""}
+                                            {thread.last_body || "Aucun message"}
+                                        </p>
+                                    </div>
+                                    <span style={styles.when}>{formatWhen(thread.last_at)}</span>
+                                </Link>
+                                {thread.last_at && (
+                                    <button
+                                        type="button"
+                                        style={styles.deleteBtn}
+                                        title="Supprimer la conversation"
+                                        aria-label={`Supprimer la conversation avec ${thread.name}`}
+                                        onClick={() => setPending(thread)}
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </div>
                         ))
                     )}
                 </div>
             </div>
+            <ConfirmDialog
+                show={!!pending}
+                title="Supprimer cette conversation ?"
+                message={`Tous les messages avec ${pending?.name || "cet employé"} seront retirés définitivement.`}
+                processing={deleting}
+                onConfirm={runDelete}
+                onClose={() => !deleting && setPending(null)}
+            />
         </>
     );
 }
@@ -74,7 +115,9 @@ const styles = {
     subtitle: { fontSize: "13px", color: colors.muted, margin: 0 },
     list: { background: "white", borderRadius: "12px", border: `1px solid ${colors.border}`, overflow: "hidden" },
     empty: { padding: "24px", color: colors.muted, margin: 0 },
-    row: { display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", borderBottom: `1px solid ${colors.border}`, textDecoration: "none", color: colors.dark },
+    rowWrap: { display: "flex", alignItems: "center", borderBottom: `1px solid ${colors.border}` },
+    row: { flex: 1, display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", textDecoration: "none", color: colors.dark, minWidth: 0 },
+    deleteBtn: { border: "none", background: "transparent", color: colors.muted, cursor: "pointer", fontSize: "22px", lineHeight: 1, padding: "0 16px 0 0", flexShrink: 0 },
     avatar: { width: "40px", height: "40px", borderRadius: "50%", background: "var(--color-primary)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "12px", overflow: "hidden", flexShrink: 0 },
     avatarImg: { width: "100%", height: "100%", objectFit: "cover" },
     meta: { flex: 1, minWidth: 0 },

@@ -124,6 +124,84 @@ class Inbox
         return [$body, $files];
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function adminThreads(): array
+    {
+        $employees = User::query()
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'last_name', 'position', 'photo_path']);
+
+        $latest = collect();
+        $unread = collect();
+
+        if ($this->ready()) {
+            $latestIds = InboxMessage::query()
+                ->selectRaw('max(id) as id')
+                ->groupBy('user_id')
+                ->pluck('id');
+
+            $latest = InboxMessage::query()
+                ->whereIn('id', $latestIds)
+                ->get()
+                ->keyBy('user_id');
+
+            $unread = InboxMessage::query()
+                ->where('author', 'user')
+                ->whereNull('read_at')
+                ->selectRaw('user_id, count(*) as total')
+                ->groupBy('user_id')
+                ->pluck('total', 'user_id');
+        }
+
+        return $employees->map(function (User $user) use ($latest, $unread) {
+            $last = $latest->get($user->id);
+
+            return [
+                'id' => $user->id,
+                'name' => trim($user->first_name.' '.$user->last_name),
+                'position' => $user->position,
+                'photo_path' => $user->photo_path,
+                'last_body' => $last
+                    ? (trim((string) $last->body) !== '' ? $last->body : 'Pièce jointe')
+                    : null,
+                'last_at' => $last?->created_at?->toIso8601String(),
+                'last_author' => $last?->author,
+                'unread' => (int) ($unread[$user->id] ?? 0),
+            ];
+        })->sortByDesc(function (array $thread) {
+            return [$thread['unread'] > 0 ? 1 : 0, $thread['last_at'] ?? ''];
+        })->values()->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function threadMessages(int $userId, string $downloadRoute, bool $markRead = false, ?string $reader = null): array
+    {
+        if (! $this->ready()) {
+            return [];
+        }
+
+        if ($markRead && $reader === 'admin') {
+            $this->markThreadReadForAdmin($userId);
+        }
+
+        if ($markRead && $reader === 'user') {
+            $this->markThreadReadForUser($userId);
+        }
+
+        return InboxMessage::query()
+            ->where('user_id', $userId)
+            ->orderBy('id')
+            ->get()
+            ->map(fn (InboxMessage $message) => $this->present($message, $downloadRoute))
+            ->values()
+            ->all();
+    }
+
     public function present(InboxMessage $message, string $downloadRoute): array
     {
         $files = [];
@@ -252,6 +330,58 @@ class Inbox
         $query->update(['read_at' => now()]);
     }
 
+    public function deleteMessage(InboxMessage $message): void
+    {
+        $this->deleteAttachments($message);
+        $message->delete();
+    }
+
+    public function deleteThread(int $userId): void
+    {
+        if (! Schema::hasTable('inbox_messages')) {
+            return;
+        }
+
+        InboxMessage::query()
+            ->where('user_id', $userId)
+            ->get()
+            ->each(fn (InboxMessage $message) => $this->deleteMessage($message));
+    }
+
+    public function deleteNotification(int $id, string $audience, ?int $userId = null): void
+    {
+        $query = PlatformNotification::query()
+            ->where('id', $id)
+            ->where('audience', $audience);
+
+        if ($audience === 'user') {
+            $query->where('user_id', $userId);
+        }
+
+        $query->delete();
+    }
+
+    public function deleteAllNotifications(string $audience, ?int $userId = null): void
+    {
+        $query = PlatformNotification::query()->where('audience', $audience);
+
+        if ($audience === 'user') {
+            $query->where('user_id', $userId);
+        }
+
+        $query->delete();
+    }
+
+    private function deleteAttachments(InboxMessage $message): void
+    {
+        foreach ($message->attachments ?? [] as $file) {
+            $path = $file['path'] ?? null;
+            if (is_string($path) && $path !== '' && $this->disk()->exists($path)) {
+                $this->disk()->delete($path);
+            }
+        }
+    }
+
     private function userPayload(User $user): array
     {
         $messages = InboxMessage::query()
@@ -261,6 +391,7 @@ class Inbox
             ->get()
             ->map(fn (InboxMessage $message) => [
                 'id' => $message->id,
+                'user_id' => $message->user_id,
                 'preview' => $this->previewText($message),
                 'from' => $message->author === 'admin' ? 'RH' : 'Vous',
                 'at' => $message->created_at?->toIso8601String(),
@@ -300,6 +431,7 @@ class Inbox
 
             return [
                 'id' => $message->id,
+                'user_id' => $message->user_id,
                 'preview' => $this->previewText($message),
                 'from' => $name,
                 'at' => $message->created_at?->toIso8601String(),

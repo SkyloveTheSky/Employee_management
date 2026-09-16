@@ -1,6 +1,9 @@
-import { Link, router, useForm, usePage } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import { useEffect, useRef, useState } from "react";
+import ConfirmDialog from "@/Components/ConfirmDialog";
 import { colors } from "@/config/colors";
+import useInboxLive from "@/hooks/useInboxLive";
+import { inboxDelete } from "@/lib/inboxRequest";
 
 function formatWhen(value) {
     if (!value) return "";
@@ -15,10 +18,17 @@ function formatWhen(value) {
 }
 
 export default function HeaderTools({ children }) {
-    const { inbox } = usePage().props;
+    const { inbox: pageInbox } = usePage().props;
+    const isAdmin = pageInbox?.role === "admin";
+    const liveUrl = pageInbox?.role
+        ? (isAdmin ? route("admin.messages.live") : route("messages.live"))
+        : null;
+    const { data: live, refresh } = useInboxLive(liveUrl, { enabled: Boolean(liveUrl) });
+    const inbox = live?.inbox?.role ? live.inbox : pageInbox;
     const [open, setOpen] = useState(null);
+    const [pending, setPending] = useState(null);
+    const [deleting, setDeleting] = useState(false);
     const wrapRef = useRef(null);
-    const isAdmin = inbox?.role === "admin";
     const messages = inbox?.messages || [];
     const notifications = inbox?.notifications || [];
     const unreadMessages = inbox?.unread_messages || 0;
@@ -26,6 +36,21 @@ export default function HeaderTools({ children }) {
     const messagesUrl = inbox?.messages_url;
     const readRoute = isAdmin ? "admin.notifications.read" : "notifications.read";
     const readAllRoute = isAdmin ? "admin.notifications.read-all" : "notifications.read-all";
+    const destroyRoute = isAdmin ? "admin.notifications.destroy" : "notifications.destroy";
+    const destroyAllRoute = isAdmin ? "admin.notifications.destroy-all" : "notifications.destroy-all";
+    const destroyMessageRoute = isAdmin ? "admin.messages.destroy" : "messages.destroy";
+
+    const runDelete = async () => {
+        if (!pending) return;
+        setDeleting(true);
+        try {
+            await inboxDelete(pending.url);
+            setPending(null);
+            await refresh();
+        } finally {
+            setDeleting(false);
+        }
+    };
 
     useEffect(() => {
         const onClick = (event) => {
@@ -80,16 +105,30 @@ export default function HeaderTools({ children }) {
                             <p style={styles.panelEmpty}>Aucun message pour le moment.</p>
                         ) : (
                             messages.map((item) => (
-                                <Link
-                                    key={item.id}
-                                    href={item.href}
-                                    style={{ ...styles.item, fontWeight: item.unread ? 700 : 500 }}
-                                    onClick={() => setOpen(null)}
-                                >
-                                    <span style={styles.itemFrom}>{item.from}</span>
-                                    <span style={styles.itemPreview}>{item.preview}</span>
-                                    <span style={styles.itemWhen}>{formatWhen(item.at)}</span>
-                                </Link>
+                                <div key={item.id} style={styles.itemRow}>
+                                    <Link
+                                        href={item.href}
+                                        style={{ ...styles.item, fontWeight: item.unread ? 700 : 500 }}
+                                        onClick={() => setOpen(null)}
+                                    >
+                                        <span style={styles.itemFrom}>{item.from}</span>
+                                        <span style={styles.itemPreview}>{item.preview}</span>
+                                        <span style={styles.itemWhen}>{formatWhen(item.at)}</span>
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        style={styles.deleteBtn}
+                                        title="Supprimer"
+                                        aria-label="Supprimer ce message"
+                                        onClick={() => setPending({
+                                            title: "Supprimer ce message ?",
+                                            message: "Le message sera retiré définitivement.",
+                                            url: route(destroyMessageRoute, item.id),
+                                        })}
+                                    >
+                                        ×
+                                    </button>
+                                </div>
                             ))
                         )}
                     </div>
@@ -112,35 +151,72 @@ export default function HeaderTools({ children }) {
                     <div style={styles.panel}>
                         <div style={styles.panelHead}>
                             <p style={styles.panelTitle}>Notifications</p>
-                            {unreadNotifications > 0 && (
-                                <button
-                                    type="button"
-                                    style={styles.panelLinkBtn}
-                                    onClick={() => router.post(route(readAllRoute), {}, { preserveScroll: true })}
-                                >
-                                    Tout lu
-                                </button>
-                            )}
+                            <div style={styles.panelActions}>
+                                {unreadNotifications > 0 && (
+                                    <button
+                                        type="button"
+                                        style={styles.panelLinkBtn}
+                                        onClick={() => router.post(route(readAllRoute), {}, { preserveScroll: true })}
+                                    >
+                                        Tout lu
+                                    </button>
+                                )}
+                                {notifications.length > 0 && (
+                                    <button
+                                        type="button"
+                                        style={styles.panelDangerBtn}
+                                        onClick={() => setPending({
+                                            title: "Supprimer toutes les notifications ?",
+                                            message: "Toutes vos notifications seront retirées définitivement.",
+                                            url: route(destroyAllRoute),
+                                        })}
+                                    >
+                                        Tout supprimer
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         {notifications.length === 0 ? (
                             <p style={styles.panelEmpty}>Aucune notification pour le moment.</p>
                         ) : (
                             notifications.map((item) => (
-                                <button
-                                    key={item.id}
-                                    type="button"
-                                    style={{ ...styles.itemBtn, fontWeight: item.unread ? 700 : 500 }}
-                                    onClick={() => openNotification(item)}
-                                >
-                                    <span style={styles.itemFrom}>{item.title}</span>
-                                    {item.preview && <span style={styles.itemPreview}>{item.preview}</span>}
-                                    <span style={styles.itemWhen}>{formatWhen(item.at)}</span>
-                                </button>
+                                <div key={item.id} style={styles.itemRow}>
+                                    <button
+                                        type="button"
+                                        style={{ ...styles.itemBtn, fontWeight: item.unread ? 700 : 500 }}
+                                        onClick={() => openNotification(item)}
+                                    >
+                                        <span style={styles.itemFrom}>{item.title}</span>
+                                        {item.preview && <span style={styles.itemPreview}>{item.preview}</span>}
+                                        <span style={styles.itemWhen}>{formatWhen(item.at)}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        style={styles.deleteBtn}
+                                        title="Supprimer"
+                                        aria-label="Supprimer cette notification"
+                                        onClick={() => setPending({
+                                            title: "Supprimer cette notification ?",
+                                            message: "La notification sera retirée définitivement.",
+                                            url: route(destroyRoute, item.id),
+                                        })}
+                                    >
+                                        ×
+                                    </button>
+                                </div>
                             ))
                         )}
                     </div>
                 )}
             </div>
+            <ConfirmDialog
+                show={!!pending}
+                title={pending?.title}
+                message={pending?.message}
+                processing={deleting}
+                onConfirm={runDelete}
+                onClose={() => !deleting && setPending(null)}
+            />
         </div>
     );
 }
@@ -212,6 +288,12 @@ const styles = {
         gap: "8px",
         marginBottom: "8px",
     },
+    panelActions: {
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        flexShrink: 0,
+    },
     panelTitle: {
         margin: 0,
         fontSize: "13px",
@@ -233,6 +315,31 @@ const styles = {
         fontWeight: 600,
         color: "var(--color-primary)",
     },
+    panelDangerBtn: {
+        border: "none",
+        background: "none",
+        padding: 0,
+        cursor: "pointer",
+        fontSize: "12px",
+        fontWeight: 600,
+        color: colors.error,
+    },
+    itemRow: {
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "4px",
+        borderTop: `1px solid ${colors.border}`,
+    },
+    deleteBtn: {
+        border: "none",
+        background: "transparent",
+        color: colors.muted,
+        cursor: "pointer",
+        fontSize: "18px",
+        lineHeight: 1,
+        padding: "8px 4px",
+        flexShrink: 0,
+    },
     panelEmpty: {
         margin: 0,
         fontSize: "13px",
@@ -242,8 +349,9 @@ const styles = {
         display: "flex",
         flexDirection: "column",
         gap: "2px",
+        flex: 1,
+        minWidth: 0,
         padding: "8px 0",
-        borderTop: `1px solid ${colors.border}`,
         textDecoration: "none",
         color: colors.dark,
     },
@@ -251,10 +359,10 @@ const styles = {
         display: "flex",
         flexDirection: "column",
         gap: "2px",
-        width: "100%",
+        flex: 1,
+        minWidth: 0,
         padding: "8px 0",
         border: "none",
-        borderTop: `1px solid ${colors.border}`,
         background: "transparent",
         textAlign: "left",
         cursor: "pointer",

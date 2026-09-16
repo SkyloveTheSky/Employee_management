@@ -16,7 +16,6 @@ export default function Edit({ admin, payroll, employees }) {
         user_id: payroll.user_id || "",
         period_month_year: monthYear,
         prime_amount: Number(payroll.prime_amount || 0),
-        overtime_hours: Number(payroll.overtime_hours || 0),
         assurance_rate: Number(payroll.assurance_rate || 1),
         payment_method: payroll.payment_method || "virement",
         payment_status: payroll.payment_status || "unpaid",
@@ -113,11 +112,6 @@ export default function Edit({ admin, payroll, employees }) {
                             <label style={styles.label}>Prime (Ar)</label>
                             <input type="number" min="0" step="1" value={data.prime_amount} onChange={(e) => setData("prime_amount", e.target.value)} style={styles.input} />
                             {errors.prime_amount && <p style={styles.error}>{errors.prime_amount}</p>}
-                        </div>
-                        <div>
-                            <label style={styles.label}>Heures supplémentaires (h)</label>
-                            <input type="number" min="0" step="0.25" value={data.overtime_hours} onChange={(e) => setData("overtime_hours", e.target.value)} style={styles.input} />
-                            {errors.overtime_hours && <p style={styles.error}>{errors.overtime_hours}</p>}
                         </div>
                         <div>
                             <label style={styles.label}>Taux Assurance (%)</label>
@@ -230,6 +224,8 @@ const styles = {
     label: { display: "block", fontSize: "12px", marginBottom: "6px", color: "#4a5568" },
     input: { width: "100%", border: "1px solid #cbd5e0", borderRadius: "8px", padding: "9px 10px", fontSize: "13px", boxSizing: "border-box" },
     error: { marginTop: "4px", marginBottom: 0, color: "#e53e3e", fontSize: "12px" },
+    hint: { fontSize: "12px", color: "#718096", margin: "6px 0 0" },
+    linkBtn: { border: "none", background: "transparent", color: "var(--color-primary)", fontWeight: 600, cursor: "pointer", padding: 0, fontSize: "12px" },
     actions: { display: "flex", gap: "12px", marginTop: "10px" },
     cancelButton: { padding: "10px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "white", cursor: "pointer" },
     submitButton: { background: "var(--color-primary)", color: "white", border: "none", borderRadius: "8px", padding: "10px 14px", fontSize: "13px", cursor: "pointer" },

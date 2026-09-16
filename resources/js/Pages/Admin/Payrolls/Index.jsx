@@ -47,7 +47,6 @@ export default function Index({ admin, payrolls, employees, filters = {}, insigh
         user_id: "",
         period_month_years: [currentMonth],
         prime_amount: 0,
-        overtime_hours: 0,
         assurance_rate: 1,
         payment_method: "virement",
         payment_status: "unpaid",
@@ -59,7 +58,7 @@ export default function Index({ admin, payrolls, employees, filters = {}, insigh
     const submit = (e) => {
         e.preventDefault();
         post(route("admin.payrolls.store"), {
-            onSuccess: () => reset("prime_amount", "overtime_hours", "assurance_rate", "paid_at", "notes", "user_id"),
+            onSuccess: () => reset("prime_amount", "assurance_rate", "paid_at", "notes", "user_id"),
         });
     };
 
@@ -148,22 +147,16 @@ export default function Index({ admin, payrolls, employees, filters = {}, insigh
         }, { preserveState: true, preserveScroll: true, replace: true });
     };
 
-    const overtimeRate = (payroll) => {
-        const hours = Number(payroll.overtime_hours || 0);
-        if (hours <= 0) return "-";
-        const hoursLabel = `${hours.toLocaleString("fr-FR")} h`;
-        const coefficient = Number(payroll.overtime_coefficient || 0);
-        return coefficient > 0 ? `${hoursLabel} × ${coefficient.toLocaleString("fr-FR")}` : hoursLabel;
+    const buildLines = (payroll) => {
+        const rows = [
+            { designation: "Salaire de base", base: payroll.base_salary, taux: "-", gain: payroll.base_salary, retenu: 0 },
+            { designation: "Prime", base: payroll.base_salary, taux: "-", gain: payroll.prime_amount || 0, retenu: 0 },
+            { designation: "CNAPS", base: payroll.gross_salary, taux: `${Number(payroll.cnaps_rate || 0).toFixed(2)}%`, gain: 0, retenu: payroll.cnaps_amount || 0 },
+            { designation: "Assurance", base: payroll.gross_salary, taux: `${Number(payroll.assurance_rate || 0).toFixed(2)}%`, gain: 0, retenu: payroll.assurance_amount || 0 },
+            { designation: "IRSA", base: Math.max(0, Number(payroll.gross_salary || 0) - Number(payroll.cnaps_amount || 0)), taux: "Barème", gain: 0, retenu: payroll.irsa_amount || 0 },
+        ];
+        return rows.map((row, index) => ({ ...row, numero: index + 1 }));
     };
-
-    const buildLines = (payroll) => [
-        { numero: 1, designation: "Salaire de base", base: payroll.base_salary, taux: "-", gain: payroll.base_salary, retenu: 0 },
-        { numero: 2, designation: "Prime", base: payroll.base_salary, taux: "-", gain: payroll.prime_amount || 0, retenu: 0 },
-        { numero: 3, designation: "Heures supplémentaires", base: payroll.base_salary, taux: overtimeRate(payroll), gain: payroll.overtime_amount || 0, retenu: 0 },
-        { numero: 4, designation: "CNAPS", base: payroll.gross_salary, taux: `${Number(payroll.cnaps_rate || 0).toFixed(2)}%`, gain: 0, retenu: payroll.cnaps_amount || 0 },
-        { numero: 5, designation: "Assurance", base: payroll.gross_salary, taux: `${Number(payroll.assurance_rate || 0).toFixed(2)}%`, gain: 0, retenu: payroll.assurance_amount || 0 },
-        { numero: 6, designation: "IRSA", base: Math.max(0, Number(payroll.gross_salary || 0) - Number(payroll.cnaps_amount || 0)), taux: "Barème", gain: 0, retenu: payroll.irsa_amount || 0 },
-    ];
 
     return (
         <>
@@ -205,7 +198,11 @@ export default function Index({ admin, payrolls, employees, filters = {}, insigh
                     <div className="app-grid-3" style={styles.grid}>
                         <div>
                             <label style={styles.label}>Employé</label>
-                            <select value={data.user_id} onChange={(e) => setData("user_id", e.target.value)} style={styles.input}>
+                            <select
+                                value={data.user_id}
+                                onChange={(e) => setData("user_id", e.target.value)}
+                                style={styles.input}
+                            >
                                 <option value="">-- Choisir --</option>
                                 {employees.map((employee) => (
                                     <option key={employee.id} value={employee.id}>
@@ -248,11 +245,6 @@ export default function Index({ admin, payrolls, employees, filters = {}, insigh
                             <label style={styles.label}>Prime (Ar)</label>
                             <input type="number" min="0" step="1" value={data.prime_amount} onChange={(e) => setData("prime_amount", e.target.value)} style={styles.input} />
                             {errors.prime_amount && <p style={styles.error}>{errors.prime_amount}</p>}
-                        </div>
-                        <div>
-                            <label style={styles.label}>Heures supplémentaires (h)</label>
-                            <input type="number" min="0" step="0.25" value={data.overtime_hours} onChange={(e) => setData("overtime_hours", e.target.value)} style={styles.input} />
-                            {errors.overtime_hours && <p style={styles.error}>{errors.overtime_hours}</p>}
                         </div>
                         <div>
                             <label style={styles.label}>Taux Assurance (%)</label>

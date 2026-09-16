@@ -39,6 +39,11 @@ class User extends Authenticatable
         return $this->hasMany(Payroll::class);
     }
 
+    public function workEntries(): HasMany
+    {
+        return $this->hasMany(WorkEntry::class);
+    }
+
     public function employeeFolder(): string
     {
         $firstName = Str::slug($this->first_name ?? '');

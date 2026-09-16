@@ -105,7 +105,6 @@ class PayrollController extends Controller
             'period_month_years'   => ['required', 'array', 'min:1'],
             'period_month_years.*' => ['required', 'date_format:Y-m', 'distinct'],
             'prime_amount'         => ['nullable', 'numeric', 'min:0'],
-            'overtime_hours'       => ['nullable', 'numeric', 'min:0', 'max:400'],
             'assurance_rate'       => ['nullable', 'numeric', 'min:0', 'max:100'],
             'payment_method'       => ['required', 'in:virement,especes,mobile_money,cheque,autre'],
             'payment_status'       => ['nullable', 'in:unpaid,paid'],
@@ -124,8 +123,9 @@ class PayrollController extends Controller
             $employee,
             $periods->all(),
             (float) ($validated['prime_amount'] ?? 0),
-            (float) ($validated['overtime_hours'] ?? 0),
+            0,
             (float) ($validated['assurance_rate'] ?? 1),
+            null,
         );
 
         $blocking = collect($anomalies)->where('severity', 'error')->values();
@@ -167,7 +167,7 @@ class PayrollController extends Controller
         $amounts = PayrollCalculator::compute(
             $employee,
             (float) ($validated['prime_amount'] ?? 0),
-            (float) ($validated['overtime_hours'] ?? 0),
+            0,
             (float) ($validated['assurance_rate'] ?? 1),
         );
 
@@ -239,20 +239,6 @@ class PayrollController extends Controller
             ->get();
 
         $payroll = Payroll::findOrFail($id);
-        $hours = (float) ($payroll->overtime_hours ?? 0);
-        $amount = (float) ($payroll->overtime_amount ?? 0);
-        if ($hours <= 0 && $amount > 0) {
-            $rules = PayrollCalculator::overtimeRules(
-                $payroll->overtime_divisor !== null ? (float) $payroll->overtime_divisor : null,
-                $payroll->overtime_coefficient !== null ? (float) $payroll->overtime_coefficient : null,
-            );
-            $payroll->overtime_hours = PayrollCalculator::hoursFromAmount(
-                (float) $payroll->base_salary,
-                $amount,
-                $rules['divisor'],
-                $rules['coefficient'],
-            );
-        }
 
         return Inertia::render('Admin/Payrolls/Edit', [
             'admin'     => $admin,
@@ -268,7 +254,6 @@ class PayrollController extends Controller
             'user_id'           => ['required', 'exists:users,id'],
             'period_month_year' => ['required', 'date_format:Y-m'],
             'prime_amount'      => ['nullable', 'numeric', 'min:0'],
-            'overtime_hours'    => ['nullable', 'numeric', 'min:0', 'max:400'],
             'assurance_rate'    => ['nullable', 'numeric', 'min:0', 'max:100'],
             'payment_method'    => ['required', 'in:virement,especes,mobile_money,cheque,autre'],
             'payment_status'    => ['nullable', 'in:unpaid,paid'],
@@ -301,7 +286,7 @@ class PayrollController extends Controller
             $employee,
             [$validated['period_month_year']],
             (float) ($validated['prime_amount'] ?? 0),
-            (float) ($validated['overtime_hours'] ?? 0),
+            0,
             (float) ($validated['assurance_rate'] ?? 1),
             $payroll->id,
         );
@@ -321,7 +306,7 @@ class PayrollController extends Controller
         $amounts = PayrollCalculator::compute(
             $employee,
             (float) ($validated['prime_amount'] ?? 0),
-            (float) ($validated['overtime_hours'] ?? 0),
+            0,
             (float) ($validated['assurance_rate'] ?? 1),
         );
 
@@ -439,7 +424,7 @@ class PayrollController extends Controller
                     continue;
                 }
 
-                $amounts = PayrollCalculator::compute($employee);
+                $amounts = PayrollCalculator::compute($employee, 0, 0, 1);
 
                 Payroll::create([
                     'user_id'               => $employee->id,

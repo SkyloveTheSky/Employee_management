@@ -5,13 +5,8 @@ import FeedbackDialog from "@/Components/FeedbackDialog";
 import HeaderTools from "@/Components/HeaderTools";
 import Sidebar from "../../../Components/Admin/Sidebar";
 import { colors } from "@/config/colors";
+import { cloneDefaultOvertimeTypes, normalizeOvertimePositions, normalizeOvertimeTypes } from "@/config/overtimeTypes";
 import { useSidebar } from "@/hooks/useSidebar";
-
-function suggestedDivisor(weeklyGoal) {
-    const goal = Number(weeklyGoal);
-    if (!goal || Number.isNaN(goal)) return "";
-    return (Math.round(((goal * 52) / 12) * 100) / 100).toFixed(2);
-}
 
 const DEFAULT_IRSA_BRACKETS = [
     { min: 0, max: 350000, rate: 0 },
@@ -22,6 +17,22 @@ const DEFAULT_IRSA_BRACKETS = [
     { min: 4000001, max: "", rate: 25 },
 ];
 
+function defaultHalf(hoursPerDay) {
+    const day = Number(hoursPerDay);
+    if (!day || Number.isNaN(day)) return "4";
+    return String(Math.round((day / 2) * 100) / 100);
+}
+
+function coefficientFromPremium(premium) {
+    const n = Number(premium);
+    if (Number.isNaN(n)) return "1.300";
+    return (1 + Math.max(0, n) / 100).toFixed(3);
+}
+
+function asFlag(value) {
+    return value === true || value === 1 || value === "1";
+}
+
 function normalizeBrackets(rows) {
     if (!Array.isArray(rows) || rows.length === 0) return DEFAULT_IRSA_BRACKETS;
     return rows.map((row) => ({
@@ -31,12 +42,14 @@ function normalizeBrackets(rows) {
     }));
 }
 
-export default function Company({ admin, settings, irsa_brackets }) {
+export default function Company({ admin, settings, irsa_brackets, overtime_types, overtime_positions }) {
     const { flash } = usePage().props;
     const { isOpen, setIsOpen, offset } = useSidebar();
     const [openSection, setOpenSection] = useState("identity");
     const [feedback, setFeedback] = useState(null);
-    const { data, setData, post, processing, errors } = useForm({
+    const [newPosition, setNewPosition] = useState("");
+    const [selectedPosition, setSelectedPosition] = useState(0);
+    const { data, setData, post, processing, errors, transform } = useForm({
         company_name: settings?.company_name || "",
         owner_name: settings?.owner_name || "",
         nif: settings?.nif || "",
@@ -44,9 +57,13 @@ export default function Company({ admin, settings, irsa_brackets }) {
         rcs: settings?.rcs || "",
         logo: null,
         overtime_hours_per_day: settings?.overtime_hours_per_day ?? "8",
-        overtime_weekly_goal: settings?.overtime_weekly_goal ?? "40",
-        overtime_divisor: settings?.overtime_divisor ?? suggestedDivisor(settings?.overtime_weekly_goal ?? 40),
-        overtime_coefficient: settings?.overtime_coefficient ?? "1.30",
+        overtime_hours_per_half: settings?.overtime_hours_per_half ?? defaultHalf(settings?.overtime_hours_per_day ?? 8),
+        overtime_enabled: settings?.overtime_enabled !== false,
+        overtime_types: normalizeOvertimeTypes(overtime_types ?? settings?.overtime_types),
+        overtime_positions: normalizeOvertimePositions(
+            overtime_positions,
+            overtime_types ?? settings?.overtime_types
+        ),
         cnaps_percent: settings?.cnaps_percent ?? "1",
         cnaps_employer_percent: settings?.cnaps_employer_percent ?? "13",
         cnaps_employee_percent: settings?.cnaps_employee_percent ?? settings?.cnaps_percent ?? "1",
@@ -65,6 +82,29 @@ export default function Company({ admin, settings, irsa_brackets }) {
 
     const submit = (e) => {
         e.preventDefault();
+        transform((current) => {
+            const { overtime_types, overtime_positions, ...rest } = current;
+            return {
+                ...rest,
+                overtime_enabled: current.overtime_enabled ? 1 : 0,
+                overtime_types_json: JSON.stringify(
+                    (overtime_types || []).map((row) => ({
+                        ...row,
+                        enabled: row.enabled ? 1 : 0,
+                    }))
+                ),
+                overtime_positions_json: JSON.stringify(
+                    (overtime_positions || []).map((row) => ({
+                        position: row.position,
+                        enabled: row.enabled ? 1 : 0,
+                        types: (row.types || []).map((type) => ({
+                            ...type,
+                            enabled: type.enabled ? 1 : 0,
+                        })),
+                    }))
+                ),
+            };
+        });
         post(route("admin.settings.company.update"), {
             forceFormData: true,
             onSuccess: () => {
@@ -82,16 +122,6 @@ export default function Company({ admin, settings, irsa_brackets }) {
                 });
             },
         });
-    };
-
-    const updateOvertime = (field, value) => {
-        const next = { ...data, [field]: value, logo: data.logo };
-        if (field === "overtime_weekly_goal" || field === "overtime_hours_per_day") {
-            const goal = field === "overtime_weekly_goal" ? value : next.overtime_weekly_goal;
-            const divisor = suggestedDivisor(goal);
-            if (divisor) next.overtime_divisor = divisor;
-        }
-        setData(next);
     };
 
     const toggle = (id) => setOpenSection((current) => (current === id ? null : id));
@@ -114,6 +144,58 @@ export default function Company({ admin, settings, irsa_brackets }) {
         setData("irsa_brackets", data.irsa_brackets.filter((_, i) => i !== index));
     };
 
+    const updatePosition = (index, patch) => {
+        setData(
+            "overtime_positions",
+            data.overtime_positions.map((row, i) => (i === index ? { ...row, ...patch } : row))
+        );
+    };
+
+    const updatePositionType = (positionIndex, typeIndex, field, value) => {
+        const row = data.overtime_positions[positionIndex];
+        if (!row) return;
+        updatePosition(positionIndex, {
+            types: row.types.map((type, i) => (i === typeIndex ? { ...type, [field]: value } : type)),
+        });
+    };
+
+    const addPositionType = (positionIndex) => {
+        const row = data.overtime_positions[positionIndex];
+        if (!row) return;
+        const n = row.types.length + 1;
+        updatePosition(positionIndex, {
+            types: [
+                ...row.types,
+                { key: `hs_${n}`, code: `HS_${n}`, label: "Nouveau type", premium: 30, enabled: true },
+            ],
+        });
+    };
+
+    const removePositionType = (positionIndex, typeIndex) => {
+        const row = data.overtime_positions[positionIndex];
+        if (!row || row.types.length <= 1) return;
+        updatePosition(positionIndex, {
+            types: row.types.filter((_, i) => i !== typeIndex),
+        });
+    };
+
+    const addPosition = () => {
+        const name = newPosition.trim();
+        if (!name) return;
+        const exists = data.overtime_positions.some(
+            (row) => row.position.toLowerCase() === name.toLowerCase()
+        );
+        if (!exists) {
+            const next = [
+                ...data.overtime_positions,
+                { position: name, enabled: true, types: cloneDefaultOvertimeTypes() },
+            ].sort((a, b) => a.position.localeCompare(b.position, "fr"));
+            setData("overtime_positions", next);
+            setSelectedPosition(next.findIndex((row) => row.position === name));
+        }
+        setNewPosition("");
+    };
+
     return (
         <>
             <Head title="Paramètres entreprise" />
@@ -123,7 +205,7 @@ export default function Company({ admin, settings, irsa_brackets }) {
                     <BrandMark />
                     <div>
                         <h1 style={styles.title}>Paramètres de l'entreprise</h1>
-                        <p style={styles.subtitle}>Identité, heures supplémentaires, cotisations et impôts</p>
+                        <p style={styles.subtitle}>Identité, journée de travail, heures supplémentaires, cotisations et impôts</p>
                     </div>
                     <HeaderTools />
                 </div>
@@ -152,50 +234,182 @@ export default function Company({ admin, settings, irsa_brackets }) {
                     </Accordion>
 
                     <Accordion
-                        title="Heures supplémentaires"
+                        title="Journée de travail"
                         open={openSection === "overtime"}
                         onToggle={() => toggle("overtime")}
                     >
-                        <div className="app-grid-2" style={styles.grid}>
-                            <Field
-                                label="Nombre d’heures de travail par jour"
-                                type="number"
-                                step="0.25"
-                                min="0"
-                                max="24"
-                                value={data.overtime_hours_per_day}
-                                onChange={(v) => updateOvertime("overtime_hours_per_day", v)}
-                                error={errors.overtime_hours_per_day}
+                        <Field
+                            label="Nombre d’heures de travail par jour"
+                            type="number"
+                            step="0.25"
+                            min="0"
+                            max="24"
+                            value={data.overtime_hours_per_day}
+                            onChange={(v) => {
+                                const next = { ...data, overtime_hours_per_day: v, logo: data.logo };
+                                const day = Number(v);
+                                if (day > 0) {
+                                    next.overtime_hours_per_half = defaultHalf(day);
+                                }
+                                setData(next);
+                            }}
+                            error={errors.overtime_hours_per_day}
+                        />
+                    </Accordion>
+
+                    <Accordion
+                        title="Heures supplémentaires"
+                        open={openSection === "overtime_rules"}
+                        onToggle={() => toggle("overtime_rules")}
+                    >
+                        <label style={styles.switchRow}>
+                            <input
+                                type="checkbox"
+                                checked={asFlag(data.overtime_enabled)}
+                                onChange={(e) => setData("overtime_enabled", e.target.checked)}
                             />
-                            <Field
-                                label="Objectif (heures / semaine)"
-                                type="number"
-                                step="0.25"
-                                min="0"
-                                max="168"
-                                value={data.overtime_weekly_goal}
-                                onChange={(v) => updateOvertime("overtime_weekly_goal", v)}
-                                error={errors.overtime_weekly_goal}
+                            <span>
+                                <strong>Activer les heures supplémentaires</strong>
+                                <span style={styles.switchHint}>
+                                    Si cette option est désactivée, aucun surplus n’est compté, quel que soit le poste.
+                                </span>
+                            </span>
+                        </label>
+                        <p style={styles.scaleHint}>
+                            Sur une demi-journée (matin ou après-midi), le surplus au-delà du seuil est compté en heures supplémentaires.
+                        </p>
+                        <Field
+                            label="Seuil par demi-journée (h)"
+                            type="number"
+                            step="0.25"
+                            min="0"
+                            max="12"
+                            value={data.overtime_hours_per_half}
+                            onChange={(v) => setData("overtime_hours_per_half", v)}
+                            error={errors.overtime_hours_per_half}
+                        />
+
+                        <p style={styles.scaleTitle}>Types d’heures supplémentaires par poste</p>
+                        <p style={styles.scaleHint}>
+                            Choisissez un poste pour définir ses types de HS (code, libellé, majoration). Chaque poste a sa propre liste, et peut désactiver les HS.
+                        </p>
+                        {data.overtime_positions.length === 0 ? (
+                            <p style={styles.scaleHint}>Aucun poste pour le moment. Ils apparaissent dès qu’un employé a un poste, ou ajoutez-en un ci-dessous.</p>
+                        ) : (
+                            <div style={styles.posLayout}>
+                                <div style={styles.posList}>
+                                    {data.overtime_positions.map((row, index) => (
+                                        <button
+                                            key={row.position}
+                                            type="button"
+                                            onClick={() => setSelectedPosition(index)}
+                                            style={{
+                                                ...styles.posItem,
+                                                borderColor: selectedPosition === index ? "var(--color-primary)" : colors.border,
+                                                background: selectedPosition === index ? "#f7fafc" : "white",
+                                            }}
+                                        >
+                                            <span>{row.position}</span>
+                                            <span style={styles.posMeta}>
+                                                {asFlag(row.enabled)
+                                                    ? `${(row.types || []).filter((type) => asFlag(type.enabled)).length} type${(row.types || []).filter((type) => asFlag(type.enabled)).length > 1 ? "s" : ""}`
+                                                    : "HS off"}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                                {data.overtime_positions[selectedPosition] && (
+                                    <div style={styles.posEditor}>
+                                        <label style={styles.switchRow}>
+                                            <input
+                                                type="checkbox"
+                                                checked={asFlag(data.overtime_positions[selectedPosition].enabled)}
+                                                onChange={(e) => updatePosition(selectedPosition, { enabled: e.target.checked })}
+                                            />
+                                            <span>
+                                                <strong>Activer les HS — {data.overtime_positions[selectedPosition].position}</strong>
+                                                <span style={styles.switchHint}>Si cette option est désactivée, ce poste n’a pas d’heures supplémentaires.</span>
+                                            </span>
+                                        </label>
+                                        <div style={styles.otHead}>
+                                            <span>Actif</span>
+                                            <span>Code</span>
+                                            <span>Libellé</span>
+                                            <span>Maj. (%)</span>
+                                            <span />
+                                        </div>
+                                        {data.overtime_positions[selectedPosition].types.map((row, index) => (
+                                            <div key={row.key || index} style={styles.otRow}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={asFlag(row.enabled)}
+                                                    onChange={(e) => updatePositionType(selectedPosition, index, "enabled", e.target.checked)}
+                                                    aria-label={`Activer ${row.label || row.code}`}
+                                                />
+                                                <input
+                                                    value={row.code}
+                                                    onChange={(e) => updatePositionType(selectedPosition, index, "code", e.target.value.toUpperCase())}
+                                                    style={styles.scaleInput}
+                                                />
+                                                <input
+                                                    value={row.label}
+                                                    onChange={(e) => updatePositionType(selectedPosition, index, "label", e.target.value)}
+                                                    style={styles.scaleInput}
+                                                />
+                                                <div>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max="400"
+                                                        step="0.1"
+                                                        value={row.premium}
+                                                        onChange={(e) => updatePositionType(selectedPosition, index, "premium", e.target.value)}
+                                                        style={styles.scaleInput}
+                                                    />
+                                                    <p style={styles.coeff}>× {coefficientFromPremium(row.premium)}</p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    style={styles.removeBtn}
+                                                    onClick={() => removePositionType(selectedPosition, index)}
+                                                    disabled={data.overtime_positions[selectedPosition].types.length <= 1}
+                                                >
+                                                    Retirer
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <div style={styles.scaleActions}>
+                                            <button type="button" style={styles.secondary} onClick={() => addPositionType(selectedPosition)}>
+                                                Ajouter un type
+                                            </button>
+                                            <button
+                                                type="button"
+                                                style={styles.secondary}
+                                                onClick={() => updatePosition(selectedPosition, { types: cloneDefaultOvertimeTypes() })}
+                                            >
+                                                Types par défaut
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        <div style={styles.addRow}>
+                            <input
+                                value={newPosition}
+                                onChange={(e) => setNewPosition(e.target.value)}
+                                placeholder="Nouveau poste"
+                                style={styles.scaleInput}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        addPosition();
+                                    }
+                                }}
                             />
-                            <Field
-                                label="Diviseur"
-                                type="number"
-                                step="0.01"
-                                min="0.01"
-                                value={data.overtime_divisor}
-                                onChange={(v) => setData("overtime_divisor", v)}
-                                error={errors.overtime_divisor}
-                            />
-                            <Field
-                                label="Coefficient"
-                                type="number"
-                                step="0.01"
-                                min="1"
-                                max="5"
-                                value={data.overtime_coefficient}
-                                onChange={(v) => setData("overtime_coefficient", v)}
-                                error={errors.overtime_coefficient}
-                            />
+                            <button type="button" style={styles.secondary} onClick={addPosition}>
+                                Ajouter un poste
+                            </button>
                         </div>
                     </Accordion>
 
@@ -343,7 +557,7 @@ const styles = {
     header: { display: "flex", alignItems: "center", gap: "16px", background: "white", padding: "20px 24px", borderRadius: "12px", marginBottom: "24px", border: `1px solid ${colors.border}` },
     title: { fontSize: "18px", fontWeight: "600", color: colors.dark, margin: 0 },
     subtitle: { fontSize: "13px", color: colors.muted, margin: 0 },
-    list: { maxWidth: "800px", display: "flex", flexDirection: "column", gap: "12px" },
+    list: { maxWidth: "1040px", display: "flex", flexDirection: "column", gap: "12px" },
     item: { background: "white", borderRadius: "12px", border: `1px solid ${colors.border}`, overflow: "hidden" },
     itemHeader: {
         width: "100%",
@@ -362,7 +576,7 @@ const styles = {
         textAlign: "left",
     },
     chevron: { color: colors.muted, fontSize: "14px" },
-    itemBody: { padding: "0 20px 20px", borderTop: `1px solid ${colors.border}` },
+    itemBody: { padding: "16px 20px 20px", borderTop: `1px solid ${colors.border}` },
     grid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px", paddingTop: "16px" },
     formGroup: { margin: "16px 0 0" },
     label: { display: "block", fontSize: "13px", fontWeight: "600", color: colors.dark, marginBottom: "8px" },
@@ -381,6 +595,75 @@ const styles = {
         marginBottom: "6px",
     },
     scaleRow: { display: "grid", gridTemplateColumns: "1fr 1fr 110px 72px", gap: "8px", marginBottom: "8px", alignItems: "center" },
+    otHead: {
+        display: "grid",
+        gridTemplateColumns: "52px 140px minmax(0, 1.4fr) 100px 72px",
+        gap: "8px",
+        fontSize: "12px",
+        fontWeight: 700,
+        color: colors.muted,
+        marginBottom: "6px",
+        alignItems: "center",
+    },
+    otRow: {
+        display: "grid",
+        gridTemplateColumns: "52px 140px minmax(0, 1.4fr) 100px 72px",
+        gap: "8px",
+        marginBottom: "10px",
+        alignItems: "center",
+    },
+    posLayout: {
+        display: "grid",
+        gridTemplateColumns: "220px minmax(0, 1fr)",
+        gap: "16px",
+        alignItems: "start",
+        marginTop: "8px",
+    },
+    posList: {
+        display: "flex",
+        flexDirection: "column",
+        gap: "6px",
+        maxHeight: "420px",
+        overflowY: "auto",
+        paddingRight: "4px",
+    },
+    posItem: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: "2px",
+        width: "100%",
+        textAlign: "left",
+        border: `1px solid ${colors.border}`,
+        borderRadius: "8px",
+        background: "white",
+        padding: "8px 10px",
+        cursor: "pointer",
+        fontFamily: "inherit",
+        fontSize: "13px",
+        fontWeight: 600,
+        color: colors.dark,
+    },
+    posMeta: { fontSize: "11px", fontWeight: 500, color: colors.muted },
+    posEditor: { minWidth: 0 },
+    switchRow: {
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "10px",
+        margin: "0 0 16px",
+        fontSize: "14px",
+        color: colors.dark,
+    },
+    switchHint: {
+        display: "block",
+        fontSize: "12px",
+        color: colors.muted,
+        fontWeight: 400,
+        marginTop: "2px",
+        lineHeight: 1.4,
+    },
+    addRow: { display: "flex", gap: "8px", alignItems: "center", marginTop: "8px" },
+    coeff: { fontSize: "11px", color: colors.muted, fontWeight: 600, margin: "4px 0 0" },
     scaleInput: { width: "100%", padding: "8px 10px", fontSize: "13px", border: `1px solid ${colors.border}`, borderRadius: "8px", boxSizing: "border-box", fontFamily: "inherit" },
     scaleActions: { display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "8px" },
     secondary: { border: `1px solid ${colors.border}`, background: "white", color: colors.dark, borderRadius: "8px", padding: "8px 12px", fontSize: "13px", fontWeight: 600, cursor: "pointer" },

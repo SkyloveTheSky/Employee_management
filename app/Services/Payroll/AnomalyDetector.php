@@ -16,6 +16,7 @@ class AnomalyDetector
         float $overtimeHours = 0,
         float $assuranceRate = 1,
         ?int $ignorePayrollId = null,
+        array $overtimeByType = [],
     ): array {
         $anomalies = [];
 
@@ -27,9 +28,8 @@ class AnomalyDetector
             ]];
         }
 
-        $amounts = PayrollCalculator::compute($employee, $primeAmount, $overtimeHours, $assuranceRate);
+        $amounts = PayrollCalculator::compute($employee, $primeAmount, 0, $assuranceRate);
         $base    = $amounts['base_salary'];
-        $overtimeAmount = (float) ($amounts['overtime_amount'] ?? 0);
 
         if ($base <= 0) {
             $anomalies[] = [
@@ -51,15 +51,6 @@ class AnomalyDetector
                 'code'     => 'prime_elevated',
                 'severity' => 'warning',
                 'message'  => 'Prime élevée : '.$this->formatAr($primeAmount).' soit '.round($primeRatio * 100).' % du salaire de base.',
-            ];
-        }
-
-        $overtimeRatio = $base > 0 ? $overtimeAmount / $base : 0;
-        if ($overtimeAmount > 0 && $overtimeRatio >= (float) config('payroll.overtime_warning_ratio', 0.5)) {
-            $anomalies[] = [
-                'code'     => 'overtime_elevated',
-                'severity' => 'warning',
-                'message'  => 'Heures supplémentaires élevées : '.$overtimeHours.' h ('.$this->formatAr($overtimeAmount).') par rapport au salaire de base.',
             ];
         }
 

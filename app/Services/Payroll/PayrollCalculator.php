@@ -13,14 +13,16 @@ class PayrollCalculator
         float $primeAmount = 0,
         float $overtimeHours = 0,
         float $assuranceRate = 1,
+        array $overtimeByType = [],
     ): array {
-        $rules = self::overtimeRules();
         $contributions = self::contributionDefaults();
         $cnapsRate = $contributions['cnaps_rate'];
         $cnapsEmployerRate = $contributions['cnaps_employer_rate'];
         $baseSalary = (float) ($employee->salary_base ?? 0);
-        $overtimeAmount = self::overtimeAmount($baseSalary, $overtimeHours, $rules['divisor'], $rules['coefficient']);
-        $grossSalary = $baseSalary + $primeAmount + $overtimeAmount;
+        $overtimeHours = 0.0;
+        $overtimeAmount = 0.0;
+        $overtimeLines = [];
+        $grossSalary = $baseSalary + $primeAmount;
         $cnapsAmount = $grossSalary * ($cnapsRate / 100);
         $cnapsEmployerAmount = round($grossSalary * ($cnapsEmployerRate / 100), 2);
         $assuranceAmount = $grossSalary * ($assuranceRate / 100);
@@ -32,10 +34,11 @@ class PayrollCalculator
         $amounts = [
             'base_salary' => $baseSalary,
             'prime_amount' => $primeAmount,
-            'overtime_hours' => round($overtimeHours, 2),
-            'overtime_divisor' => $rules['divisor'],
-            'overtime_coefficient' => $rules['coefficient'],
+            'overtime_hours' => $overtimeHours,
+            'overtime_divisor' => null,
+            'overtime_coefficient' => null,
             'overtime_amount' => $overtimeAmount,
+            'overtime_lines' => $overtimeLines,
             'gross_salary' => $grossSalary,
             'cnaps_rate' => $cnapsRate,
             'cnaps_employer_rate' => $cnapsEmployerRate,
@@ -54,6 +57,7 @@ class PayrollCalculator
             'overtime_hours',
             'overtime_divisor',
             'overtime_coefficient',
+            'overtime_lines',
             'irsa_rate',
             'irsa_amount',
             'cnaps_employer_rate',
@@ -110,40 +114,5 @@ class PayrollCalculator
             'rate' => $rate,
             'amount' => $amount,
         ];
-    }
-
-    /**
-     * @return array{divisor: float, coefficient: float}
-     */
-    public static function overtimeRules(?float $divisor = null, ?float $coefficient = null): array
-    {
-        $settings = CompanySetting::query()->first();
-
-        return [
-            'divisor' => $divisor > 0
-                ? $divisor
-                : (float) ($settings?->overtime_divisor ?: 173.33),
-            'coefficient' => $coefficient > 0
-                ? $coefficient
-                : (float) ($settings?->overtime_coefficient ?: 1.3),
-        ];
-    }
-
-    public static function overtimeAmount(float $baseSalary, float $hours, float $divisor, float $coefficient): float
-    {
-        if ($hours <= 0 || $baseSalary <= 0 || $divisor <= 0 || $coefficient <= 0) {
-            return 0.0;
-        }
-
-        return round(($baseSalary / $divisor) * $hours * $coefficient, 2);
-    }
-
-    public static function hoursFromAmount(float $baseSalary, float $amount, float $divisor, float $coefficient): float
-    {
-        if ($amount <= 0 || $baseSalary <= 0 || $divisor <= 0 || $coefficient <= 0) {
-            return 0.0;
-        }
-
-        return round(($amount * $divisor) / ($baseSalary * $coefficient), 2);
     }
 }

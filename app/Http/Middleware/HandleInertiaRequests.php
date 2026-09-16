@@ -47,12 +47,14 @@ class HandleInertiaRequests extends Middleware
                 'logo_url' => $settings?->logo_path && Storage::disk('public')->exists($settings->logo_path)
                     ? '/storage/'.ltrim($settings->logo_path, '/')
                     : null,
-                'overtime' => Schema::hasColumn('company_settings', 'overtime_divisor')
+                'overtime' => Schema::hasColumn('company_settings', 'overtime_hours_per_day')
                     ? [
+                        'enabled' => CompanySetting::overtimeEnabled($settings),
                         'hours_per_day' => $settings?->overtime_hours_per_day,
-                        'weekly_goal' => $settings?->overtime_weekly_goal,
-                        'divisor' => $settings?->overtime_divisor,
+                        'hours_per_half' => CompanySetting::halfDayHours($settings),
                         'coefficient' => $settings?->overtime_coefficient,
+                        'premium' => CompanySetting::overtimePremium($settings),
+                        'types' => CompanySetting::overtimeTypes($settings),
                     ]
                     : null,
                 'contributions' => Schema::hasColumn('company_settings', 'cnaps_percent')
@@ -79,7 +81,9 @@ class HandleInertiaRequests extends Middleware
                     ? $settings->display_theme
                     : null
             ),
-            'inbox' => app(Inbox::class)->payload($request),
+            'inbox' => $request->routeIs('messages.live', 'admin.messages.live')
+                ? []
+                : app(Inbox::class)->payload($request),
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'payroll_warnings' => $request->session()->get('payroll_warnings'),

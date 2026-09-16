@@ -11,6 +11,7 @@ use App\Http\Controllers\User\PayrollController as UserPayrollController;
 use App\Http\Controllers\Admin\CompanySettingsController;
 use App\Http\Controllers\Admin\AgendaController;
 use App\Http\Controllers\Admin\ChargeController;
+use App\Http\Controllers\Admin\OvertimeController;
 use App\Http\Controllers\Admin\FileManagerController;
 use App\Http\Controllers\Admin\InboxController as AdminInboxController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
@@ -47,11 +48,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/files/upload', [UserFileManagerController::class, 'upload'])->name('files.upload');
     Route::delete('/files', [UserFileManagerController::class, 'destroy'])->name('files.destroy');
     Route::get('/files/download', [UserFileManagerController::class, 'download'])->name('files.download');
+    Route::get('/messages/live', [UserInboxController::class, 'live'])->name('messages.live');
     Route::get('/messages', [UserInboxController::class, 'index'])->name('messages.index');
     Route::post('/messages', [UserInboxController::class, 'store'])->name('messages.store');
+    Route::delete('/messages', [UserInboxController::class, 'destroyThread'])->name('messages.destroy-thread');
     Route::get('/messages/{id}/attachments/{index}', [UserInboxController::class, 'attachment'])->name('messages.attachments');
+    Route::delete('/messages/{id}', [UserInboxController::class, 'destroy'])->name('messages.destroy');
     Route::post('/notifications/read-all', [UserNotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::post('/notifications/{id}/read', [UserNotificationController::class, 'read'])->name('notifications.read');
+    Route::delete('/notifications', [UserNotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
+    Route::delete('/notifications/{id}', [UserNotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
 // Routes admin
@@ -94,18 +100,26 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/charges', [ChargeController::class, 'index'])->name('charges.index');
 
+        Route::get('/overtime', [OvertimeController::class, 'index'])->name('overtime.index');
+        Route::put('/overtime/day', [OvertimeController::class, 'updateDay'])->name('overtime.day');
+
         // Settings
         Route::get('/settings', [AuthController::class, 'showSettings'])->name('settings.edit');
         Route::patch('/settings/password', [AuthController::class, 'updatePassword'])->name('settings.password');
         Route::patch('/settings/theme', [AuthController::class, 'updateTheme'])->name('settings.theme');
         Route::get('/settings/company', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');
         Route::post('/settings/company', [CompanySettingsController::class, 'update'])->name('settings.company.update');
+        Route::get('/messages/live', [AdminInboxController::class, 'live'])->name('messages.live');
         Route::get('/messages', [AdminInboxController::class, 'index'])->name('messages.index');
         Route::get('/messages/attachments/{id}/{index}', [AdminInboxController::class, 'attachment'])->name('messages.attachments');
+        Route::delete('/messages/items/{id}', [AdminInboxController::class, 'destroy'])->name('messages.destroy');
+        Route::delete('/messages/{id}/thread', [AdminInboxController::class, 'destroyThread'])->name('messages.destroy-thread');
         Route::get('/messages/{id}', [AdminInboxController::class, 'show'])->name('messages.show');
         Route::post('/messages/{id}', [AdminInboxController::class, 'store'])->name('messages.store');
         Route::post('/notifications/read-all', [AdminNotificationController::class, 'readAll'])->name('notifications.read-all');
         Route::post('/notifications/{id}/read', [AdminNotificationController::class, 'read'])->name('notifications.read');
+        Route::delete('/notifications', [AdminNotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
+        Route::delete('/notifications/{id}', [AdminNotificationController::class, 'destroy'])->name('notifications.destroy');
         Route::get('/files', [FileManagerController::class, 'index'])->name('files.index');
         Route::post('/files/mkdir', [FileManagerController::class, 'mkdir'])->name('files.mkdir');
         Route::post('/files/upload', [FileManagerController::class, 'upload'])->name('files.upload');

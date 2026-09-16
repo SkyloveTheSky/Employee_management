@@ -31,6 +31,9 @@ export default function Index({ messages = [] }) {
                     otherLabel="RH"
                     otherIcon="/assets/icon/building.svg"
                     storeUrl={route("messages.store")}
+                    pollUrl={`${route("messages.live")}?thread=1`}
+                    deleteUrl={(id) => route("messages.destroy", id)}
+                    clearUrl={route("messages.destroy-thread")}
                     emptyText="Aucun message. Écrivez à la RH ou joignez un fichier."
                 />
             </div>

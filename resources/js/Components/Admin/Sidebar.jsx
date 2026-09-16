@@ -29,6 +29,7 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
                 { label: "Agenda",          route: "admin.agenda",    icon: "/assets/icon/calendrier.svg" },
                 { label: "Employés",        route: "admin.employees", icon: "/assets/icon/users.svg" },
                 { label: "Paie",            route: "admin.payrolls.index", icon: "/assets/icon/payroll.svg" },
+                { label: "Gestion des présences", route: "admin.overtime.index", icon: "/assets/icon/hours.svg" },
                 { label: "Charge",          route: "admin.charges.index", icon: "/assets/icon/support.svg" },
                 { label: "Messages",        route: "admin.messages.index", icon: "/assets/icon/message.svg" },
                 { label: "Fichiers",        route: "admin.files.index", icon: "/assets/icon/file-manager.svg" },

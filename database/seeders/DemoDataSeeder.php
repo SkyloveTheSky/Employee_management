@@ -9,9 +9,11 @@ use App\Models\InboxMessage;
 use App\Models\Payroll;
 use App\Models\PlatformNotification;
 use App\Models\User;
+use App\Services\Payroll\OvertimeTypes;
 use App\Services\Payroll\PayrollCalculator;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class DemoDataSeeder extends Seeder
 {
@@ -38,15 +40,29 @@ class DemoDataSeeder extends Seeder
     {
         $settings = CompanySetting::query()->first();
         if (! $settings) {
-            CompanySetting::query()->create([
+            $payload = [
                 'company_name' => 'Cathicia\'s group',
                 'owner_name' => 'Cathicia Rasoanaivo',
                 'nif' => '4001234567',
                 'stat' => '32101 11 2020 0 12345',
                 'rcs' => '2020 B 00123',
-            ]);
+            ];
+            if (Schema::hasColumn('company_settings', 'overtime_enabled')) {
+                $payload['overtime_enabled'] = true;
+            }
+            if (Schema::hasColumn('company_settings', 'overtime_types')) {
+                $payload['overtime_types'] = OvertimeTypes::defaults();
+            }
+            CompanySetting::query()->create($payload);
 
             return;
+        }
+
+        if (Schema::hasColumn('company_settings', 'overtime_types') && empty($settings->overtime_types)) {
+            $settings->overtime_types = OvertimeTypes::defaults();
+        }
+        if (Schema::hasColumn('company_settings', 'overtime_enabled') && $settings->overtime_enabled === null) {
+            $settings->overtime_enabled = true;
         }
 
         $settings->fill(array_filter([
@@ -143,8 +159,7 @@ class DemoDataSeeder extends Seeder
                 }
 
                 $prime = $this->primeFor($profile, $periodIndex, count($periods));
-                $overtime = $this->overtimeFor($profile, $periodIndex);
-                $amounts = PayrollCalculator::compute($user, $prime, $overtime, $profile === 'cash' ? 0.5 : 1);
+                $amounts = PayrollCalculator::compute($user, $prime, 0, $profile === 'cash' ? 0.5 : 1);
                 $isPaid = $this->isPaid($profile, $periodIndex, count($periods));
                 $paidAt = $isPaid
                     ? $period->copy()->day($profile === 'late' ? min(18, $period->daysInMonth) : min(5 + ($periodIndex % 4), $period->daysInMonth))->toDateString()
@@ -169,7 +184,7 @@ class DemoDataSeeder extends Seeder
                         'payment_method' => $method,
                         'payment_status' => $isPaid ? 'paid' : 'unpaid',
                         'paid_at' => $paidAt,
-                        'notes' => $this->noteFor($profile, $prime, $overtime),
+                        'notes' => $this->noteFor($profile, $prime),
                     ]
                 );
             }
@@ -219,28 +234,10 @@ class DemoDataSeeder extends Seeder
         return 0;
     }
 
-    private function overtimeFor(string $profile, int $periodIndex): float
+    private function noteFor(string $profile, float $prime): ?string
     {
-        if (in_array($profile, ['bonus', 'gap', 'new'], true) && $periodIndex % 2 === 1) {
-            return 8;
-        }
-        if ($profile === 'cash' && $periodIndex % 3 === 0) {
-            return 4;
-        }
-
-        return 0;
-    }
-
-    private function noteFor(string $profile, float $prime, float $overtime): ?string
-    {
-        if ($prime > 0 && $overtime > 0) {
-            return 'Prime et heures supplémentaires ce mois-ci.';
-        }
         if ($prime > 0) {
             return 'Prime exceptionnelle incluse.';
-        }
-        if ($overtime > 0) {
-            return 'Heures supplémentaires validées par le responsable.';
         }
         if ($profile === 'late') {
             return 'Paiement souvent décalé, à relancer.';
@@ -254,7 +251,7 @@ class DemoDataSeeder extends Seeder
         $now = Carbon::now();
         $notes = [
             [$now->copy()->startOfMonth()->addDays(2), 'Réunion RH', 'Point mensuel sur les embauches et les absences.'],
-            [$now->copy()->startOfMonth()->addDays(7), 'Clôture paie', 'Vérifier les heures supplémentaires avant génération des fiches.'],
+            [$now->copy()->startOfMonth()->addDays(7), 'Clôture paie', 'Vérifier les fiches avant génération.'],
             [$now->copy()->day(min(12, $now->daysInMonth)), 'Versements CNAPS', 'Préparer le bordereau CNAPS du mois.'],
             [$now->copy()->day(min(18, $now->daysInMonth)), 'Entretien stagiaire', 'Suivi d’intégration de Tiana Razafy.'],
             [$now->copy()->day(min(25, $now->daysInMonth)), 'Rappel virements', 'Payer les fiches encore en statut non payé.'],

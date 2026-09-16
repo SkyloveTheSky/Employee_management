@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\CompanySetting;
+use App\Models\User;
 use App\Services\Payroll\IrsaScale;
+use App\Services\Payroll\OvertimeTypes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -19,10 +21,27 @@ class CompanySettingsController extends Controller
     {
         $admin = Admin::findOrFail(session('admin_id'));
         $settings = CompanySetting::query()->first();
+        $positions = User::query()
+            ->whereNotNull('position')
+            ->where('position', '!=', '')
+            ->orderBy('position')
+            ->pluck('position')
+            ->unique()
+            ->values();
+        $storedPositions = array_keys(CompanySetting::overtimeByPosition($settings));
+        $positions = $positions->merge($storedPositions)->unique()->sort()->values();
+        $positionMap = CompanySetting::overtimeByPosition($settings);
+        $defaultTypes = CompanySetting::overtimeTypes($settings);
 
         return Inertia::render('Admin/Settings/Company', [
             'admin' => $admin,
             'settings' => $settings,
+            'overtime_types' => $defaultTypes,
+            'overtime_positions' => $positions->map(fn (string $position) => [
+                'position' => $position,
+                'enabled' => (bool) ($positionMap[$position]['enabled'] ?? true),
+                'types' => $positionMap[$position]['types'] ?? $defaultTypes,
+            ])->values(),
             'irsa_brackets' => IrsaScale::normalize(
                 Schema::hasColumn('company_settings', 'irsa_brackets') ? $settings?->irsa_brackets : null
             ),
@@ -31,6 +50,16 @@ class CompanySettingsController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
+        foreach (['overtime_types', 'overtime_positions'] as $key) {
+            $raw = $request->input($key.'_json');
+            if (is_string($raw) && $raw !== '') {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    $request->merge([$key => $decoded]);
+                }
+            }
+        }
+
         $validated = $request->validate([
             'company_name' => ['nullable', 'string', 'max:255'],
             'owner_name' => ['nullable', 'string', 'max:255'],
@@ -39,9 +68,23 @@ class CompanySettingsController extends Controller
             'rcs' => ['nullable', 'string', 'max:255'],
             'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:2048'],
             'overtime_hours_per_day' => ['nullable', 'numeric', 'min:0', 'max:24'],
-            'overtime_weekly_goal' => ['nullable', 'numeric', 'min:0', 'max:168'],
-            'overtime_divisor' => ['nullable', 'numeric', 'min:0.01', 'max:9999'],
-            'overtime_coefficient' => ['nullable', 'numeric', 'min:1', 'max:5'],
+            'overtime_hours_per_half' => ['nullable', 'numeric', 'min:0', 'max:12'],
+            'overtime_enabled' => ['sometimes', 'boolean'],
+            'overtime_types' => ['nullable', 'array', 'max:30'],
+            'overtime_types.*.key' => ['nullable', 'string', 'max:64'],
+            'overtime_types.*.code' => ['nullable', 'string', 'max:64'],
+            'overtime_types.*.label' => ['required_with:overtime_types', 'string', 'max:120'],
+            'overtime_types.*.premium' => ['required_with:overtime_types', 'numeric', 'min:0', 'max:400'],
+            'overtime_types.*.enabled' => ['sometimes', 'boolean'],
+            'overtime_positions' => ['nullable', 'array', 'max:80'],
+            'overtime_positions.*.position' => ['required_with:overtime_positions', 'string', 'max:255'],
+            'overtime_positions.*.enabled' => ['sometimes', 'boolean'],
+            'overtime_positions.*.types' => ['nullable', 'array', 'max:30'],
+            'overtime_positions.*.types.*.key' => ['nullable', 'string', 'max:64'],
+            'overtime_positions.*.types.*.code' => ['nullable', 'string', 'max:64'],
+            'overtime_positions.*.types.*.label' => ['nullable', 'string', 'max:120'],
+            'overtime_positions.*.types.*.premium' => ['nullable', 'numeric', 'min:0', 'max:400'],
+            'overtime_positions.*.types.*.enabled' => ['sometimes', 'boolean'],
             'cnaps_employer_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'cnaps_employee_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'irsa_brackets' => ['nullable', 'array', 'min:1', 'max:20'],
@@ -71,10 +114,49 @@ class CompanySettingsController extends Controller
         $settings->stat = $validated['stat'] ?? $settings->stat;
         $settings->rcs = $validated['rcs'] ?? $settings->rcs;
 
+        if (array_key_exists('overtime_enabled', $validated)) {
+            $validated['overtime_enabled'] = $request->boolean('overtime_enabled');
+        }
+
+        if (array_key_exists('overtime_types', $validated)) {
+            $validated['overtime_types'] = OvertimeTypes::normalize($validated['overtime_types']);
+            $normal = collect($validated['overtime_types'])->firstWhere('key', 'normal')
+                ?? collect($validated['overtime_types'])->firstWhere('enabled', true);
+            if ($normal) {
+                $validated['overtime_coefficient'] = OvertimeTypes::coefficient((float) $normal['premium']);
+            }
+        }
+
+        if (array_key_exists('overtime_positions', $validated)) {
+            $map = [];
+            foreach ($validated['overtime_positions'] as $row) {
+                $name = trim((string) ($row['position'] ?? ''));
+                if ($name === '') {
+                    continue;
+                }
+                $map[$name] = [
+                    'enabled' => filter_var($row['enabled'] ?? true, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== false,
+                    'types' => OvertimeTypes::normalize($row['types'] ?? null),
+                ];
+            }
+            $validated['overtime_by_position'] = $map;
+            $firstEnabled = collect($map)->firstWhere('enabled', true);
+            $typesForCoeff = $firstEnabled['types'] ?? ($validated['overtime_types'] ?? null);
+            if ($typesForCoeff) {
+                $normal = collect($typesForCoeff)->firstWhere('key', 'normal')
+                    ?? collect($typesForCoeff)->firstWhere('enabled', true);
+                if ($normal) {
+                    $validated['overtime_coefficient'] = OvertimeTypes::coefficient((float) $normal['premium']);
+                }
+            }
+        }
+
         foreach ([
             'overtime_hours_per_day',
-            'overtime_weekly_goal',
-            'overtime_divisor',
+            'overtime_hours_per_half',
+            'overtime_enabled',
+            'overtime_types',
+            'overtime_by_position',
             'overtime_coefficient',
             'cnaps_percent',
             'cnaps_employer_percent',

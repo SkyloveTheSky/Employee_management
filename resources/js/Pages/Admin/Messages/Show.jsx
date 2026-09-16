@@ -33,6 +33,9 @@ export default function Show({ admin, employee, messages = [] }) {
                     otherLabel={employee.name}
                     otherIcon={employee.photo_path ? `/storage/${employee.photo_path}` : "/assets/icon/user.svg"}
                     storeUrl={route("admin.messages.store", employee.id)}
+                    pollUrl={`${route("admin.messages.live")}?user_id=${employee.id}`}
+                    deleteUrl={(id) => route("admin.messages.destroy", id)}
+                    clearUrl={route("admin.messages.destroy-thread", employee.id)}
                     emptyText="Aucun message. Écrivez le premier ou joignez un fichier."
                 />
             </div>
