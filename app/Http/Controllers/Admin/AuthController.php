@@ -29,17 +29,17 @@ class AuthController extends Controller
         'email_admin'    => 'required|email',
         'password_admin' => 'required|string|min:6',
         ], [
-        'email_admin.required'    => 'L\'email est obligatoire.',
-        'email_admin.email'       => 'L\'email n\'est pas valide.',
-        'password_admin.required' => 'Le mot de passe est obligatoire.',
-        'password_admin.min'      => 'Le mot de passe doit contenir au moins 6 caractères.',
+        'email_admin.required'    => __('auth.admin_email_required'),
+        'email_admin.email'       => __('auth.admin_email_invalid'),
+        'password_admin.required' => __('auth.admin_password_required'),
+        'password_admin.min'      => __('auth.admin_password_min'),
     ]);
 
     $admin = Admin::where('email_admin', $request->email_admin)->first();
 
     if (!$admin || !$admin->checkPassword($request->password_admin)) {
         return back()->withErrors([
-            'email_admin' => 'Email ou mot de passe incorrect.',
+            'email_admin' => __('auth.admin_failed'),
         ]);
     }
 
@@ -229,22 +229,22 @@ class AuthController extends Controller
             'current_password' => ['required', 'string'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
         ], [
-            'current_password.required' => 'Le mot de passe actuel est obligatoire.',
-            'password.required' => 'Le nouveau mot de passe est obligatoire.',
-            'password.min' => 'Le mot de passe doit contenir au moins 6 caractères.',
-            'password.confirmed' => 'La confirmation ne correspond pas.',
+            'current_password.required' => __('settings.current_required'),
+            'password.required' => __('settings.new_required'),
+            'password.min' => __('settings.password_min'),
+            'password.confirmed' => __('settings.password_confirmed'),
         ]);
 
         if (! $admin->checkPassword($validated['current_password'])) {
             return back()->withErrors([
-                'current_password' => 'Le mot de passe actuel est incorrect.',
+                'current_password' => __('settings.current_invalid'),
             ]);
         }
 
         $admin->password_admin = $validated['password'];
         $admin->save();
 
-        return back()->with('success', 'Mot de passe mis à jour.');
+        return back()->with('success', __('settings.password_updated'));
     }
 
     public function updateTheme(Request $request)
@@ -257,22 +257,22 @@ class AuthController extends Controller
             'tertiary' => $hex,
             'background' => $hex,
         ], [
-            'primary.regex' => 'La couleur primaire doit être un code hexadécimal (#RRGGBB).',
-            'secondary.regex' => 'La couleur secondaire doit être un code hexadécimal (#RRGGBB).',
-            'tertiary.regex' => 'La couleur tertiaire doit être un code hexadécimal (#RRGGBB).',
-            'background.regex' => 'La couleur de fond doit être un code hexadécimal (#RRGGBB).',
+            'primary.regex' => __('settings.primary_hex'),
+            'secondary.regex' => __('settings.secondary_hex'),
+            'tertiary.regex' => __('settings.tertiary_hex'),
+            'background.regex' => __('settings.background_hex'),
         ]);
 
         $settings = CompanySetting::query()->first() ?? new CompanySetting();
         if (! Schema::hasColumn('company_settings', 'display_theme')) {
             return back()->withErrors([
-                'primary' => 'Exécutez les migrations pour activer l’affichage (colonne display_theme).',
+                'primary' => __('settings.theme_migration'),
             ]);
         }
         $settings->display_theme = Theme::merge($validated);
         $settings->save();
 
-        return back()->with('success', 'Charte graphique enregistrée.');
+        return back()->with('success', __('settings.theme_saved'));
     }
 
     public function logout()

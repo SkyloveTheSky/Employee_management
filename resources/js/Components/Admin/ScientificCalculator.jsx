@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useT } from "@/i18n";
 
 function factorial(n) {
     if (!Number.isFinite(n) || n < 0 || Math.floor(n) !== n || n > 170) {
@@ -178,6 +179,7 @@ const KEYS = [
 ];
 
 export default function ScientificCalculator({ onClose }) {
+    const t = useT();
     const [expr, setExpr] = useState("");
     const [output, setOutput] = useState("0");
     const [degrees, setDegrees] = useState(true);
@@ -242,8 +244,8 @@ export default function ScientificCalculator({ onClose }) {
     return (
         <div style={styles.panel}>
             <div style={styles.header}>
-                <button type="button" onClick={onClose} style={styles.close}>
-                    Fermer
+                <button type="button" style={styles.close} onClick={onClose}>
+                    {t("common.close")}
                 </button>
             </div>
             <div style={styles.display}>

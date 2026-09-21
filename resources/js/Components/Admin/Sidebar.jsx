@@ -4,10 +4,12 @@ import { SIDEBAR_COLLAPSED, SIDEBAR_WIDTH } from "@/config/layout";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import BrandMark from "@/Components/BrandMark";
 import ThemeSync from "@/Components/ThemeSync";
+import { useT } from "@/i18n";
 
 export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
+    const t = useT();
     const { company } = usePage().props;
-    const companyName = company?.name || "Entreprise";
+    const companyName = company?.name || t("welcome.companyFallback");
     const isMobile = useIsMobile();
     const expanded = isMobile ? true : isOpen;
 
@@ -23,23 +25,24 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
 
     const menuSections = [
         {
-            title: "Activité",
+            title: t("nav.activity"),
             items: [
-                { label: "Tableau de bord", route: "admin.dashboard", icon: "/assets/icon/dashboard.svg" },
-                { label: "Agenda",          route: "admin.agenda",    icon: "/assets/icon/calendrier.svg" },
-                { label: "Employés",        route: "admin.employees", icon: "/assets/icon/users.svg" },
-                { label: "Paie",            route: "admin.payrolls.index", icon: "/assets/icon/payroll.svg" },
-                { label: "Gestion des présences", route: "admin.overtime.index", icon: "/assets/icon/hours.svg" },
-                { label: "Charge",          route: "admin.charges.index", icon: "/assets/icon/support.svg" },
-                { label: "Messages",        route: "admin.messages.index", icon: "/assets/icon/message.svg" },
-                { label: "Fichiers",        route: "admin.files.index", icon: "/assets/icon/file-manager.svg" },
+                { label: t("nav.dashboard"), route: "admin.dashboard", icon: "/assets/icon/dashboard.svg" },
+                { label: t("nav.agenda"),          route: "admin.agenda",    icon: "/assets/icon/calendrier.svg" },
+                { label: t("nav.employees"),        route: "admin.employees", icon: "/assets/icon/users.svg" },
+                { label: t("nav.payroll"),            route: "admin.payrolls.index", icon: "/assets/icon/payroll.svg" },
+                { label: t("nav.presences"), route: "admin.overtime.index", icon: "/assets/icon/hours.svg" },
+                { label: t("nav.adminLeaves"), route: "admin.leaves.index", icon: "/assets/icon/leave.svg" },
+                { label: t("nav.charges"),          route: "admin.charges.index", icon: "/assets/icon/support.svg" },
+                { label: t("nav.messages"),        route: "admin.messages.index", icon: "/assets/icon/message.svg" },
+                { label: t("nav.adminFiles"),        route: "admin.files.index", icon: "/assets/icon/file-manager.svg" },
             ],
         },
         {
-            title: "Plateforme",
+            title: t("nav.platform"),
             items: [
-                { label: "Entreprise", route: "admin.settings.company.edit", icon: "/assets/icon/building.svg" },
-                { label: "Paramètres", route: "admin.settings.edit", icon: "/assets/icon/gear.svg" },
+                { label: t("nav.company"), route: "admin.settings.company.edit", icon: "/assets/icon/building.svg" },
+                { label: t("nav.settings"), route: "admin.settings.edit", icon: "/assets/icon/gear.svg" },
             ],
         },
     ];
@@ -48,7 +51,7 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
         <>
             <ThemeSync />
             {isMobile && !isOpen && (
-                <button type="button" className="app-menu-fab" onClick={() => setIsOpen(true)} aria-label="Ouvrir le menu">
+                <button type="button" className="app-menu-fab" onClick={() => setIsOpen(true)} aria-label={t("nav.openMenu")}>
                     ☰
                 </button>
             )}
@@ -76,7 +79,7 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
                         type="button"
                         onClick={() => setIsOpen(!isOpen)}
                         style={styles.toggleButton}
-                        aria-label={isOpen ? "Fermer le menu" : "Ouvrir le menu"}
+                        aria-label={isOpen ? t("nav.closeMenu") : t("nav.openMenu")}
                     >
                         {isMobile ? "✕" : isOpen ? "‹" : "›"}
                     </button>
@@ -138,8 +141,8 @@ export default function Sidebar({ admin, currentPage, isOpen, setIsOpen }) {
                         )}
                     </div>
 
-                    <button onClick={logout} style={styles.logoutButton} title="Se déconnecter">
-                        {expanded ? "Se déconnecter" : "⎋"}
+                    <button onClick={logout} style={styles.logoutButton} title={t("nav.logout")}>
+                        {expanded ? t("nav.logout") : "⎋"}
                     </button>
                 </div>
             </aside>

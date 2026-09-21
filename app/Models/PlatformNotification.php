@@ -14,6 +14,7 @@ class PlatformNotification extends Model
         'title',
         'body',
         'link',
+        'dedupe_key',
         'read_at',
     ];
 

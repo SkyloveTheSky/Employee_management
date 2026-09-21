@@ -1,9 +1,11 @@
 import { useForm, usePage } from "@inertiajs/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/Components/ConfirmDialog";
+import IconButton from "@/Components/IconButton";
 import { colors } from "@/config/colors";
 import useInboxLive from "@/hooks/useInboxLive";
 import { inboxDelete } from "@/lib/inboxRequest";
+import { useDateLocale, useT } from "@/i18n";
 
 const EMOJI_GROUPS = [
     {
@@ -23,11 +25,18 @@ const EMOJI_GROUPS = [
     },
 ];
 
-function formatWhen(value) {
+function normalize(value) {
+    return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
+
+function formatWhen(value, locale) {
     if (!value) return "";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
-    return new Intl.DateTimeFormat("fr-FR", {
+    return new Intl.DateTimeFormat(locale, {
         day: "2-digit",
         month: "short",
         hour: "2-digit",
@@ -47,32 +56,57 @@ function formatSize(bytes) {
     return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
 }
 
+function messageText(message) {
+    const names = (message.attachments || []).map((file) => file.name).join(" ");
+    return `${message.body || ""} ${names}`;
+}
+
 export default function MessageThread({
     messages: initialMessages = [],
     me = "user",
     otherLabel = "RH",
     otherIcon = "/assets/icon/building.svg",
     storeUrl,
-    pollUrl,
+    liveUrl,
+    liveUserId = null,
+    liveThread = false,
     deleteUrl,
     clearUrl,
-    emptyText = "Aucun message.",
+    emptyText,
 }) {
+    const t = useT();
+    const dateLoc = useDateLocale();
+    const resolvedEmpty = emptyText || t("messages.empty");
     const { errors } = usePage().props;
-    const { data: live, refresh } = useInboxLive(pollUrl, { enabled: Boolean(pollUrl) });
+    const { data: live, refresh } = useInboxLive({
+        url: liveUrl,
+        enabled: Boolean(liveUrl),
+        userId: liveUserId,
+        thread: liveThread,
+    });
     const liveMessages = Array.isArray(live?.messages) ? live.messages : null;
     const lastInitial = Number(initialMessages[initialMessages.length - 1]?.id || 0);
     const lastLive = Number(liveMessages?.[liveMessages.length - 1]?.id || 0);
     const [hiddenIds, setHiddenIds] = useState([]);
     const [pending, setPending] = useState(null);
     const [deleting, setDeleting] = useState(false);
+    const [query, setQuery] = useState("");
     const source = liveMessages && lastLive >= lastInitial ? liveMessages : initialMessages;
     const messages = source.filter((message) => !hiddenIds.includes(message.id));
+    const needle = normalize(query).trim();
+    const visible = useMemo(() => {
+        if (!needle) {
+            return messages;
+        }
+        return messages.filter((message) => normalize(messageText(message)).includes(needle));
+    }, [messages, needle]);
+    const lastId = visible[visible.length - 1]?.id || 0;
     const { data, setData, post, processing, reset } = useForm({
         body: "",
         attachments: [],
     });
-    const bottomRef = useRef(null);
+    const threadRef = useRef(null);
+    const stickToBottom = useRef(true);
     const fileInput = useRef(null);
     const textareaRef = useRef(null);
     const pickerRef = useRef(null);
@@ -81,9 +115,31 @@ export default function MessageThread({
     const files = Array.from(data.attachments || []);
     const activeEmojis = EMOJI_GROUPS.find((group) => group.id === emojiGroup)?.items || EMOJI_GROUPS[0].items;
 
+    const onThreadScroll = () => {
+        const el = threadRef.current;
+        if (!el) {
+            return;
+        }
+        stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 72;
+    };
+
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+        if (needle) {
+            stickToBottom.current = false;
+            return undefined;
+        }
+        if (!stickToBottom.current) {
+            return undefined;
+        }
+        const el = threadRef.current;
+        if (!el) {
+            return undefined;
+        }
+        const frame = window.requestAnimationFrame(() => {
+            el.scrollTop = el.scrollHeight;
+        });
+        return () => window.cancelAnimationFrame(frame);
+    }, [lastId, visible.length, needle]);
 
     useEffect(() => {
         if (!emojiOpen) return undefined;
@@ -108,12 +164,15 @@ export default function MessageThread({
     const submit = (e) => {
         e.preventDefault();
         if (!canSend) return;
+        setQuery("");
+        stickToBottom.current = true;
         post(storeUrl, {
             forceFormData: true,
             preserveScroll: true,
             preserveState: true,
             only: ["messages", "inbox", "errors"],
             onSuccess: () => {
+                stickToBottom.current = true;
                 reset("body", "attachments");
                 if (fileInput.current) fileInput.current.value = "";
             },
@@ -166,78 +225,72 @@ export default function MessageThread({
     };
 
     return (
-        <div style={styles.card}>
-            {clearUrl && messages.length > 0 && (
-                <div style={styles.threadTools}>
+        <div className="app-msg-card" style={styles.card}>
+            <div style={styles.toolbar}>
+                <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={t("messages.search")}
+                    style={styles.search}
+                />
+                {needle ? (
+                    <span style={styles.searchMeta}>
+                        {t(visible.length > 1 ? "messages.results_plural" : "messages.results", { count: visible.length })}
+                    </span>
+                ) : null}
+                {clearUrl && messages.length > 0 && (
                     <button
                         type="button"
                         style={styles.clearBtn}
                         onClick={() => setPending({
                             type: "all",
                             url: clearUrl,
-                            title: "Vider la conversation ?",
-                            message: "Tous les messages de cette conversation seront supprimés.",
+                            title: t("messages.clearTitle"),
+                            message: t("messages.clearBody"),
                         })}
                     >
-                        Vider la conversation
+                        {t("messages.clear")}
                     </button>
-                </div>
-            )}
-            <div style={styles.thread}>
-                {messages.length === 0 ? (
-                    <p style={styles.empty}>{emptyText}</p>
+                )}
+            </div>
+            <div ref={threadRef} className="app-msg-thread" style={styles.thread} onScroll={onThreadScroll}>
+                {visible.length === 0 ? (
+                    <p style={styles.empty}>{needle ? t("messages.noneMatch") : resolvedEmpty}</p>
                 ) : (
-                    messages.map((message) => {
+                    visible.map((message) => {
                         const mine = message.author === me;
+                        const photo = !mine && String(otherIcon).includes("/storage/");
                         return (
                             <div
                                 key={message.id}
+                                className="app-msg-row"
                                 style={{
                                     ...styles.row,
                                     flexDirection: mine ? "row-reverse" : "row",
                                 }}
                             >
-                                <img
-                                    src={mine ? "/assets/icon/user.svg" : otherIcon}
-                                    alt=""
-                                    style={{
-                                        ...styles.avatar,
-                                        padding: mine || !String(otherIcon).includes("/storage/") ? "6px" : "0",
-                                        objectFit: "cover",
-                                        filter: mine ? "invert(1)" : "none",
-                                        background: mine ? "var(--color-primary)" : "#edf2f7",
-                                    }}
-                                />
+                                {!mine ? (
+                                    <img
+                                        src={otherIcon}
+                                        alt=""
+                                        style={{
+                                            ...styles.avatar,
+                                            padding: photo ? "0" : "6px",
+                                            objectFit: "cover",
+                                        }}
+                                    />
+                                ) : (
+                                    <span style={styles.avatarSpacer} />
+                                )}
                                 <div
                                     style={{
                                         ...styles.bubble,
-                                        background: mine ? "var(--color-primary)" : "#f7fafc",
+                                        background: mine ? "var(--color-primary)" : "#f4f6fb",
                                         color: mine ? "white" : colors.dark,
+                                        borderBottomRightRadius: mine ? "4px" : "16px",
+                                        borderBottomLeftRadius: mine ? "16px" : "4px",
                                     }}
                                 >
-                                    <p style={{ ...styles.bubbleAuthor, display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
-                                        <span>{mine ? "Vous" : otherLabel}</span>
-                                        {deleteUrl && (
-                                            <button
-                                                type="button"
-                                                style={{
-                                                    ...styles.bubbleDelete,
-                                                    color: mine ? "rgba(255,255,255,0.85)" : colors.muted,
-                                                }}
-                                                title="Supprimer"
-                                                aria-label="Supprimer ce message"
-                                                onClick={() => setPending({
-                                                    type: "one",
-                                                    id: message.id,
-                                                    url: deleteUrl(message.id),
-                                                    title: "Supprimer ce message ?",
-                                                    message: "Le message sera retiré définitivement.",
-                                                })}
-                                            >
-                                                ×
-                                            </button>
-                                        )}
-                                    </p>
                                     {message.body ? <p style={styles.bubbleBody}>{message.body}</p> : null}
                                     {(message.attachments || []).length > 0 && (
                                         <div style={styles.files}>
@@ -270,13 +323,30 @@ export default function MessageThread({
                                             ))}
                                         </div>
                                     )}
-                                    <p style={styles.bubbleWhen}>{formatWhen(message.at)}</p>
+                                    <p style={styles.bubbleWhen}>{formatWhen(message.at, dateLoc)}</p>
                                 </div>
+                                {deleteUrl && (
+                                    <span className="app-msg-delete">
+                                        <IconButton
+                                            icon="close"
+                                            label={t("messages.deleteMessage")}
+                                            variant="ghost"
+                                            size={24}
+                                            iconSize={12}
+                                            onClick={() => setPending({
+                                                type: "one",
+                                                id: message.id,
+                                                url: deleteUrl(message.id),
+                                                title: t("messages.deleteMessageTitle"),
+                                                message: t("messages.deleteMessageBody"),
+                                            })}
+                                        />
+                                    </span>
+                                )}
                             </div>
                         );
                     })
                 )}
-                <div ref={bottomRef} />
             </div>
             {errors?.body && <p style={styles.error}>{errors.body}</p>}
             {errors?.attachments && <p style={styles.error}>{errors.attachments}</p>}
@@ -285,9 +355,14 @@ export default function MessageThread({
                     {files.map((file, index) => (
                         <span key={`${file.name}-${index}`} style={styles.pendingChip}>
                             {file.name} · {formatSize(file.size)}
-                            <button type="button" style={styles.pendingRemove} onClick={() => removeFile(index)}>
-                                ×
-                            </button>
+                            <IconButton
+                                icon="close"
+                                label={t("messages.removeFile")}
+                                variant="ghost"
+                                size={22}
+                                iconSize={12}
+                                onClick={() => removeFile(index)}
+                            />
                         </span>
                     ))}
                 </div>
@@ -297,8 +372,8 @@ export default function MessageThread({
                     <button
                         type="button"
                         style={styles.iconBtn}
-                        title="Joindre un fichier"
-                        aria-label="Joindre un fichier"
+                        title={t("messages.attach")}
+                        aria-label={t("messages.attach")}
                         onClick={() => {
                             setEmojiOpen(false);
                             fileInput.current?.click();
@@ -312,15 +387,15 @@ export default function MessageThread({
                             ...styles.iconBtn,
                             borderColor: emojiOpen ? "var(--color-primary)" : colors.border,
                         }}
-                        title="Emojis"
-                        aria-label="Emojis"
+                        title={t("messages.emojis")}
+                        aria-label={t("messages.emojis")}
                         aria-expanded={emojiOpen}
                         onClick={() => setEmojiOpen((open) => !open)}
                     >
                         <img src="/assets/icon/emoji.svg" alt="" style={styles.icon} />
                     </button>
                     {emojiOpen && (
-                        <div style={styles.picker} role="listbox" aria-label="Choisir un emoji">
+                        <div style={styles.picker} role="listbox" aria-label={t("messages.chooseEmoji")}>
                             <div style={styles.pickerTabs}>
                                 {EMOJI_GROUPS.map((group) => (
                                     <button
@@ -333,7 +408,7 @@ export default function MessageThread({
                                         }}
                                         onClick={() => setEmojiGroup(group.id)}
                                     >
-                                        {group.label}
+                                        {t(`messages.${group.id === "gestes" ? "gestures" : group.id === "travail" ? "work" : "smileys"}`)}
                                     </button>
                                 ))}
                             </div>
@@ -364,11 +439,19 @@ export default function MessageThread({
                     ref={textareaRef}
                     value={data.body}
                     onChange={(e) => setData("body", e.target.value)}
-                    placeholder="Votre message…"
-                    rows={3}
+                    placeholder={t("messages.placeholder")}
+                    rows={1}
                     style={styles.textarea}
+                    onKeyDown={(event) => {
+                        if (event.key === "Enter" && !event.shiftKey) {
+                            event.preventDefault();
+                            if (canSend && !processing) {
+                                event.currentTarget.form?.requestSubmit();
+                            }
+                        }
+                    }}
                 />
-                <button type="submit" disabled={processing || !canSend} style={styles.send} title="Envoyer" aria-label="Envoyer">
+                <button type="submit" disabled={processing || !canSend} style={styles.send} title={t("messages.send")} aria-label={t("messages.send")}>
                     <img src="/assets/icon/send.svg" alt="" style={styles.sendIcon} />
                 </button>
             </form>
@@ -385,37 +468,61 @@ export default function MessageThread({
 }
 
 const styles = {
-    card: { background: "white", borderRadius: "12px", border: `1px solid ${colors.border}`, padding: "16px", display: "flex", flexDirection: "column", minHeight: "60vh" },
-    thread: { flex: 1, display: "flex", flexDirection: "column", gap: "12px", overflow: "auto", padding: "8px 4px 16px" },
-    threadTools: { display: "flex", justifyContent: "flex-end", marginBottom: "8px" },
-    clearBtn: { border: "none", background: "transparent", color: colors.error, fontSize: "12px", fontWeight: 600, cursor: "pointer", padding: 0 },
-    bubbleDelete: { border: "none", background: "transparent", cursor: "pointer", fontSize: "16px", lineHeight: 1, padding: 0 },
+    card: {
+        background: "white",
+        borderRadius: "12px",
+        border: `1px solid ${colors.border}`,
+        padding: "12px 12px 12px",
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+    },
+    toolbar: {
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "0 4px 10px",
+        borderBottom: `1px solid ${colors.border}`,
+        flexShrink: 0,
+    },
+    search: {
+        flex: 1,
+        minWidth: 0,
+        border: `1px solid ${colors.border}`,
+        borderRadius: "8px",
+        padding: "8px 10px",
+        fontSize: "13px",
+        boxSizing: "border-box",
+        fontFamily: "inherit",
+    },
+    searchMeta: { fontSize: "12px", color: colors.muted, whiteSpace: "nowrap", flexShrink: 0 },
+    thread: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "10px", overflowY: "auto", padding: "12px 4px" },
+    clearBtn: { border: "none", background: "transparent", color: colors.error, fontSize: "13px", fontWeight: 600, cursor: "pointer", padding: "4px 2px", flexShrink: 0 },
     empty: { margin: "auto", color: colors.muted, fontSize: "14px" },
     row: { display: "flex", alignItems: "flex-end", gap: "8px", maxWidth: "100%" },
-    avatar: { width: "32px", height: "32px", borderRadius: "50%", padding: "6px", boxSizing: "border-box", flexShrink: 0 },
-    bubble: { maxWidth: "min(520px, 82%)", borderRadius: "12px", padding: "10px 12px" },
-    bubbleAuthor: { margin: 0, fontSize: "11px", fontWeight: 700, opacity: 0.8 },
-    bubbleBody: { margin: "4px 0", fontSize: "15px", lineHeight: 1.45, whiteSpace: "pre-wrap", fontFamily: 'system-ui, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif' },
-    bubbleWhen: { margin: "6px 0 0", fontSize: "11px", opacity: 0.7 },
+    avatar: { width: "32px", height: "32px", borderRadius: "50%", padding: "6px", boxSizing: "border-box", flexShrink: 0, background: "#edf2f7" },
+    avatarSpacer: { width: "32px", flexShrink: 0 },
+    bubble: { maxWidth: "min(520px, 78%)", borderRadius: "16px", padding: "8px 12px 6px" },
+    bubbleBody: { margin: 0, fontSize: "15px", lineHeight: 1.45, whiteSpace: "pre-wrap", fontFamily: 'system-ui, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif' },
+    bubbleWhen: { margin: "4px 0 0", fontSize: "11px", opacity: 0.65 },
     files: { display: "flex", flexDirection: "column", gap: "6px", marginTop: "8px" },
     fileChip: { display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", borderRadius: "8px", padding: "6px", fontSize: "12px", fontWeight: 600 },
     fileIcon: { width: "18px", height: "18px", flexShrink: 0 },
     thumb: { width: "72px", height: "52px", objectFit: "cover", borderRadius: "6px", flexShrink: 0 },
     fileName: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
     error: { color: colors.error, fontSize: "13px", margin: "0 0 8px" },
-    pending: { display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" },
+    pending: { display: "flex", flexWrap: "wrap", gap: "6px", margin: "0 0 8px" },
     pendingChip: { display: "inline-flex", alignItems: "center", gap: "6px", background: "#edf2f7", borderRadius: "999px", padding: "4px 8px", fontSize: "12px", color: colors.dark },
-    pendingRemove: { border: "none", background: "transparent", cursor: "pointer", fontSize: "16px", lineHeight: 1, padding: 0 },
-    form: { display: "flex", gap: "8px", alignItems: "flex-end", borderTop: `1px solid ${colors.border}`, paddingTop: "12px", position: "relative" },
+    form: { display: "flex", gap: "8px", alignItems: "flex-end", borderTop: `1px solid ${colors.border}`, paddingTop: "10px", position: "relative", flexShrink: 0 },
     tools: { display: "flex", gap: "6px", position: "relative", flexShrink: 0 },
     picker: { position: "absolute", left: 0, bottom: "50px", width: "min(280px, calc(100vw - 96px))", background: "white", border: `1px solid ${colors.border}`, borderRadius: "12px", boxShadow: "0 10px 30px rgba(15, 23, 42, 0.12)", padding: "8px", zIndex: 5 },
     pickerTabs: { display: "flex", gap: "4px", marginBottom: "8px" },
     pickerTab: { flex: 1, border: "none", background: "transparent", padding: "6px 4px", fontSize: "12px", fontWeight: 700, cursor: "pointer", borderBottom: "2px solid transparent" },
     pickerGrid: { display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: "2px" },
     emojiBtn: { border: "none", background: "transparent", fontSize: "20px", lineHeight: 1.3, cursor: "pointer", borderRadius: "8px", padding: "4px" },
-    iconBtn: { width: "42px", height: "42px", border: `1px solid ${colors.border}`, background: "white", borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0 },
-    icon: { width: "20px", height: "20px" },
-    textarea: { flex: 1, border: `1px solid ${colors.border}`, borderRadius: "10px", padding: "10px 12px", fontSize: "15px", fontFamily: 'system-ui, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif', resize: "vertical" },
-    send: { width: "42px", height: "42px", border: "none", background: "var(--color-primary)", borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0 },
+    iconBtn: { width: "40px", height: "40px", border: `1px solid ${colors.border}`, background: "white", borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0 },
+    icon: { width: "18px", height: "18px" },
+    textarea: { flex: 1, border: `1px solid ${colors.border}`, borderRadius: "10px", padding: "10px 12px", fontSize: "15px", fontFamily: 'system-ui, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif', resize: "none", minHeight: "40px", maxHeight: "120px", lineHeight: 1.4 },
+    send: { width: "40px", height: "40px", border: "none", background: "var(--color-primary)", borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0 },
     sendIcon: { width: "18px", height: "18px", filter: "invert(1)" },
 };

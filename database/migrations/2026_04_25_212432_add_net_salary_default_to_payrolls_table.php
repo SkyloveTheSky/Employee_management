@@ -11,8 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasTable('payrolls')) {
+            return;
+        }
+
         Schema::table('payrolls', function (Blueprint $table) {
-            $table->decimal('net_salary', 12, 2)->default(0)->change();
+            if (! Schema::hasColumn('payrolls', 'net_salary')) {
+                $table->decimal('net_salary', 12, 2)->default(0);
+            }
         });
     }
 

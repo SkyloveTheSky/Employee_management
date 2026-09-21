@@ -4,10 +4,12 @@ import { SIDEBAR_COLLAPSED, SIDEBAR_WIDTH } from "@/config/layout";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import BrandMark from "@/Components/BrandMark";
 import ThemeSync from "@/Components/ThemeSync";
+import { useT } from "@/i18n";
 
 export default function Sidebar({ user, currentPage, isOpen, setIsOpen }) {
+    const t = useT();
     const { company } = usePage().props;
-    const companyName = company?.name || "Espace employé";
+    const companyName = company?.name || t("nav.employeeFallback");
     const isMobile = useIsMobile();
     const expanded = isMobile ? true : isOpen;
 
@@ -22,18 +24,20 @@ export default function Sidebar({ user, currentPage, isOpen, setIsOpen }) {
     };
 
     const menuItems = [
-        { label: "Tableau de bord", route: "dashboard", path: "/dashboard", icon: "/assets/icon/dashboard.svg" },
-        { label: "Mes fiches de paie", route: "payrolls.index", path: "/payrolls", icon: "/assets/icon/payroll.svg" },
-        { label: "Mes fichiers", route: "files.index", path: "/files", icon: "/assets/icon/file-manager.svg" },
-        { label: "Messages", route: "messages.index", path: "/messages", icon: "/assets/icon/message.svg" },
-        { label: "Paramètres", route: "profile.edit", path: "/profile", icon: "/assets/icon/gear.svg" },
+        { label: t("nav.dashboard"), route: "dashboard", path: "/dashboard", icon: "/assets/icon/dashboard.svg" },
+        { label: t("nav.attendance"), route: "attendance.index", path: "/attendance", icon: "/assets/icon/calendrier.svg" },
+        { label: t("nav.leaves"), route: "leaves.index", path: "/leaves", icon: "/assets/icon/leave.svg" },
+        { label: t("nav.payrolls"), route: "payrolls.index", path: "/payrolls", icon: "/assets/icon/payroll.svg" },
+        { label: t("nav.files"), route: "files.index", path: "/files", icon: "/assets/icon/file-manager.svg" },
+        { label: t("nav.messages"), route: "messages.index", path: "/messages", icon: "/assets/icon/message.svg" },
+        { label: t("nav.settings"), route: "profile.edit", path: "/profile", icon: "/assets/icon/gear.svg" },
     ];
 
     return (
         <>
             <ThemeSync />
             {isMobile && !isOpen && (
-                <button type="button" className="app-menu-fab" onClick={() => setIsOpen(true)} aria-label="Ouvrir le menu">
+                <button type="button" className="app-menu-fab" onClick={() => setIsOpen(true)} aria-label={t("nav.openMenu")}>
                     ☰
                 </button>
             )}
@@ -61,14 +65,14 @@ export default function Sidebar({ user, currentPage, isOpen, setIsOpen }) {
                         type="button"
                         onClick={() => setIsOpen(!isOpen)}
                         style={styles.toggleButton}
-                        aria-label={isOpen ? "Fermer le menu" : "Ouvrir le menu"}
+                        aria-label={isOpen ? t("nav.closeMenu") : t("nav.openMenu")}
                     >
                         {isMobile ? "✕" : isOpen ? "‹" : "›"}
                     </button>
                 </div>
 
                 <nav style={styles.nav}>
-                    {expanded && <p style={styles.sectionTitle}>Menu Principal</p>}
+                    {expanded && <p style={styles.sectionTitle}>{t("nav.mainMenu")}</p>}
                     {menuItems.map((item) => (
                         <Link
                             key={item.route}
@@ -114,13 +118,13 @@ export default function Sidebar({ user, currentPage, isOpen, setIsOpen }) {
                                 <p style={styles.userName}>
                                     {user?.first_name} {user?.last_name}
                                 </p>
-                                <p style={styles.userRole}>{user?.position || "Utilisateur"}</p>
+                                <p style={styles.userRole}>{user?.position || t("common.user")}</p>
                             </div>
                         )}
                     </div>
 
-                    <button onClick={logout} style={styles.logoutButton} title="Se déconnecter">
-                        {expanded ? "Se déconnecter" : "⎋"}
+                    <button onClick={logout} style={styles.logoutButton} title={t("nav.logout")}>
+                        {expanded ? t("nav.logout") : "⎋"}
                     </button>
                 </div>
             </aside>

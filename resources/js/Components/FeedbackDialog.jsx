@@ -1,14 +1,19 @@
 import { colors } from "@/config/colors";
+import { useT } from "@/i18n";
 
 export default function FeedbackDialog({
     show = false,
-    title = "Enregistrement réussi",
-    message = "Les modifications ont bien été enregistrées.",
-    confirmLabel = "OK",
+    title,
+    message,
+    confirmLabel,
     variant = "success",
     onClose,
 }) {
+    const t = useT();
     if (!show) return null;
+    const heading = title || t("admin.company.savedTitle");
+    const body = message || t("admin.company.savedBody");
+    const confirm = confirmLabel || "OK";
 
     return (
         <div style={styles.overlay} onClick={onClose}>
@@ -20,9 +25,9 @@ export default function FeedbackDialog({
                 onClick={(e) => e.stopPropagation()}
             >
                 <h3 id="feedback-dialog-title" style={styles.title}>
-                    {title}
+                    {heading}
                 </h3>
-                <p style={styles.message}>{message}</p>
+                <p style={styles.message}>{body}</p>
                 <div style={styles.actions}>
                     <button
                         type="button"
@@ -32,7 +37,7 @@ export default function FeedbackDialog({
                         }}
                         onClick={onClose}
                     >
-                        {confirmLabel}
+                        {confirm}
                     </button>
                 </div>
             </div>

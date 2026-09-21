@@ -4,6 +4,7 @@ import HeaderTools from "@/Components/HeaderTools";
 import Sidebar from "../../../Components/Admin/Sidebar";
 import { colors } from "@/config/colors";
 import { useSidebar } from "@/hooks/useSidebar";
+import { useT } from "@/i18n";
 
 const DEFAULT_THEME = {
     primary: "#261FB3",
@@ -13,6 +14,7 @@ const DEFAULT_THEME = {
 };
 
 export default function Account({ admin }) {
+    const t = useT();
     const { isOpen, setIsOpen, offset } = useSidebar();
     const { flash, theme } = usePage().props;
     const passwordForm = useForm({
@@ -51,14 +53,14 @@ export default function Account({ admin }) {
 
     return (
         <>
-            <Head title="Paramètres" />
+            <Head title={t("admin.settings.title")} />
             <Sidebar admin={admin} currentPage="admin.settings.edit" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
-                        <h1 style={styles.title}>Paramètres</h1>
-                        <p style={styles.subtitle}>Compte administrateur et affichage de la plateforme</p>
+                        <h1 style={styles.title}>{t("admin.settings.title")}</h1>
+                        <p style={styles.subtitle}>{t("admin.settings.subtitle")}</p>
                     </div>
                     <HeaderTools />
                 </div>
@@ -66,14 +68,14 @@ export default function Account({ admin }) {
                 {flash?.success && <p style={styles.success}>{flash.success}</p>}
 
                 <div style={styles.card}>
-                    <h2 style={styles.sectionTitle}>Compte</h2>
+                    <h2 style={styles.sectionTitle}>{t("admin.settings.account")}</h2>
                     <p style={styles.meta}>
                         {admin.email_admin}
                         {admin.number_phone_admin ? ` · ${admin.number_phone_admin}` : ""}
                     </p>
                     <form onSubmit={submitPassword}>
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Mot de passe actuel</label>
+                            <label style={styles.label}>{t("profile.currentPassword")}</label>
                             <input
                                 type="password"
                                 value={passwordForm.data.current_password}
@@ -85,7 +87,7 @@ export default function Account({ admin }) {
                             )}
                         </div>
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Nouveau mot de passe</label>
+                            <label style={styles.label}>{t("profile.newPassword")}</label>
                             <input
                                 type="password"
                                 value={passwordForm.data.password}
@@ -95,7 +97,7 @@ export default function Account({ admin }) {
                             {passwordForm.errors.password && <p style={styles.error}>{passwordForm.errors.password}</p>}
                         </div>
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Confirmer le mot de passe</label>
+                            <label style={styles.label}>{t("profile.confirmPassword")}</label>
                             <input
                                 type="password"
                                 value={passwordForm.data.password_confirmation}
@@ -104,39 +106,39 @@ export default function Account({ admin }) {
                             />
                         </div>
                         <button type="submit" disabled={passwordForm.processing} style={styles.button}>
-                            {passwordForm.processing ? "Enregistrement..." : "Mettre à jour le mot de passe"}
+                            {passwordForm.processing ? t("common.saving") : t("admin.settings.updatePassword")}
                         </button>
                     </form>
                 </div>
 
                 <div style={styles.card}>
-                    <h2 style={styles.sectionTitle}>Affichage</h2>
-                    <p style={styles.meta}>Charte graphique de la plateforme (admin et employés).</p>
+                    <h2 style={styles.sectionTitle}>{t("admin.settings.appearance")}</h2>
+                    <p style={styles.meta}>{t("admin.settings.appearanceHelp")}</p>
                     <form onSubmit={submitTheme}>
                         <ColorField
-                            label="Primaire"
-                            hint="Logo RH, menu actif, graphiques"
+                            label={t("admin.settings.primary")}
+                            hint={t("admin.settings.primaryHint")}
                             value={themeForm.data.primary}
                             onChange={(v) => themeForm.setData("primary", v)}
                             error={themeForm.errors.primary}
                         />
                         <ColorField
-                            label="Secondaire"
-                            hint="Carte profil dans la barre latérale"
+                            label={t("admin.settings.secondary")}
+                            hint={t("admin.settings.secondaryHint")}
                             value={themeForm.data.secondary}
                             onChange={(v) => themeForm.setData("secondary", v)}
                             error={themeForm.errors.secondary}
                         />
                         <ColorField
-                            label="Tertiaire"
-                            hint="Fond de la barre latérale"
+                            label={t("admin.settings.tertiary")}
+                            hint={t("admin.settings.tertiaryHint")}
                             value={themeForm.data.tertiary}
                             onChange={(v) => themeForm.setData("tertiary", v)}
                             error={themeForm.errors.tertiary}
                         />
                         <ColorField
-                            label="Fond"
-                            hint="Arrière-plan des pages"
+                            label={t("admin.settings.background")}
+                            hint={t("admin.settings.backgroundHint")}
                             value={themeForm.data.background}
                             onChange={(v) => themeForm.setData("background", v)}
                             error={themeForm.errors.background}
@@ -149,10 +151,10 @@ export default function Account({ admin }) {
                         </div>
                         <div style={styles.actions}>
                             <button type="submit" disabled={themeForm.processing} style={styles.button}>
-                                {themeForm.processing ? "Enregistrement..." : "Enregistrer l'affichage"}
+                                {themeForm.processing ? t("common.saving") : t("admin.settings.saveAppearance")}
                             </button>
                             <button type="button" onClick={resetTheme} style={styles.secondaryButton}>
-                                Réinitialiser
+                                {t("admin.settings.reset")}
                             </button>
                         </div>
                     </form>

@@ -4,36 +4,39 @@ import BrandMark from "@/Components/BrandMark";
 import HeaderTools from "@/Components/HeaderTools";
 import { colors } from "@/config/colors";
 import { useSidebar } from "@/hooks/useSidebar";
+import { useDateLocale, useT } from "@/i18n";
 
 export default function Index({ payrolls }) {
+    const t = useT();
+    const dateLoc = useDateLocale();
     const { auth } = usePage().props;
     const user = auth?.user;
     const { isOpen, setIsOpen, offset } = useSidebar();
 
-    const formatAr = (value) => `${Number(value || 0).toLocaleString("fr-FR")} Ar`;
+    const formatAr = (value) => `${Number(value || 0).toLocaleString(dateLoc)} Ar`;
     const formatDate = (value) => {
-        if (!value) return "-";
+        if (!value) return t("common.dash");
         const date = new Date(value);
-        if (Number.isNaN(date.getTime())) return "-";
-        return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "long", year: "numeric" }).format(date);
+        if (Number.isNaN(date.getTime())) return t("common.dash");
+        return new Intl.DateTimeFormat(dateLoc, { day: "2-digit", month: "long", year: "numeric" }).format(date);
     };
     const formatMonth = (monthYear) => {
-        if (!monthYear) return "-";
+        if (!monthYear) return t("common.dash");
         const [year, month] = monthYear.split("-");
         const date = new Date(year, parseInt(month, 10) - 1, 1);
-        return new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(date);
+        return new Intl.DateTimeFormat(dateLoc, { month: "long", year: "numeric" }).format(date);
     };
 
     return (
         <>
-            <Head title="Mes fiches de paie" />
+            <Head title={t("payrolls.title")} />
             <Sidebar user={user} currentPage="payrolls.index" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
-                        <h1 style={styles.title}>Mes fiches de paie</h1>
-                        <p style={styles.subtitle}>Consultation et téléchargement de vos bulletins</p>
+                        <h1 style={styles.title}>{t("payrolls.title")}</h1>
+                        <p style={styles.subtitle}>{t("payrolls.subtitle")}</p>
                     </div>
                     <HeaderTools />
                 </div>
@@ -42,13 +45,13 @@ export default function Index({ payrolls }) {
                     <table style={styles.table}>
                         <thead>
                             <tr>
-                                <th style={styles.th}>Période</th>
-                                <th style={styles.th}>Brut</th>
-                                <th style={styles.th}>Total retenu</th>
-                                <th style={styles.th}>Net à payer</th>
-                                <th style={styles.th}>Date paiement</th>
-                                <th style={styles.th}>Statut</th>
-                                <th style={styles.th}>Actions</th>
+                                <th style={styles.th}>{t("payrolls.period")}</th>
+                                <th style={styles.th}>{t("payrolls.gross")}</th>
+                                <th style={styles.th}>{t("payrolls.withheld")}</th>
+                                <th style={styles.th}>{t("payrolls.net")}</th>
+                                <th style={styles.th}>{t("payrolls.paidAt")}</th>
+                                <th style={styles.th}>{t("payrolls.status")}</th>
+                                <th style={styles.th}>{t("payrolls.actions")}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -64,7 +67,7 @@ export default function Index({ payrolls }) {
                                         <td style={styles.td}>{formatDate(payroll.paid_at)}</td>
                                         <td style={styles.td}>
                                             <span style={payroll.payment_status === "paid" ? styles.paidBadge : styles.unpaidBadge}>
-                                                {payroll.payment_status === "paid" ? "Payé" : "Non payé"}
+                                                {payroll.payment_status === "paid" ? t("payrolls.paid") : t("payrolls.unpaid")}
                                             </span>
                                         </td>
                                         <td style={styles.td}>
@@ -80,7 +83,7 @@ export default function Index({ payrolls }) {
                             ) : (
                                 <tr>
                                     <td colSpan="7" style={{ ...styles.td, textAlign: "center" }}>
-                                        Aucune fiche de paie disponible
+                                        {t("payrolls.empty")}
                                     </td>
                                 </tr>
                             )}

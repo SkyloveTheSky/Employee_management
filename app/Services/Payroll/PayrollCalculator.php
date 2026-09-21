@@ -4,6 +4,7 @@ namespace App\Services\Payroll;
 
 use App\Models\CompanySetting;
 use App\Models\User;
+use App\Services\Leave\LeaveCalendar;
 use Illuminate\Support\Facades\Schema;
 
 class PayrollCalculator
@@ -14,15 +15,77 @@ class PayrollCalculator
         float $overtimeHours = 0,
         float $assuranceRate = 1,
         array $overtimeByType = [],
+        float $unpaidLeaveDays = 0,
     ): array {
+        $settings = CompanySetting::query()->first();
         $contributions = self::contributionDefaults();
         $cnapsRate = $contributions['cnaps_rate'];
         $cnapsEmployerRate = $contributions['cnaps_employer_rate'];
         $baseSalary = (float) ($employee->salary_base ?? 0);
-        $overtimeHours = 0.0;
-        $overtimeAmount = 0.0;
+        $divisor = CompanySetting::overtimeDivisor($settings);
+        $hourly = $divisor > 0 ? $baseSalary / $divisor : 0.0;
+
         $overtimeLines = [];
-        $grossSalary = $baseSalary + $primeAmount;
+        $overtimeAmount = 0.0;
+        $hoursTotal = 0.0;
+        $mainCoeff = null;
+        $source = $overtimeByType;
+
+        if ($source === [] && $overtimeHours > 0) {
+            $types = OvertimeTypes::enabled(CompanySetting::overtimeTypesForPosition($employee->position, $settings));
+            $type = collect($types)->firstWhere('key', 'normal') ?? ($types[0] ?? null);
+            if ($type) {
+                $source = [[...$type, 'hours' => $overtimeHours]];
+            } else {
+                $premium = CompanySetting::overtimePremium($settings);
+                $source = [[
+                    'key' => 'normal',
+                    'code' => 'HS_NORMAL',
+                    'label' => 'HS',
+                    'premium' => $premium,
+                    'hours' => $overtimeHours,
+                ]];
+            }
+        }
+
+        foreach ($source as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $hours = round(max(0, (float) ($row['hours'] ?? 0)), 2);
+            if ($hours <= 0) {
+                continue;
+            }
+
+            $premium = (float) ($row['premium'] ?? 30);
+            $coeff = isset($row['coefficient'])
+                ? (float) $row['coefficient']
+                : OvertimeTypes::coefficient($premium);
+            $amount = round($hours * $hourly * $coeff, 2);
+            $hoursTotal = round($hoursTotal + $hours, 2);
+            $overtimeAmount = round($overtimeAmount + $amount, 2);
+            $mainCoeff ??= $coeff;
+            $overtimeLines[] = [
+                'key' => (string) ($row['key'] ?? 'normal'),
+                'code' => (string) ($row['code'] ?? 'HS'),
+                'label' => (string) ($row['label'] ?? 'HS'),
+                'hours' => $hours,
+                'premium' => $premium,
+                'coefficient' => $coeff,
+                'hourly_rate' => round($hourly, 4),
+                'amount' => $amount,
+            ];
+        }
+
+        $overtimeHours = $hoursTotal;
+        $unpaidLeaveDays = round(max(0, $unpaidLeaveDays), 1);
+        $unpaidLeaveAmount = 0.0;
+        if ($unpaidLeaveDays > 0 && $baseSalary > 0) {
+            $unpaidLeaveAmount = round(min($baseSalary, $unpaidLeaveDays * ($baseSalary / 30)), 2);
+        }
+        $paidBase = round(max(0, $baseSalary - $unpaidLeaveAmount), 2);
+        $grossSalary = $paidBase + $primeAmount + $overtimeAmount;
         $cnapsAmount = $grossSalary * ($cnapsRate / 100);
         $cnapsEmployerAmount = round($grossSalary * ($cnapsEmployerRate / 100), 2);
         $assuranceAmount = $grossSalary * ($assuranceRate / 100);
@@ -33,10 +96,12 @@ class PayrollCalculator
 
         $amounts = [
             'base_salary' => $baseSalary,
+            'unpaid_leave_days' => $unpaidLeaveDays,
+            'unpaid_leave_amount' => $unpaidLeaveAmount,
             'prime_amount' => $primeAmount,
             'overtime_hours' => $overtimeHours,
-            'overtime_divisor' => null,
-            'overtime_coefficient' => null,
+            'overtime_divisor' => $divisor,
+            'overtime_coefficient' => $mainCoeff,
             'overtime_amount' => $overtimeAmount,
             'overtime_lines' => $overtimeLines,
             'gross_salary' => $grossSalary,
@@ -62,6 +127,8 @@ class PayrollCalculator
             'irsa_amount',
             'cnaps_employer_rate',
             'cnaps_employer_amount',
+            'unpaid_leave_days',
+            'unpaid_leave_amount',
         ] as $column) {
             if (! Schema::hasColumn('payrolls', $column)) {
                 unset($amounts[$column]);
@@ -69,6 +136,31 @@ class PayrollCalculator
         }
 
         return $amounts;
+    }
+
+    public static function computeForPeriod(
+        User $employee,
+        int $year,
+        int $month,
+        float $primeAmount = 0,
+        float $assuranceRate = 1,
+    ): array {
+        $breakdown = app(OvertimeFromTimesheet::class)->presenceBreakdown(
+            $employee->id,
+            $year,
+            $month,
+            $employee->position,
+        );
+        $unpaidDays = app(LeaveCalendar::class)->unpaidDaysInMonth($employee->id, $year, $month);
+
+        return self::compute(
+            $employee,
+            $primeAmount,
+            $breakdown['hours'],
+            $assuranceRate,
+            $breakdown['lines'],
+            $unpaidDays,
+        );
     }
 
     /**

@@ -28,8 +28,24 @@ class AnomalyDetector
             ]];
         }
 
-        $amounts = PayrollCalculator::compute($employee, $primeAmount, 0, $assuranceRate);
-        $base    = $amounts['base_salary'];
+        $periodForAmounts = collect($periods)->first(
+            fn ($period) => is_string($period) && preg_match('/^\d{4}-\d{2}$/', $period)
+        );
+
+        if (is_string($periodForAmounts)) {
+            [$year, $month] = explode('-', $periodForAmounts);
+            $amounts = PayrollCalculator::computeForPeriod(
+                $employee,
+                (int) $year,
+                (int) $month,
+                $primeAmount,
+                $assuranceRate,
+            );
+        } else {
+            $amounts = PayrollCalculator::compute($employee, $primeAmount, 0, $assuranceRate);
+        }
+
+        $base = $amounts['base_salary'];
 
         if ($base <= 0) {
             $anomalies[] = [
@@ -79,6 +95,27 @@ class AnomalyDetector
                 'severity' => 'warning',
                 'message'  => 'Le net à payer est à 0 Ar alors que le brut est de '.$this->formatAr($amounts['gross_salary']).'.',
             ];
+        }
+
+        $warningRatio = (float) config('payroll.overtime_warning_ratio', 0.5);
+        foreach ($periods as $period) {
+            if (! is_string($period) || ! preg_match('/^\d{4}-\d{2}$/', $period)) {
+                continue;
+            }
+            [$year, $month] = explode('-', $period);
+            $periodAmounts = ($period === $periodForAmounts)
+                ? $amounts
+                : PayrollCalculator::computeForPeriod($employee, (int) $year, (int) $month, $primeAmount, $assuranceRate);
+            $otAmount = (float) ($periodAmounts['overtime_amount'] ?? 0);
+            $otHours = (float) ($periodAmounts['overtime_hours'] ?? 0);
+            $otRatio = $base > 0 ? $otAmount / $base : 0;
+            if ($otAmount > 0 && $otRatio >= $warningRatio) {
+                $anomalies[] = [
+                    'code' => 'overtime_high',
+                    'severity' => 'warning',
+                    'message' => 'Heures supplémentaires élevées en '.$this->periodLabel($period).' : '.$this->formatAr($otAmount).' ('.$otHours.' h) soit '.round($otRatio * 100).' % du salaire de base.',
+                ];
+            }
         }
 
         if (Schema::hasTable('payrolls')) {

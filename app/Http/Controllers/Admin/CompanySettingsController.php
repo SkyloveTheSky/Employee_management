@@ -91,12 +91,20 @@ class CompanySettingsController extends Controller
             'irsa_brackets.*.min' => ['required', 'numeric', 'min:0'],
             'irsa_brackets.*.max' => ['nullable', 'numeric', 'min:0'],
             'irsa_brackets.*.rate' => ['required', 'numeric', 'min:0', 'max:100'],
+            'attendance_timezone' => ['nullable', 'timezone'],
+            'attendance_morning_start' => ['nullable', 'string', 'max:8'],
+            'attendance_morning_end' => ['nullable', 'string', 'max:8'],
+            'attendance_afternoon_start' => ['nullable', 'string', 'max:8'],
+            'attendance_afternoon_end' => ['nullable', 'string', 'max:8'],
+            'attendance_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'attendance_longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'attendance_radius_m' => ['nullable', 'integer', 'min:20', 'max:5000'],
         ], [
             'logo.mimes' => 'Le logo doit être une image (jpg ou png).',
             'logo.max' => 'Le logo ne doit pas dépasser 2MB.',
         ]);
 
-        $settings = CompanySetting::query()->first() ?? new CompanySetting();
+        $settings = CompanySetting::query()->first() ?? new CompanySetting;
 
         if ($request->hasFile('logo')) {
             $path = $request->file('logo')->store('company', 'public');
@@ -162,11 +170,43 @@ class CompanySettingsController extends Controller
             'cnaps_employer_percent',
             'cnaps_employee_percent',
             'irsa_brackets',
+            'attendance_timezone',
+            'attendance_morning_start',
+            'attendance_morning_end',
+            'attendance_afternoon_start',
+            'attendance_afternoon_end',
+            'attendance_latitude',
+            'attendance_longitude',
+            'attendance_radius_m',
         ] as $column) {
             if (Schema::hasColumn('company_settings', $column) && array_key_exists($column, $validated)) {
                 $value = $validated[$column];
                 if ($column === 'irsa_brackets') {
                     $value = IrsaScale::normalize($value);
+                }
+                if (in_array($column, [
+                    'attendance_morning_start',
+                    'attendance_morning_end',
+                    'attendance_afternoon_start',
+                    'attendance_afternoon_end',
+                ], true)) {
+                    $fallback = match ($column) {
+                        'attendance_morning_start' => '06:00',
+                        'attendance_morning_end' => '12:30',
+                        'attendance_afternoon_start' => '12:00',
+                        'attendance_afternoon_end' => '20:00',
+                        default => '00:00',
+                    };
+                    $value = CompanySetting::normalizeClock(is_string($value) ? $value : null, $fallback);
+                }
+                if ($column === 'attendance_timezone') {
+                    $tz = is_string($value) && $value !== '' ? $value : 'Indian/Antananarivo';
+                    $value = in_array($tz, timezone_identifiers_list(), true) ? $tz : 'Indian/Antananarivo';
+                }
+                if (in_array($column, ['attendance_latitude', 'attendance_longitude'], true)) {
+                    if ($value === '' || $value === null) {
+                        continue;
+                    }
                 }
                 $settings->{$column} = $value;
             }
@@ -182,7 +222,6 @@ class CompanySettingsController extends Controller
 
         $settings->save();
 
-        return back()->with('success', 'Paramètres entreprise mis à jour.');
+        return back()->with('success', __('settings.company_updated'));
     }
 }
-

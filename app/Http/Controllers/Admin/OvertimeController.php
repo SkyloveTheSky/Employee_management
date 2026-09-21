@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\AttendancePunch;
 use App\Models\CompanySetting;
 use App\Models\User;
 use App\Models\WorkEntry;
+use App\Services\Leave\LeaveCalendar;
 use App\Services\Payroll\OvertimeFromTimesheet;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -48,7 +50,7 @@ class OvertimeController extends Controller
         $rows = $employees->map(function (User $user) use ($timesheet, $entriesByUser, $year, $month, $settings) {
             $map = ($entriesByUser->get($user->id) ?? collect())
                 ->keyBy(fn (WorkEntry $entry) => $entry->date->toDateString());
-            $computed = $timesheet->compute($map, $year, $month);
+            $computed = $timesheet->compute($map, $year, $month, $user->id);
             $allowsOvertime = CompanySetting::positionAllowsOvertime($user->position, $settings);
             $days = $computed['days'];
             if (! $allowsOvertime) {
@@ -91,6 +93,34 @@ class OvertimeController extends Controller
         $selected = $rows->firstWhere('id', $selectedId);
         $detail = null;
         if ($selected) {
+            $tz = CompanySetting::attendanceTimezone($settings);
+            $punchesByDate = collect();
+            if (Schema::hasTable('attendance_punches')) {
+                $monthStart = Carbon::create($year, $month, 1)->startOfDay();
+                $monthEnd = $monthStart->copy()->endOfMonth();
+                $punchesByDate = AttendancePunch::query()
+                    ->where('user_id', $selectedId)
+                    ->whereBetween('date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+                    ->orderBy('punched_at')
+                    ->get()
+                    ->groupBy(fn (AttendancePunch $punch) => $punch->date->toDateString());
+            }
+
+            $days = array_map(function (array $day) use ($punchesByDate, $tz) {
+                $day['punches'] = ($punchesByDate->get($day['date']) ?? collect())
+                    ->map(fn (AttendancePunch $punch) => [
+                        'slot' => $punch->slot,
+                        'type' => $punch->type,
+                        'at' => $punch->punched_at->copy()->timezone($tz)->format('H:i'),
+                        'distance_m' => (float) $punch->distance_m,
+                        'accuracy' => $punch->accuracy !== null ? (float) $punch->accuracy : null,
+                    ])
+                    ->values()
+                    ->all();
+
+                return $day;
+            }, $selected['days']);
+
             $detail = [
                 'employee' => [
                     'id' => $selected['id'],
@@ -105,7 +135,7 @@ class OvertimeController extends Controller
                 'present_days' => $selected['present_days'],
                 'overtime_enabled' => $selected['overtime_enabled'],
                 'overtime_types' => CompanySetting::overtimeTypesForPosition($selected['position'] ?? null, $settings),
-                'days' => $selected['days'],
+                'days' => $days,
             ];
         }
 
@@ -153,11 +183,22 @@ class OvertimeController extends Controller
             $afternoon = max(0, $total - $morning);
         }
 
+        $morningHours = (float) ($morning ?? 0);
+        $afternoonHours = (float) ($afternoon ?? 0);
+        $calendar = app(LeaveCalendar::class);
+        $morningLeave = $calendar->slotType((int) $validated['user_id'], $validated['date'], 'morning');
+        $afternoonLeave = $calendar->slotType((int) $validated['user_id'], $validated['date'], 'afternoon');
+        if (($morningHours > 0 && $morningLeave) || ($afternoonHours > 0 && $afternoonLeave)) {
+            return back()->withErrors([
+                'hours' => 'Ce créneau est en congé validé.',
+            ]);
+        }
+
         $this->persistDay(
             (int) $validated['user_id'],
             $validated['date'],
-            (float) ($morning ?? 0),
-            (float) ($afternoon ?? 0),
+            $morningHours,
+            $afternoonHours,
             $validated['note'] ?? null,
             (int) session('admin_id')
         );

@@ -3,11 +3,11 @@ import { useMemo, useState } from "react";
 import BrandMark from "@/Components/BrandMark";
 import ConfirmDialog from "@/Components/ConfirmDialog";
 import HeaderTools from "@/Components/HeaderTools";
+import IconButton from "@/Components/IconButton";
 import Sidebar from "@/Components/Admin/Sidebar";
 import { colors } from "@/config/colors";
 import { useSidebar } from "@/hooks/useSidebar";
-
-const WEEKDAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+import { useDateLocale, useLocale, useT, weekdayShortLabels } from "@/i18n";
 
 const TYPE_COLORS = {
     unpaid: { bg: "#feebc8", color: "#9c4221" },
@@ -18,6 +18,10 @@ const TYPE_COLORS = {
 };
 
 export default function Index({ admin, month, year, events = [], summaries = { unpaid: 0, paid: 0, period: "" } }) {
+    const t = useT();
+    const locale = useLocale();
+    const dateLoc = useDateLocale();
+    const weekdays = weekdayShortLabels(locale);
     const { errors } = usePage().props;
     const { isOpen, setIsOpen, offset } = useSidebar();
     const [editorOpen, setEditorOpen] = useState(false);
@@ -32,10 +36,10 @@ export default function Index({ admin, month, year, events = [], summaries = { u
 
     const label = useMemo(
         () =>
-            new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(
+            new Intl.DateTimeFormat(dateLoc, { month: "long", year: "numeric" }).format(
                 new Date(year, month - 1, 1)
             ),
-        [month, year]
+        [month, year, dateLoc]
     );
 
     const days = useMemo(() => buildMonthGrid(year, month), [year, month]);
@@ -136,14 +140,14 @@ export default function Index({ admin, month, year, events = [], summaries = { u
 
     return (
         <>
-            <Head title="Agenda" />
+            <Head title={t("admin.agenda.title")} />
             <Sidebar admin={admin} currentPage="admin.agenda" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
-                        <h1 style={styles.title}>Agenda</h1>
-                        <p style={styles.subtitle}>Paies, paiements, embauches et notes</p>
+                        <h1 style={styles.title}>{t("admin.agenda.title")}</h1>
+                        <p style={styles.subtitle}>{t("admin.agenda.subtitle")}</p>
                     </div>
                     <HeaderTools />
                 </div>
@@ -157,18 +161,23 @@ export default function Index({ admin, month, year, events = [], summaries = { u
                         style={styles.todayBtn}
                         onClick={() => goTo(new Date().getMonth() + 1, new Date().getFullYear())}
                     >
-                        Aujourd’hui
+                        {t("common.today")}
                     </button>
-                    <button type="button" style={styles.addBtn} onClick={() => openCreate(data.date || today)}>
-                        Ajouter une note
-                    </button>
+                    <IconButton
+                        icon="add"
+                        label={t("admin.agenda.addNote")}
+                        variant="primary"
+                        showLabel
+                        size={38}
+                        onClick={() => openCreate(data.date || today)}
+                    />
                 </div>
 
                 <div style={styles.legend}>
-                    <span style={{ ...styles.chip, ...TYPE_COLORS.unpaid }}>Paie à verser</span>
-                    <span style={{ ...styles.chip, ...TYPE_COLORS.paid }}>Paiement</span>
-                    <span style={{ ...styles.chip, ...TYPE_COLORS.hire }}>Embauche</span>
-                    <span style={{ ...styles.chip, ...TYPE_COLORS.note }}>Note</span>
+                    <span style={{ ...styles.chip, ...TYPE_COLORS.unpaid }}>{t("admin.agenda.unpaid")}</span>
+                    <span style={{ ...styles.chip, ...TYPE_COLORS.paid }}>{t("admin.agenda.paid")}</span>
+                    <span style={{ ...styles.chip, ...TYPE_COLORS.hire }}>{t("admin.agenda.hire")}</span>
+                    <span style={{ ...styles.chip, ...TYPE_COLORS.note }}>{t("admin.agenda.note")}</span>
                 </div>
 
                 {(summaries.unpaid > 0 || summaries.paid > 0) && (
@@ -179,7 +188,7 @@ export default function Index({ admin, month, year, events = [], summaries = { u
                                 style={{ ...styles.summaryBtn, ...TYPE_COLORS.unpaid }}
                                 onClick={() => router.visit(route("admin.payrolls.index", { period, filter_status: "unpaid" }))}
                             >
-                                {summaries.unpaid} paie{summaries.unpaid > 1 ? "s" : ""} à verser ce mois
+                                {t("admin.agenda.unpaidSummary", { count: summaries.unpaid })}
                             </button>
                         )}
                         {summaries.paid > 0 && (
@@ -188,7 +197,7 @@ export default function Index({ admin, month, year, events = [], summaries = { u
                                 style={{ ...styles.summaryBtn, ...TYPE_COLORS.paid }}
                                 onClick={() => router.visit(route("admin.payrolls.index", { period, filter_status: "paid" }))}
                             >
-                                {summaries.paid} fiche{summaries.paid > 1 ? "s" : ""} déjà payée{summaries.paid > 1 ? "s" : ""}
+                                {t("admin.agenda.paidSummary", { count: summaries.paid })}
                             </button>
                         )}
                     </div>
@@ -196,7 +205,7 @@ export default function Index({ admin, month, year, events = [], summaries = { u
 
                 <div className="app-agenda-scroll">
                 <div className="app-agenda-head" style={styles.weekHead}>
-                    {WEEKDAYS.map((day) => (
+                    {weekdays.map((day) => (
                         <div key={day} style={styles.weekCell}>{day}</div>
                     ))}
                 </div>
@@ -236,7 +245,7 @@ export default function Index({ admin, month, year, events = [], summaries = { u
                                     <button
                                         type="button"
                                         style={styles.dayAdd}
-                                        aria-label={`Ajouter une note le ${key}`}
+                                        aria-label={t("admin.agenda.addNoteOn", { date: key })}
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             openCreate(key);
@@ -270,7 +279,7 @@ export default function Index({ admin, month, year, events = [], summaries = { u
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setDayList({
-                                                title: `Le ${day.getDate()} ${label}`,
+                                                title: t("admin.agenda.moreOn", { day: day.getDate(), month: label }),
                                                 items: dayEvents.flatMap((event) =>
                                                     (event.items || []).length
                                                         ? event.items
@@ -279,7 +288,7 @@ export default function Index({ admin, month, year, events = [], summaries = { u
                                             });
                                         }}
                                     >
-                                        +{extra} de plus
+                                        +{extra} {t("common.more")}
                                     </button>
                                 )}
                             </div>
@@ -316,7 +325,7 @@ export default function Index({ admin, month, year, events = [], summaries = { u
                         </div>
                         <div style={styles.modalActions}>
                             <button type="button" style={styles.cancelBtn} onClick={() => setDayList(null)}>
-                                Fermer
+                                {t("common.close")}
                             </button>
                         </div>
                     </div>
@@ -326,9 +335,9 @@ export default function Index({ admin, month, year, events = [], summaries = { u
             {editorOpen && (
                 <div style={styles.overlay} onClick={closeEditor}>
                     <form style={styles.modal} onSubmit={saveNote} onClick={(e) => e.stopPropagation()}>
-                        <h3 style={styles.modalTitle}>{data.id ? "Modifier la note" : "Nouvelle note"}</h3>
+                        <h3 style={styles.modalTitle}>{data.id ? t("admin.agenda.editNote") : t("admin.agenda.newNote")}</h3>
                         <label style={styles.label}>
-                            Date
+                            {t("common.date")}
                             <input
                                 type="date"
                                 value={data.date}
@@ -339,7 +348,7 @@ export default function Index({ admin, month, year, events = [], summaries = { u
                         </label>
                         {errors.date && <p style={styles.error}>{errors.date}</p>}
                         <label style={styles.label}>
-                            Titre
+                            {t("common.title")}
                             <input
                                 type="text"
                                 value={data.title}
@@ -348,33 +357,37 @@ export default function Index({ admin, month, year, events = [], summaries = { u
                                 maxLength={120}
                                 required
                                 autoFocus
-                                placeholder="Réunion, rappel, rendez-vous…"
+                                placeholder={t("admin.agenda.titlePlaceholder")}
                             />
                         </label>
                         {errors.title && <p style={styles.error}>{errors.title}</p>}
                         <label style={styles.label}>
-                            Note
+                            {t("common.note")}
                             <textarea
                                 value={data.note}
                                 onChange={(e) => setData("note", e.target.value)}
                                 style={styles.textarea}
                                 rows={4}
                                 maxLength={2000}
-                                placeholder="Détail optionnel"
+                                placeholder={t("admin.agenda.notePlaceholder")}
                             />
                         </label>
                         {errors.note && <p style={styles.error}>{errors.note}</p>}
                         <div style={styles.modalActions}>
                             {data.id && (
-                                <button type="button" style={styles.deleteBtn} onClick={deleteNote} disabled={processing}>
-                                    Supprimer
-                                </button>
+                                <IconButton
+                                    icon="delete"
+                                    label={t("common.delete")}
+                                    variant="danger"
+                                    onClick={deleteNote}
+                                    disabled={processing}
+                                />
                             )}
                             <button type="button" style={styles.cancelBtn} onClick={closeEditor}>
-                                Annuler
+                                {t("common.cancel")}
                             </button>
                             <button type="submit" style={styles.saveBtn} disabled={processing}>
-                                {processing ? "Enregistrement..." : "Enregistrer"}
+                                {processing ? t("common.saving") : t("common.save")}
                             </button>
                         </div>
                     </form>
@@ -382,11 +395,11 @@ export default function Index({ admin, month, year, events = [], summaries = { u
             )}
             <ConfirmDialog
                 show={confirmDelete}
-                title="Supprimer cette note ?"
+                title={t("admin.agenda.deleteTitle")}
                 message={
                     data.title
-                        ? `La note « ${data.title} » sera définitivement retirée.`
-                        : "Cette note sera définitivement retirée."
+                        ? t("admin.agenda.deleteNamed", { title: data.title })
+                        : t("admin.agenda.deleteUnnamed")
                 }
                 processing={processing}
                 onConfirm={confirmDeleteNote}

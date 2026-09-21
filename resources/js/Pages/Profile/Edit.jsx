@@ -5,22 +5,24 @@ import HeaderTools from "@/Components/HeaderTools";
 import { colors } from "@/config/colors";
 import { useSidebar } from "@/hooks/useSidebar";
 import UpdatePasswordForm from "./Partials/UpdatePasswordForm";
+import { useT } from "@/i18n";
 
 export default function Edit() {
+    const t = useT();
     const { auth } = usePage().props;
     const user = auth?.user;
     const { isOpen, setIsOpen, offset } = useSidebar();
 
     return (
         <>
-            <Head title="Paramètres" />
+            <Head title={t("profile.title")} />
             <Sidebar user={user} currentPage="profile.edit" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
-                        <h1 style={styles.title}>Paramètres</h1>
-                        <p style={styles.subtitle}>Modifier uniquement votre mot de passe</p>
+                        <h1 style={styles.title}>{t("profile.title")}</h1>
+                        <p style={styles.subtitle}>{t("profile.subtitle")}</p>
                     </div>
                     <HeaderTools />
                 </div>

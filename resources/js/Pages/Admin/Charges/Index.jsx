@@ -5,6 +5,7 @@ import HeaderTools from "@/Components/HeaderTools";
 import Sidebar from "@/Components/Admin/Sidebar";
 import { colors } from "@/config/colors";
 import { useSidebar } from "@/hooks/useSidebar";
+import { useDateLocale, useT } from "@/i18n";
 
 export default function Index({
     admin,
@@ -13,19 +14,21 @@ export default function Index({
     employees = [],
     global = {},
 }) {
+    const t = useT();
+    const dateLoc = useDateLocale();
     const { isOpen, setIsOpen, offset } = useSidebar();
     const [query, setQuery] = useState("");
 
     const formatAr = (value) =>
-        `${Number(value || 0).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} Ar`;
+        `${Number(value || 0).toLocaleString(dateLoc, { maximumFractionDigits: 0 })} Ar`;
 
     const periodLabel = useMemo(() => {
         const [year, month] = String(period || "").split("-");
         if (!year || !month) return "";
-        return new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(
+        return new Intl.DateTimeFormat(dateLoc, { month: "long", year: "numeric" }).format(
             new Date(Number(year), Number(month) - 1, 1)
         );
-    }, [period]);
+    }, [period, dateLoc]);
 
     const goTo = (next = {}) => {
         router.get(
@@ -44,22 +47,22 @@ export default function Index({
         return `${row.name} ${row.position}`.toLowerCase().includes(needle);
     });
 
-    const rateLabel = `${Number(global.cnaps_employer_rate || 0).toLocaleString("fr-FR", {
+    const rateLabel = `${Number(global.cnaps_employer_rate || 0).toLocaleString(dateLoc, {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
     })} %`;
 
     return (
         <>
-            <Head title="Charge" />
+            <Head title={t("admin.charges.title")} />
             <Sidebar admin={admin} currentPage="admin.charges.index" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
-                        <h1 style={styles.title}>Charge</h1>
+                        <h1 style={styles.title}>{t("admin.charges.title")}</h1>
                         <p style={styles.subtitle}>
-                            Charge patronale = salaires des employés + CNAPS part patronale
+                            {t("admin.charges.subtitle")}
                         </p>
                     </div>
                     <HeaderTools />
@@ -67,7 +70,7 @@ export default function Index({
 
                 <div style={styles.toolbar}>
                     <label style={styles.period}>
-                        Mois
+                        {t("admin.charges.month")}
                         <input
                             type="month"
                             value={period}
@@ -81,14 +84,14 @@ export default function Index({
                             onClick={() => goTo({ view: "global" })}
                             style={view === "global" ? styles.tabActive : styles.tab}
                         >
-                            Charge globale
+                            {t("admin.charges.global")}
                         </button>
                         <button
                             type="button"
                             onClick={() => goTo({ view: "employees" })}
                             style={view === "employees" ? styles.tabActive : styles.tab}
                         >
-                            Par employé
+                            {t("admin.charges.byEmployee")}
                         </button>
                     </div>
                 </div>
@@ -97,48 +100,48 @@ export default function Index({
                     <>
                         <div className="app-cards" style={styles.cards}>
                             <div style={styles.stat}>
-                                <p style={styles.statLabel}>Salaires des employés</p>
+                                <p style={styles.statLabel}>{t("admin.charges.salaries")}</p>
                                 <p style={styles.statValue}>{formatAr(global.gross_total)}</p>
                                 <p style={styles.statHint}>
-                                    {global.employee_count || 0} fiches · {periodLabel}
+                                    {t("admin.charges.slipsPeriod", { count: global.employee_count || 0, period: periodLabel })}
                                 </p>
                             </div>
                             <div style={styles.stat}>
-                                <p style={styles.statLabel}>CNAPS part patronale</p>
+                                <p style={styles.statLabel}>{t("admin.charges.cnapsEmployer")}</p>
                                 <p style={styles.statValue}>{formatAr(global.cnaps_employer_total)}</p>
-                                <p style={styles.statHint}>Taux {rateLabel} · retraite et prestations familiales</p>
+                                <p style={styles.statHint}>{t("admin.charges.cnapsHint", { rate: rateLabel })}</p>
                             </div>
                             <div style={styles.stat}>
-                                <p style={styles.statLabel}>Charge patronale</p>
+                                <p style={styles.statLabel}>{t("admin.charges.employerCharge")}</p>
                                 <p style={styles.statValue}>{formatAr(global.employer_charge_total)}</p>
-                                <p style={styles.statHint}>Salaires + part patronale</p>
+                                <p style={styles.statHint}>{t("admin.charges.salariesPlus")}</p>
                             </div>
                         </div>
 
                         <div className="app-table-wrap" style={styles.card}>
                             {employees.length === 0 ? (
-                                <p style={styles.empty}>Aucune fiche de paie pour ce mois, donc aucune charge patronale.</p>
+                                <p style={styles.empty}>{t("admin.charges.empty")}</p>
                             ) : (
                                 <table style={styles.table}>
                                     <thead>
                                         <tr>
-                                            <th style={styles.th}>Libellé</th>
-                                            <th style={styles.th}>Détail</th>
-                                            <th style={{ ...styles.th, textAlign: "right" }}>Base (brut)</th>
-                                            <th style={{ ...styles.th, textAlign: "right" }}>Montant</th>
+                                            <th style={styles.th}>{t("admin.charges.label")}</th>
+                                            <th style={styles.th}>{t("admin.charges.detail")}</th>
+                                            <th style={{ ...styles.th, textAlign: "right" }}>{t("admin.charges.baseGross")}</th>
+                                            <th style={{ ...styles.th, textAlign: "right" }}>{t("admin.charges.amount")}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td style={styles.td}>Salaires des employés</td>
-                                            <td style={styles.td}>Salaires bruts des fiches du mois.</td>
+                                            <td style={styles.td}>{t("admin.charges.salaries")}</td>
+                                            <td style={styles.td}>{t("admin.charges.salariesDetail")}</td>
                                             <td style={{ ...styles.td, textAlign: "right" }}>{formatAr(global.gross_total)}</td>
                                             <td style={{ ...styles.td, textAlign: "right" }}>{formatAr(global.gross_total)}</td>
                                         </tr>
                                         <tr>
-                                            <td style={styles.td}>CNAPS — Part patronale</td>
+                                            <td style={styles.td}>{t("admin.charges.cnapsRow")}</td>
                                             <td style={styles.td}>
-                                                Charge entreprise, non retenue sur le salaire. Taux actuel : {rateLabel}.
+                                                {t("admin.charges.cnapsDetail", { rate: rateLabel })}
                                             </td>
                                             <td style={{ ...styles.td, textAlign: "right" }}>{formatAr(global.gross_total)}</td>
                                             <td style={{ ...styles.td, textAlign: "right" }}>
@@ -146,8 +149,8 @@ export default function Index({
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style={{ ...styles.td, fontWeight: 700 }}>Charge patronale</td>
-                                            <td style={styles.td}>Salaires + part patronale</td>
+                                            <td style={{ ...styles.td, fontWeight: 700 }}>{t("admin.charges.employerCharge")}</td>
+                                            <td style={styles.td}>{t("admin.charges.salariesPlus")}</td>
                                             <td style={styles.td} />
                                             <td style={{ ...styles.td, textAlign: "right", fontWeight: 700 }}>
                                                 {formatAr(global.employer_charge_total)}
@@ -164,11 +167,11 @@ export default function Index({
                             <input
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                placeholder="Rechercher un employé"
+                                placeholder={t("common.searchEmployee")}
                                 style={styles.search}
                             />
                             <div style={styles.totalBox}>
-                                <span style={styles.totalLabel}>Total {periodLabel}</span>
+                                <span style={styles.totalLabel}>{t("admin.charges.total", { period: periodLabel })}</span>
                                 <strong style={styles.totalValue}>{formatAr(global.employer_charge_total)}</strong>
                             </div>
                         </div>
@@ -176,17 +179,17 @@ export default function Index({
                             {filtered.length === 0 ? (
                                 <p style={styles.empty}>
                                     {employees.length === 0
-                                        ? "Aucune fiche de paie pour ce mois."
-                                        : "Aucun employé ne correspond à la recherche."}
+                                        ? t("admin.charges.emptyMonth")
+                                        : t("admin.charges.noMatch")}
                                 </p>
                             ) : (
                                 <table style={styles.table}>
                                     <thead>
                                         <tr>
-                                            <th style={styles.th}>Employé</th>
-                                            <th style={{ ...styles.th, textAlign: "right" }}>Salaire</th>
-                                            <th style={{ ...styles.th, textAlign: "right" }}>Part patronale</th>
-                                            <th style={{ ...styles.th, textAlign: "right" }}>Charge patronale</th>
+                                            <th style={styles.th}>{t("common.employee")}</th>
+                                            <th style={{ ...styles.th, textAlign: "right" }}>{t("admin.charges.salary")}</th>
+                                            <th style={{ ...styles.th, textAlign: "right" }}>{t("admin.charges.employerShare")}</th>
+                                            <th style={{ ...styles.th, textAlign: "right" }}>{t("admin.charges.employerCharge")}</th>
                                             <th style={styles.th} />
                                         </tr>
                                     </thead>
@@ -201,7 +204,7 @@ export default function Index({
                                                 <td style={{ ...styles.td, textAlign: "right" }}>
                                                     {formatAr(row.cnaps_employer_amount)}
                                                     <div style={styles.notes}>
-                                                        {Number(row.cnaps_employer_rate || 0).toLocaleString("fr-FR", {
+                                                        {Number(row.cnaps_employer_rate || 0).toLocaleString(dateLoc, {
                                                             maximumFractionDigits: 2,
                                                         })}{" "}
                                                         %
@@ -212,7 +215,7 @@ export default function Index({
                                                 </td>
                                                 <td style={{ ...styles.td, textAlign: "right" }}>
                                                     <Link href={route("admin.payrolls.edit", row.payroll_id)} style={styles.link}>
-                                                        Fiche de paie
+                                                        {t("admin.charges.payslip")}
                                                     </Link>
                                                 </td>
                                             </tr>

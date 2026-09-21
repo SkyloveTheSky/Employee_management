@@ -16,6 +16,8 @@ class Payroll extends Model
         'period_month',
         'period_year',
         'base_salary',
+        'unpaid_leave_days',
+        'unpaid_leave_amount',
         'prime_amount',
         'overtime_hours',
         'overtime_divisor',
@@ -44,6 +46,8 @@ class Payroll extends Model
     {
         return [
             'base_salary' => 'decimal:2',
+            'unpaid_leave_days' => 'decimal:1',
+            'unpaid_leave_amount' => 'decimal:2',
             'prime_amount' => 'decimal:2',
             'overtime_hours' => 'decimal:2',
             'overtime_divisor' => 'decimal:2',

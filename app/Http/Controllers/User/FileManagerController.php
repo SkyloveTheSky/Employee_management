@@ -107,33 +107,6 @@ class FileManagerController extends Controller
         ]);
     }
 
-    public function mkdir(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'path' => ['nullable', 'string', 'max:500'],
-            'name' => ['required', 'string', 'max:80', 'regex:/^[\pL\pN][\pL\pN ._-]*$/u'],
-        ]);
-
-        $user = $request->user();
-        $disk = $this->disk();
-        $root = $this->ensureRoot($user, $disk);
-        $parentRel = $this->normalize($validated['path'] ?? '');
-        abort_if($this->isReadOnlyDir($parentRel), 403);
-
-        $name = trim($validated['name']);
-        $targetRel = $parentRel === '' ? $name : $parentRel.'/'.$name;
-        $target = $this->absolute($root, $targetRel);
-
-        if ($disk->exists($target) || $disk->directoryExists($target)) {
-            return back()->withErrors(['name' => 'Ce dossier existe déjà.']);
-        }
-
-        $disk->makeDirectory($target);
-
-        return redirect()->route('files.index', $parentRel === '' ? [] : ['path' => $parentRel])
-            ->with('success', 'Dossier créé.');
-    }
-
     public function upload(Request $request): RedirectResponse
     {
         $validated = $request->validate([

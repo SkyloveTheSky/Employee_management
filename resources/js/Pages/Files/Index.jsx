@@ -6,8 +6,10 @@ import HeaderTools from "@/Components/HeaderTools";
 import Sidebar from "@/Components/User/Sidebar";
 import { colors } from "@/config/colors";
 import { useSidebar } from "@/hooks/useSidebar";
+import { useT } from "@/i18n";
 
 export default function Index({ path = "", crumbs = [], folders = [], files = [], q = "", canWrite = true }) {
+    const t = useT();
     const page = usePage().props;
     const user = page.auth?.user;
     const flash = page.flash || {};
@@ -15,7 +17,6 @@ export default function Index({ path = "", crumbs = [], folders = [], files = []
     const folderList = Array.isArray(folders) ? folders : Object.values(folders || {});
     const fileList = Array.isArray(files) ? files : Object.values(files || {});
     const { isOpen, setIsOpen, offset } = useSidebar();
-    const [folderName, setFolderName] = useState("");
     const [query, setQuery] = useState(q || "");
     const [preview, setPreview] = useState(null);
     const [pendingDelete, setPendingDelete] = useState(null);
@@ -41,15 +42,6 @@ export default function Index({ path = "", crumbs = [], folders = [], files = []
 
     const openPath = (next = "") => {
         router.get("/files", next ? { path: next } : {}, { preserveState: true });
-    };
-
-    const createFolder = (e) => {
-        e.preventDefault();
-        if (!folderName.trim()) return;
-        router.post("/files/mkdir", { path, name: folderName.trim() }, {
-            preserveScroll: true,
-            onSuccess: () => setFolderName(""),
-        });
     };
 
     const uploadFile = (e) => {
@@ -87,14 +79,14 @@ export default function Index({ path = "", crumbs = [], folders = [], files = []
 
     return (
         <>
-            <Head title="Mes fichiers" />
+            <Head title={t("files.title")} />
             <Sidebar user={user} currentPage="files.index" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
-                        <h1 style={styles.title}>Mes fichiers</h1>
-                        <p style={styles.subtitle}>Documents personnels, photos et fiches de paie</p>
+                        <h1 style={styles.title}>{t("files.title")}</h1>
+                        <p style={styles.subtitle}>{t("files.subtitle")}</p>
                     </div>
                     <HeaderTools />
                 </div>
@@ -106,7 +98,7 @@ export default function Index({ path = "", crumbs = [], folders = [], files = []
 
                 <div style={styles.toolbar}>
                     <nav style={styles.crumbs}>
-                        <button type="button" style={styles.crumb} onClick={() => openPath("")}>Mes fichiers</button>
+                        <button type="button" style={styles.crumb} onClick={() => openPath("")}>{t("files.title")}</button>
                         {crumbs.map((crumb) => (
                             <span key={crumb.path} style={styles.crumbWrap}>
                                 <span style={styles.sep}>/</span>
@@ -119,22 +111,13 @@ export default function Index({ path = "", crumbs = [], folders = [], files = []
                     <input
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Rechercher…"
+                        placeholder={t("common.search")}
                         style={styles.search}
                     />
                     {canWrite && (
                         <div style={styles.actions}>
-                            <form onSubmit={createFolder} style={styles.folderForm}>
-                                <input
-                                    value={folderName}
-                                    onChange={(e) => setFolderName(e.target.value)}
-                                    placeholder="Nouveau dossier"
-                                    style={styles.input}
-                                />
-                                <button type="submit" style={styles.button}>Créer</button>
-                            </form>
                             <button type="button" style={styles.secondary} onClick={() => fileInput.current?.click()}>
-                                Envoyer un fichier
+                                {t("files.upload")}
                             </button>
                             <input ref={fileInput} type="file" hidden onChange={uploadFile} />
                         </div>
@@ -142,22 +125,22 @@ export default function Index({ path = "", crumbs = [], folders = [], files = []
                 </div>
 
                 {folderList.length === 0 && fileList.length === 0 ? (
-                    <div style={styles.empty}>{q ? "Aucun résultat." : "Ce dossier est vide."}</div>
+                    <div style={styles.empty}>{q ? t("files.noResults") : t("files.empty")}</div>
                 ) : (
                     <div className="app-cards" style={styles.grid}>
                         {folderList.map((folder) => (
                             <div key={folder.path} style={styles.card}>
                                 <button type="button" style={styles.cardMain} onClick={() => openPath(folder.path)}>
                                     <img src="/assets/icon/file-manager.svg" alt="" style={styles.folderIcon} />
-                                    <span style={styles.cardName}>{folderLabel(folder.name)}</span>
+                                    <span style={styles.cardName}>{folderLabel(folder.name, t)}</span>
                                     <span style={styles.meta}>
                                         {folder.location && folder.location !== "." ? `${folder.location} · ` : ""}
-                                        {folder.items} élément{folder.items > 1 ? "s" : ""}
+                                        {t(folder.items > 1 ? "files.items_plural" : "files.items", { count: folder.items })}
                                     </span>
                                 </button>
                                 {!folder.locked && (
                                     <button type="button" style={styles.delete} onClick={() => removeItem(folder, true)}>
-                                        Supprimer
+                                        {t("files.delete")}
                                     </button>
                                 )}
                             </div>
@@ -181,10 +164,10 @@ export default function Index({ path = "", crumbs = [], folders = [], files = []
                                     </span>
                                 </button>
                                 <div style={styles.cardActions}>
-                                    <a href={file.download} style={styles.link}>Télécharger</a>
+                                    <a href={file.download} style={styles.link}>{t("files.download")}</a>
                                     {!file.locked && (
                                         <button type="button" style={styles.delete} onClick={() => removeItem(file, false)}>
-                                            Supprimer
+                                            {t("files.delete")}
                                         </button>
                                     )}
                                 </div>
@@ -199,17 +182,19 @@ export default function Index({ path = "", crumbs = [], folders = [], files = []
                     <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
                         <img src={preview.url} alt={preview.name} style={styles.previewImg} />
                         <p style={styles.cardName}>{preview.name}</p>
-                        <button type="button" style={styles.button} onClick={() => setPreview(null)}>Fermer</button>
+                        <button type="button" style={styles.secondary} onClick={() => setPreview(null)}>
+                            {t("common.close")}
+                        </button>
                     </div>
                 </div>
             )}
             <ConfirmDialog
                 show={!!pendingDelete}
-                title={pendingDelete?.isFolder ? "Supprimer ce dossier ?" : "Supprimer ce fichier ?"}
+                title={pendingDelete?.isFolder ? t("files.deleteFolderTitle") : t("files.deleteFileTitle")}
                 message={
                     pendingDelete?.isFolder
-                        ? `Le dossier « ${pendingDelete.name} » et tout son contenu seront définitivement retirés.`
-                        : `Le fichier « ${pendingDelete?.name} » sera définitivement retiré.`
+                        ? t("files.deleteFolderBody", { name: pendingDelete.name })
+                        : t("files.deleteFileBody", { name: pendingDelete?.name })
                 }
                 processing={deleting}
                 onConfirm={confirmDelete}
@@ -219,11 +204,11 @@ export default function Index({ path = "", crumbs = [], folders = [], files = []
     );
 }
 
-function folderLabel(name) {
+function folderLabel(name, t) {
     const labels = {
-        documents: "Documents",
-        images: "Images",
-        payrolls: "Fiches de paie",
+        documents: t("files.documents"),
+        images: t("files.images"),
+        payrolls: t("files.payrolls"),
     };
     return labels[name] || name;
 }
@@ -257,21 +242,23 @@ const styles = {
         flex: "1 1 220px",
         minWidth: "180px",
         maxWidth: "360px",
+        height: "38px",
         border: `1px solid ${colors.border}`,
         borderRadius: "8px",
-        padding: "8px 10px",
+        padding: "0 10px",
         fontSize: "13px",
         boxSizing: "border-box",
+        fontFamily: "inherit",
     },
     crumbs: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px" },
     crumbWrap: { display: "inline-flex", alignItems: "center", gap: "4px" },
     crumb: { border: "none", background: "transparent", color: colors.btnPrimary, cursor: "pointer", fontSize: "13px", fontWeight: 600, padding: 0 },
     sep: { color: colors.muted },
     actions: { display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" },
-    folderForm: { display: "flex", gap: "8px" },
-    input: { border: `1px solid ${colors.border}`, borderRadius: "8px", padding: "8px 10px", fontSize: "13px" },
-    button: { background: colors.btnPrimary, color: "white", border: "none", borderRadius: "8px", padding: "8px 12px", fontSize: "13px", fontWeight: 600, cursor: "pointer" },
-    secondary: { background: colors.surface, color: colors.dark, border: `1px solid ${colors.border}`, borderRadius: "8px", padding: "8px 12px", fontSize: "13px", fontWeight: 600, cursor: "pointer" },
+    folderForm: { display: "flex", gap: "8px", alignItems: "center" },
+    input: { height: "38px", border: `1px solid ${colors.border}`, borderRadius: "8px", padding: "0 10px", fontSize: "13px", boxSizing: "border-box", fontFamily: "inherit" },
+    button: { height: "38px", background: colors.btnPrimary, color: "white", border: "none", borderRadius: "8px", padding: "0 12px", fontSize: "13px", fontWeight: 600, cursor: "pointer" },
+    secondary: { height: "38px", background: colors.surface, color: colors.dark, border: `1px solid ${colors.border}`, borderRadius: "8px", padding: "0 12px", fontSize: "13px", fontWeight: 600, cursor: "pointer", boxSizing: "border-box" },
     empty: { background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "32px", textAlign: "center", color: colors.muted },
     grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "12px" },
     card: { background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "12px", display: "flex", flexDirection: "column", gap: "8px" },

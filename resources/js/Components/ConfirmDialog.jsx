@@ -1,16 +1,22 @@
 import { colors } from "@/config/colors";
+import { useT } from "@/i18n";
 
 export default function ConfirmDialog({
     show = false,
-    title = "Confirmer la suppression",
-    message = "Cette action est irréversible.",
-    confirmLabel = "Supprimer",
-    cancelLabel = "Annuler",
+    title,
+    message,
+    confirmLabel,
+    cancelLabel,
     processing = false,
     onConfirm,
     onClose,
 }) {
+    const t = useT();
     if (!show) return null;
+    const resolvedTitle = title || t("confirm.title");
+    const resolvedMessage = message || t("confirm.message");
+    const resolvedConfirm = confirmLabel || t("common.delete");
+    const resolvedCancel = cancelLabel || t("common.cancel");
 
     return (
         <div
@@ -27,15 +33,15 @@ export default function ConfirmDialog({
                 onClick={(e) => e.stopPropagation()}
             >
                 <h3 id="confirm-dialog-title" style={styles.title}>
-                    {title}
+                    {resolvedTitle}
                 </h3>
-                <p style={styles.message}>{message}</p>
+                <p style={styles.message}>{resolvedMessage}</p>
                 <div style={styles.actions}>
                     <button type="button" style={styles.cancel} onClick={onClose} disabled={processing}>
-                        {cancelLabel}
+                        {resolvedCancel}
                     </button>
                     <button type="button" style={styles.confirm} onClick={onConfirm} disabled={processing}>
-                        {processing ? "Suppression…" : confirmLabel}
+                        {processing ? t("common.deleting") : resolvedConfirm}
                     </button>
                 </div>
             </div>

@@ -3,24 +3,28 @@ import { useState } from "react";
 import BrandMark from "@/Components/BrandMark";
 import ConfirmDialog from "@/Components/ConfirmDialog";
 import HeaderTools from "@/Components/HeaderTools";
+import IconButton from "@/Components/IconButton";
 import Sidebar from "../../../Components/Admin/Sidebar";
 import { useSidebar } from "@/hooks/useSidebar";
+import { useDateLocale, useT } from "@/i18n";
 
 export default function Employees({ admin, employees, isOpen: initialOpen = true }) {
+    const t = useT();
+    const dateLoc = useDateLocale();
     const { isOpen, setIsOpen, offset } = useSidebar();
     const [pendingDelete, setPendingDelete] = useState(null);
     const [deleting, setDeleting] = useState(false);
     const formatDate = (value) => {
-        if (!value) return "-";
+        if (!value) return t("common.dash");
         const date = new Date(value);
-        if (Number.isNaN(date.getTime())) return "-";
-        return new Intl.DateTimeFormat("fr-FR", {
+        if (Number.isNaN(date.getTime())) return t("common.dash");
+        return new Intl.DateTimeFormat(dateLoc, {
             day: "2-digit",
             month: "long",
             year: "numeric",
         }).format(date);
     };
-    const formatAr = (value) => `${Number(value || 0).toLocaleString("fr-FR")} Ar`;
+    const formatAr = (value) => `${Number(value || 0).toLocaleString(dateLoc)} Ar`;
 
     const confirmDelete = () => {
         if (!pendingDelete) return;
@@ -35,15 +39,15 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
 
     return (
         <>
-            <Head title="Employés" />
+            <Head title={t("nav.employees")} />
             <Sidebar admin={admin} currentPage="admin.employees" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
-                        <h1 style={styles.title}>Gestion des Employés</h1>
+                        <h1 style={styles.title}>{t("admin.employees.title")}</h1>
                         <p style={styles.subtitle}>
-                            Gérez et consultez la liste des employés
+                            {t("admin.employees.subtitle")}
                         </p>
                     </div>
                     <HeaderTools />
@@ -51,31 +55,32 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
 
                 <div style={styles.toolbar}>
                     <p style={styles.toolbarHint}>
-                        {employees?.length || 0} employé{(employees?.length || 0) > 1 ? "s" : ""}
+                        {t("common.employeeCount", { count: employees?.length || 0 })}
                     </p>
-                    <button
-                        type="button"
+                    <IconButton
+                        icon="add"
+                        label={t("admin.employees.create")}
+                        variant="primary"
+                        showLabel
+                        size={38}
                         onClick={() => router.visit(route("admin.employees.create"))}
-                        style={styles.createButton}
-                    >
-                        + Créer un employé
-                    </button>
+                    />
                 </div>
 
                 <div className="app-table-wrap" style={styles.tableContainer}>
                     <table style={styles.table}>
                         <thead>
                             <tr>
-                                <th style={styles.th}>Photo</th>
-                                <th style={styles.th}>ID</th>
-                                <th style={styles.th}>Prénom</th>
-                                <th style={styles.th}>Nom</th>
-                                <th style={styles.th}>Téléphone</th>
-                                <th style={styles.th}>Email</th>
-                                <th style={styles.th}>Poste</th>
-                                <th style={styles.th}>Date d'embauche</th>
-                                <th style={styles.th}>Salaire de base</th>
-                                <th style={styles.th}>Actions</th>
+                                <th style={styles.th}>{t("common.photo")}</th>
+                                <th style={styles.th}>{t("common.id")}</th>
+                                <th style={styles.th}>{t("common.firstName")}</th>
+                                <th style={styles.th}>{t("common.lastName")}</th>
+                                <th style={styles.th}>{t("common.phone")}</th>
+                                <th style={styles.th}>{t("common.email")}</th>
+                                <th style={styles.th}>{t("common.position")}</th>
+                                <th style={styles.th}>{t("common.hireDate")}</th>
+                                <th style={styles.th}>{t("common.baseSalary")}</th>
+                                <th style={styles.th}>{t("common.actions")}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -96,35 +101,35 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
                                         <td style={styles.td}>{employee.first_name}</td>
                                         <td style={styles.td}>{employee.last_name}</td>
                                         <td style={styles.td}>{employee.phone}</td>
-                                        <td style={styles.td}>{employee.email || "N/A"}</td>
+                                        <td style={styles.td}>{employee.email || t("common.na")}</td>
                                         <td style={styles.td}>{employee.position}</td>
                                         <td style={styles.td}>{formatDate(employee.hire_date)}</td>
                                         <td style={styles.td}>{formatAr(employee.salary_base)}</td>
                                         <td style={styles.actionsCell}>
-                                            <button
-                                                onClick={() => router.visit(route('admin.employees.edit', employee.id))}
-                                                style={styles.editButton}
-                                            >
-                                                Modifier
-                                            </button>
-                                            <button
+                                            <IconButton
+                                                icon="edit"
+                                                label={t("common.edit")}
+                                                variant="muted"
+                                                onClick={() => router.visit(route("admin.employees.edit", employee.id))}
+                                            />
+                                            <IconButton
+                                                icon="delete"
+                                                label={t("common.delete")}
+                                                variant="danger"
                                                 onClick={() =>
                                                     setPendingDelete({
                                                         id: employee.id,
                                                         name: `${employee.first_name} ${employee.last_name}`,
                                                     })
                                                 }
-                                                style={styles.deleteButton}
-                                            >
-                                                Supprimer
-                                            </button>
+                                            />
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
                                     <td colSpan="10" style={{ ...styles.td, textAlign: "center" }}>
-                                        Aucun employé trouvé
+                                        {t("admin.employees.empty")}
                                     </td>
                                 </tr>
                             )}
@@ -134,10 +139,10 @@ export default function Employees({ admin, employees, isOpen: initialOpen = true
             </div>
             <ConfirmDialog
                 show={!!pendingDelete}
-                title="Supprimer cet employé ?"
+                title={t("admin.employees.deleteTitle")}
                 message={
                     pendingDelete
-                        ? `Voulez-vous vraiment supprimer ${pendingDelete.name} ? Cette action est irréversible.`
+                        ? t("admin.employees.deleteBody", { name: pendingDelete.name })
                         : ""
                 }
                 processing={deleting}

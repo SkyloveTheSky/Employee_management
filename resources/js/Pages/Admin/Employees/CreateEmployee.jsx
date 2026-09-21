@@ -4,8 +4,10 @@ import BrandMark from "@/Components/BrandMark";
 import HeaderTools from "@/Components/HeaderTools";
 import { useState } from "react";
 import { useSidebar } from "@/hooks/useSidebar";
+import { useT } from "@/i18n";
 
 export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
+    const t = useT();
     const { isOpen, setIsOpen, offset } = useSidebar();
     const [formData, setFormData] = useState({
         first_name: "",
@@ -64,15 +66,15 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
 
     return (
         <>
-            <Head title="Créer un Employé" />
+            <Head title={t("admin.employees.createTitle")} />
             <Sidebar admin={admin} currentPage="admin.employees" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
-                        <h1 style={styles.title}>Créer un Nouvel Employé</h1>
+                        <h1 style={styles.title}>{t("admin.employees.createHeading")}</h1>
                         <p style={styles.subtitle}>
-                            Ajoutez un nouvel employé à votre plateforme
+                            {t("admin.employees.createSubtitle")}
                         </p>
                     </div>
                     <HeaderTools />
@@ -81,19 +83,19 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
                 <div style={styles.formContainer}>
                     <form onSubmit={handleSubmit}>
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Photo</label>
-                            {photoPreview && <img src={photoPreview} alt="Aperçu" style={styles.photoPreview} />}
+                            <label style={styles.label}>{t("common.photo")}</label>
+                            {photoPreview && <img src={photoPreview} alt={t("common.preview")} style={styles.photoPreview} />}
                             <input type="file" accept="image/jpeg,image/png" onChange={handlePhotoChange} />
                             {errors.photo && <p style={styles.error}>{errors.photo}</p>}
                         </div>
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Prénom</label>
+                            <label style={styles.label}>{t("common.firstName")}</label>
                             <input
                                 type="text"
                                 name="first_name"
                                 value={formData.first_name}
                                 onChange={handleChange}
-                                placeholder="Ex: Jean"
+                                placeholder={t("admin.employees.firstNamePh")}
                                 style={{
                                     ...styles.input,
                                     borderColor: errors.first_name ? "#e53e3e" : "#e2e8f0",
@@ -103,13 +105,13 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
                         </div>
 
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Nom</label>
+                            <label style={styles.label}>{t("common.lastName")}</label>
                             <input
                                 type="text"
                                 name="last_name"
                                 value={formData.last_name}
                                 onChange={handleChange}
-                                placeholder="Ex: Dupont"
+                                placeholder={t("admin.employees.lastNamePh")}
                                 style={{
                                     ...styles.input,
                                     borderColor: errors.last_name ? "#e53e3e" : "#e2e8f0",
@@ -119,13 +121,13 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
                         </div>
 
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Numéro Téléphone</label>
+                            <label style={styles.label}>{t("admin.employees.phone")}</label>
                             <input
                                 type="tel"
                                 name="phone"
                                 value={formData.phone}
                                 onChange={handleChange}
-                                placeholder="Ex: +33612345678"
+                                placeholder={t("admin.employees.phonePh")}
                                 style={{
                                     ...styles.input,
                                     borderColor: errors.phone ? "#e53e3e" : "#e2e8f0",
@@ -135,13 +137,13 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
                         </div>
 
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Email (Optionnel)</label>
+                            <label style={styles.label}>{t("admin.employees.emailOptional")}</label>
                             <input
                                 type="email"
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
-                                placeholder="Ex: jean@example.com"
+                                placeholder={t("admin.employees.emailPh")}
                                 style={{
                                     ...styles.input,
                                     borderColor: errors.email ? "#e53e3e" : "#e2e8f0",
@@ -151,13 +153,13 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
                         </div>
 
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Poste</label>
+                            <label style={styles.label}>{t("common.position")}</label>
                             <input
                                 type="text"
                                 name="position"
                                 value={formData.position}
                                 onChange={handleChange}
-                                placeholder="Ex: Responsable RH"
+                                placeholder={t("admin.employees.positionPh")}
                                 style={{
                                     ...styles.input,
                                     borderColor: errors.position ? "#e53e3e" : "#e2e8f0",
@@ -167,7 +169,7 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
                         </div>
 
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Date d'embauche</label>
+                            <label style={styles.label}>{t("common.hireDate")}</label>
                             <input
                                 type="date"
                                 name="hire_date"
@@ -182,7 +184,7 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
                         </div>
 
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Salaire de base (Ar)</label>
+                            <label style={styles.label}>{t("admin.employees.salary")}</label>
                             <input
                                 type="number"
                                 min="0"
@@ -199,13 +201,13 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
                         </div>
 
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Mot de passe</label>
+                            <label style={styles.label}>{t("auth.password")}</label>
                             <input
                                 type="password"
                                 name="password"
                                 value={formData.password}
                                 onChange={handleChange}
-                                placeholder="Minimum 6 caractères"
+                                placeholder={t("admin.employees.passwordMin")}
                                 style={{
                                     ...styles.input,
                                     borderColor: errors.password ? "#e53e3e" : "#e2e8f0",
@@ -221,14 +223,14 @@ export default function CreateEmployee({ admin, isOpen: initialOpen = true }) {
                                 style={styles.cancelButton}
                                 disabled={loading}
                             >
-                                Annuler
+                                {t("common.cancel")}
                             </button>
                             <button
                                 type="submit"
                                 style={styles.submitButton}
                                 disabled={loading}
                             >
-                                {loading ? "Création en cours..." : "Créer l'Employé"}
+                                {loading ? t("common.creating") : t("admin.employees.createSubmit")}
                             </button>
                         </div>
                     </form>
@@ -301,7 +303,8 @@ const styles = {
     },
     input: {
         width: "100%",
-        padding: "10px 12px",
+        height: "38px",
+        padding: "0 12px",
         fontSize: "14px",
         border: "1px solid #e2e8f0",
         borderRadius: "8px",
@@ -327,10 +330,12 @@ const styles = {
         display: "flex",
         gap: "12px",
         marginTop: "24px",
+        alignItems: "center",
     },
     cancelButton: {
         flex: 1,
-        padding: "10px 16px",
+        height: "38px",
+        padding: "0 16px",
         background: "white",
         color: "#718096",
         border: "1px solid #e2e8f0",
@@ -338,11 +343,13 @@ const styles = {
         fontSize: "13px",
         fontWeight: "600",
         cursor: "pointer",
+        boxSizing: "border-box",
         transition: "all 0.2s",
     },
     submitButton: {
         flex: 1,
-        padding: "10px 16px",
+        height: "38px",
+        padding: "0 16px",
         background: "var(--color-primary)",
         color: "white",
         border: "none",
@@ -350,6 +357,7 @@ const styles = {
         fontSize: "13px",
         fontWeight: "600",
         cursor: "pointer",
+        boxSizing: "border-box",
         transition: "all 0.2s",
     },
 };

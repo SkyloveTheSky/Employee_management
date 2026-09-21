@@ -33,6 +33,15 @@ class LoginRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'email.required' => __('auth.email_required'),
+            'email.email' => __('auth.email_invalid'),
+            'password.required' => __('auth.password_required'),
+        ];
+    }
+
     /**
      * Attempt to authenticate the request's credentials.
      *
@@ -71,7 +80,6 @@ class LoginRequest extends FormRequest
         throw ValidationException::withMessages([
             'email' => trans('auth.throttle', [
                 'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
             ]),
         ]);
     }

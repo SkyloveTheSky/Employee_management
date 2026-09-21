@@ -60,6 +60,7 @@ class PayrollController extends Controller
                 ],
                 'filters' => $filters,
                 'insights' => ['period' => $filters['period'], 'unpaid' => [], 'missing' => []],
+                'covered_periods' => [],
             ]);
         }
 
@@ -88,6 +89,7 @@ class PayrollController extends Controller
             'payrolls'    => $query->paginate(15)->withQueryString(),
             'filters'     => $filters,
             'insights'    => app(AnomalyDetector::class)->overview($filters['period'] ?: now()->format('Y-m')),
+            'covered_periods' => $this->coveredPeriods(),
             'currentPage' => 'admin.payrolls.index',
         ]);
     }
@@ -164,16 +166,16 @@ class PayrollController extends Controller
             ])->withInput();
         }
 
-        $amounts = PayrollCalculator::compute(
-            $employee,
-            (float) ($validated['prime_amount'] ?? 0),
-            0,
-            (float) ($validated['assurance_rate'] ?? 1),
-        );
-
-        DB::transaction(function () use ($validated, $toCreate, $amounts) {
+        DB::transaction(function () use ($validated, $toCreate, $employee) {
             foreach ($toCreate as $period) {
                 [$period_year, $period_month] = explode('-', $period);
+                $amounts = PayrollCalculator::computeForPeriod(
+                    $employee,
+                    (int) $period_year,
+                    (int) $period_month,
+                    (float) ($validated['prime_amount'] ?? 0),
+                    (float) ($validated['assurance_rate'] ?? 1),
+                );
 
                 Payroll::create([
                     'user_id'               => $validated['user_id'],
@@ -220,6 +222,26 @@ class PayrollController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * @return array<int|string, list<string>>
+     */
+    private function coveredPeriods(): array
+    {
+        if (! Schema::hasTable('payrolls')) {
+            return [];
+        }
+
+        return Payroll::query()
+            ->get(['user_id', 'period_year', 'period_month'])
+            ->groupBy('user_id')
+            ->map(fn ($rows) => $rows
+                ->map(fn (Payroll $payroll) => sprintf('%04d-%02d', $payroll->period_year, $payroll->period_month))
+                ->unique()
+                ->values()
+                ->all())
+            ->all();
     }
 
     private function formatPeriodLabel(string $period): string
@@ -303,10 +325,11 @@ class PayrollController extends Controller
             return back()->with('payroll_warnings', $warnings->all())->withInput();
         }
 
-        $amounts = PayrollCalculator::compute(
+        $amounts = PayrollCalculator::computeForPeriod(
             $employee,
+            (int) $period_year,
+            (int) $period_month,
             (float) ($validated['prime_amount'] ?? 0),
-            0,
             (float) ($validated['assurance_rate'] ?? 1),
         );
 
@@ -424,7 +447,7 @@ class PayrollController extends Controller
                     continue;
                 }
 
-                $amounts = PayrollCalculator::compute($employee, 0, 0, 1);
+                $amounts = PayrollCalculator::computeForPeriod($employee, (int) $year, (int) $month, 0, 1);
 
                 Payroll::create([
                     'user_id'               => $employee->id,

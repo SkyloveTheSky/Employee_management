@@ -3,10 +3,14 @@ import { useState } from "react";
 import Sidebar from "../../../Components/Admin/Sidebar";
 import BrandMark from "@/Components/BrandMark";
 import HeaderTools from "@/Components/HeaderTools";
+import EmployeePicker from "@/Components/EmployeePicker";
 import ScientificCalculator from "@/Components/Admin/ScientificCalculator";
 import { useSidebar } from "@/hooks/useSidebar";
+import { useDateLocale, useT } from "@/i18n";
 
 export default function Edit({ admin, payroll, employees }) {
+    const t = useT();
+    const dateLoc = useDateLocale();
     const { flash } = usePage().props;
     const warnings = flash?.payroll_warnings || [];
     const { isOpen, setIsOpen, offset } = useSidebar();
@@ -30,10 +34,10 @@ export default function Edit({ admin, payroll, employees }) {
     };
 
     const formatMonth = (monthYear) => {
-        if (!monthYear) return "-";
+        if (!monthYear) return t("common.dash");
         const [year, month] = monthYear.split('-');
         const date = new Date(year, parseInt(month) - 1, 1);
-        return new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(date);
+        return new Intl.DateTimeFormat(dateLoc, { month: "long", year: "numeric" }).format(date);
     };
 
     // Générer une liste de 24 mois (2 ans précédents + mois actuel + 1 futur)
@@ -55,7 +59,7 @@ export default function Edit({ admin, payroll, employees }) {
 
     return (
         <>
-            <Head title="Modifier une fiche de paie" />
+            <Head title={t("admin.payroll.editTitle")} />
             <Sidebar admin={admin} currentPage="admin.payrolls.index" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div className="app-page" style={{
                 ...styles.page,
@@ -65,8 +69,8 @@ export default function Edit({ admin, payroll, employees }) {
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
-                        <h1 style={styles.title}>Modifier une fiche</h1>
-                        <p style={styles.subtitle}>Mettre à jour les montants et le paiement</p>
+                        <h1 style={styles.title}>{t("admin.payroll.editHeading")}</h1>
+                        <p style={styles.subtitle}>{t("admin.payroll.editSubtitle")}</p>
                     </div>
                     <HeaderTools />
                 </div>
@@ -74,25 +78,24 @@ export default function Edit({ admin, payroll, employees }) {
                 <form onSubmit={submit} style={styles.formCard}>
                     <div className="app-grid-3" style={styles.grid}>
                         <div>
-                            <label style={styles.label}>Employé</label>
-                            <select value={data.user_id} onChange={(e) => setData("user_id", e.target.value)} style={styles.input}>
-                                <option value="">-- Choisir --</option>
-                                {employees.map((employee) => (
-                                    <option key={employee.id} value={employee.id}>
-                                        {employee.first_name} {employee.last_name}
-                                    </option>
-                                ))}
-                            </select>
+                            <label style={styles.label}>{t("common.employee")}</label>
+                            <EmployeePicker
+                                employees={employees}
+                                value={data.user_id}
+                                onChange={(userId) => setData("user_id", userId)}
+                                placeholder={t("common.searchEmployee")}
+                                emptyLabel={t("common.choose")}
+                            />
                             {errors.user_id && <p style={styles.error}>{errors.user_id}</p>}
                         </div>
                         <div>
-                            <label style={styles.label}>Période (Mois et Année)</label>
+                            <label style={styles.label}>{t("admin.payroll.periodMonthYear")}</label>
                             <select
                                 value={data.period_month_year}
                                 onChange={(e) => setData("period_month_year", e.target.value)}
                                 style={styles.input}
                             >
-                                <option value="">-- Sélectionner un mois --</option>
+                                <option value="">{t("admin.payroll.selectMonth")}</option>
                                 {generateMonthsList().map((month) => (
                                     <option key={month.value} value={month.value}>
                                         {month.label}
@@ -101,7 +104,7 @@ export default function Edit({ admin, payroll, employees }) {
                             </select>
                             {data.period_month_year && (
                                 <p style={{ fontSize: '14px', color: '#666', marginTop: '5px', fontWeight: '500' }}>
-                                    📅 Fiche de paie pour: <strong>{formatMonth(data.period_month_year)}</strong>
+                                    {t("admin.payroll.slipFor")} <strong>{formatMonth(data.period_month_year)}</strong>
                                 </p>
                             )}
                             {errors.period_month_year && <p style={styles.error}>{errors.period_month_year}</p>}
@@ -109,28 +112,52 @@ export default function Edit({ admin, payroll, employees }) {
                             {errors.period_year && <p style={styles.error}>{errors.period_year}</p>}
                         </div>
                         <div>
-                            <label style={styles.label}>Prime (Ar)</label>
+                            <label style={styles.label}>{t("admin.payroll.bonus")}</label>
                             <input type="number" min="0" step="1" value={data.prime_amount} onChange={(e) => setData("prime_amount", e.target.value)} style={styles.input} />
                             {errors.prime_amount && <p style={styles.error}>{errors.prime_amount}</p>}
                         </div>
                         <div>
-                            <label style={styles.label}>Taux Assurance (%)</label>
+                            <label style={styles.label}>{t("admin.payroll.overtimeHours")}</label>
+                            <p style={styles.hint}>
+                                {t("admin.payroll.overtimeRecalc")}{" "}
+                                {Number(payroll.overtime_hours || 0) > 0
+                                    ? t("admin.payroll.overtimeCurrent", {
+                                        hours: Number(payroll.overtime_hours).toLocaleString(dateLoc),
+                                        amount: Number(payroll.overtime_amount || 0).toLocaleString(dateLoc),
+                                    })
+                                    : t("admin.payroll.overtimeNone")}
+                            </p>
+                        </div>
+                        <div>
+                            <label style={styles.label}>{t("admin.payroll.unpaidLeave")}</label>
+                            <p style={styles.hint}>
+                                {t("admin.payroll.unpaidRecalc")}{" "}
+                                {Number(payroll.unpaid_leave_days || 0) > 0
+                                    ? t("admin.payroll.unpaidCurrent", {
+                                        days: Number(payroll.unpaid_leave_days).toLocaleString(dateLoc),
+                                        amount: Number(payroll.unpaid_leave_amount || 0).toLocaleString(dateLoc),
+                                    })
+                                    : t("admin.payroll.unpaidNone")}
+                            </p>
+                        </div>
+                        <div>
+                            <label style={styles.label}>{t("admin.payroll.assurance")}</label>
                             <input type="number" min="0" max="100" step="0.01" value={data.assurance_rate} onChange={(e) => setData("assurance_rate", e.target.value)} style={styles.input} />
                             {errors.assurance_rate && <p style={styles.error}>{errors.assurance_rate}</p>}
                         </div>
                         <div>
-                            <label style={styles.label}>Mode de paiement</label>
+                            <label style={styles.label}>{t("admin.payroll.paymentMethod")}</label>
                             <select value={data.payment_method} onChange={(e) => setData("payment_method", e.target.value)} style={styles.input}>
-                                <option value="virement">Virement</option>
-                                <option value="especes">Espèces</option>
-                                <option value="mobile_money">Mobile Money</option>
-                                <option value="cheque">Chèque</option>
-                                <option value="autre">Autre</option>
+                                <option value="virement">{t("admin.payroll.transfer")}</option>
+                                <option value="especes">{t("admin.payroll.cash")}</option>
+                                <option value="mobile_money">{t("admin.payroll.mobile")}</option>
+                                <option value="cheque">{t("admin.payroll.cheque")}</option>
+                                <option value="autre">{t("admin.payroll.other")}</option>
                             </select>
                             {errors.payment_method && <p style={styles.error}>{errors.payment_method}</p>}
                         </div>
                         <div>
-                            <label style={styles.label}>Statut</label>
+                            <label style={styles.label}>{t("admin.payroll.status")}</label>
                             <select
                                 value={data.payment_status}
                                 onChange={(e) => {
@@ -145,28 +172,28 @@ export default function Edit({ admin, payroll, employees }) {
                                 }}
                                 style={styles.input}
                             >
-                                <option value="unpaid">Non payé</option>
-                                <option value="paid">Payé</option>
+                                <option value="unpaid">{t("payrolls.unpaid")}</option>
+                                <option value="paid">{t("payrolls.paid")}</option>
                             </select>
                             {errors.payment_status && <p style={styles.error}>{errors.payment_status}</p>}
                         </div>
                         {data.payment_status === "paid" ? (
                             <div>
-                                <label style={styles.label}>Date de paiement</label>
+                                <label style={styles.label}>{t("admin.payroll.paidAt")}</label>
                                 <input type="date" value={data.paid_at} onChange={(e) => setData("paid_at", e.target.value)} style={styles.input} />
                                 {errors.paid_at && <p style={styles.error}>{errors.paid_at}</p>}
                             </div>
                         ) : (
                             <div>
-                                <label style={styles.label}>Date de paiement</label>
-                                <p style={{ margin: 0, fontSize: "13px", color: "#718096" }}>Disponible uniquement lorsque le statut est Payé.</p>
+                                <label style={styles.label}>{t("admin.payroll.paidAt")}</label>
+                                <p style={{ margin: 0, fontSize: "13px", color: "#718096" }}>{t("admin.payroll.paidAtHint")}</p>
                             </div>
                         )}
                     </div>
 
                     {warnings.length > 0 && (
                         <div style={{ background: "#fffaf0", border: "1px solid #f6ad55", borderRadius: "8px", padding: "12px", marginBottom: "14px" }}>
-                            <p style={{ margin: "0 0 8px", fontWeight: 600, color: "#9c4221", fontSize: "13px" }}>Contrôle d’anomalies</p>
+                            <p style={{ margin: "0 0 8px", fontWeight: 600, color: "#9c4221", fontSize: "13px" }}>{t("admin.payroll.anomalyTitleShort")}</p>
                             <ul style={{ margin: "0 0 10px", paddingLeft: "18px", color: "#9c4221", fontSize: "13px" }}>
                                 {warnings.map((warning, index) => (
                                     <li key={`${warning.code}-${index}`}>{warning.message}</li>
@@ -178,17 +205,17 @@ export default function Edit({ admin, payroll, employees }) {
                                     checked={!!data.confirm_anomalies}
                                     onChange={(e) => setData("confirm_anomalies", e.target.checked)}
                                 />
-                                J’ai lu les alertes, enregistrer quand même
+                                {t("admin.payroll.anomalySave")}
                             </label>
                         </div>
                     )}
 
                     <div style={styles.actions}>
                         <button type="button" style={styles.cancelButton} onClick={() => router.visit(route("admin.payrolls.index"))}>
-                            Annuler
+                            {t("common.cancel")}
                         </button>
                         <button type="submit" style={styles.submitButton} disabled={processing}>
-                            {processing ? "Mise à jour..." : "Mettre à jour"}
+                            {processing ? t("common.updating") : t("common.update")}
                         </button>
                     </div>
                 </form>
@@ -202,8 +229,8 @@ export default function Edit({ admin, payroll, employees }) {
                         type="button"
                         onClick={() => setCalculatorOpen(true)}
                         style={styles.iconToggle}
-                        aria-label="Ouvrir la calculatrice"
-                        title="Calculatrice"
+                        aria-label={t("admin.payroll.openCalculator")}
+                        title={t("admin.payroll.calculator")}
                     >
                         <img src="/assets/icon/calculator.svg" alt="" style={styles.toggleIcon} />
                     </button>

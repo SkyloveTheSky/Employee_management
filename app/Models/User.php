@@ -44,10 +44,20 @@ class User extends Authenticatable
         return $this->hasMany(WorkEntry::class);
     }
 
+    public function attendancePunches(): HasMany
+    {
+        return $this->hasMany(AttendancePunch::class);
+    }
+
+    public function leaveRequests(): HasMany
+    {
+        return $this->hasMany(LeaveRequest::class);
+    }
+
     public function employeeFolder(): string
     {
         $firstName = Str::slug($this->first_name ?? '');
-        $lastName  = Str::slug($this->last_name ?? '');
+        $lastName = Str::slug($this->last_name ?? '');
 
         return "employees/{$firstName}-{$lastName}-{$this->id}";
     }
@@ -55,14 +65,14 @@ class User extends Authenticatable
     public function photoFileName(string $extension): string
     {
         $firstName = Str::slug($this->first_name ?? '');
-        $lastName  = Str::slug($this->last_name ?? '');
+        $lastName = Str::slug($this->last_name ?? '');
 
         return "{$firstName}-{$lastName}.".strtolower($extension);
     }
 
     public function payslipFileName(int $month, int $year): string
     {
-        $nom  = trim(Str::slug($this->last_name ?? '').'-'.Str::slug($this->first_name ?? ''), '-');
+        $nom = trim(Str::slug($this->last_name ?? '').'-'.Str::slug($this->first_name ?? ''), '-');
         $date = sprintf('%04d-%02d', $year, $month);
 
         return "FP_{$nom}_{$date}.pdf";

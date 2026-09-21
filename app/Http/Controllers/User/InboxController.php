@@ -16,21 +16,7 @@ class InboxController extends Controller
 {
     public function live(Request $request, Inbox $inbox): \Illuminate\Http\JsonResponse
     {
-        $user = $request->user();
-        $payload = [
-            'inbox' => $inbox->payload($request),
-        ];
-
-        if ($request->boolean('thread') && $user) {
-            $payload['messages'] = $inbox->threadMessages(
-                $user->id,
-                'messages.attachments',
-                true,
-                'user',
-            );
-        }
-
-        return response()->json($payload);
+        return response()->json($inbox->live($request));
     }
 
     public function index(Request $request, Inbox $inbox): Response

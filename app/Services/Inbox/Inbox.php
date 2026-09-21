@@ -5,6 +5,7 @@ namespace App\Services\Inbox;
 use App\Models\InboxMessage;
 use App\Models\PlatformNotification;
 use App\Models\User;
+use App\Services\Agenda\AgendaReminder;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -20,7 +21,7 @@ class Inbox
         return Schema::hasTable('inbox_messages') && Schema::hasTable('platform_notifications');
     }
 
-    public function payload(Request $request): array
+    public function payload(Request $request, bool $preview = true): array
     {
         $empty = [
             'role' => null,
@@ -36,15 +37,63 @@ class Inbox
         }
 
         if (session('admin_logged_in') && session('admin_id')) {
-            return $this->adminPayload();
+            return $this->adminPayload($preview);
         }
 
         $user = $request->user();
         if ($user) {
-            return $this->userPayload($user);
+            return $this->userPayload($user, $preview);
         }
 
         return $empty;
+    }
+
+    public function live(Request $request): array
+    {
+        $isAdmin = session('admin_logged_in') && session('admin_id');
+        $preview = $request->boolean('preview');
+        $threads = $isAdmin && $request->boolean('threads');
+        $thread = ! $isAdmin && $request->boolean('thread');
+        $userId = $isAdmin ? $request->integer('user_id') : 0;
+        $since = (string) $request->query('since', '');
+        $revision = $this->revision($request, $userId);
+
+        if ($since !== '' && $since === $revision) {
+            return [
+                'unchanged' => true,
+                'revision' => $revision,
+            ];
+        }
+
+        $payload = [
+            'revision' => $revision,
+            'inbox' => $this->payload($request, $preview),
+        ];
+
+        if ($threads) {
+            $payload['threads'] = $this->adminThreads();
+        }
+
+        if ($userId > 0) {
+            User::query()->findOrFail($userId);
+            $payload['messages'] = $this->threadMessages(
+                $userId,
+                'admin.messages.attachments',
+                false,
+                'admin',
+            );
+        }
+
+        if ($thread && $request->user()) {
+            $payload['messages'] = $this->threadMessages(
+                $request->user()->id,
+                'messages.attachments',
+                false,
+                'user',
+            );
+        }
+
+        return $payload;
     }
 
     public function sendFromAdmin(int $userId, int $adminId, string $body, array $files = []): InboxMessage
@@ -288,20 +337,32 @@ class Inbox
         ]);
     }
 
-    public function notifyAdmins(string $type, string $title, string $body, ?string $link = null): void
+    public function notifyAdmins(string $type, string $title, string $body, ?string $link = null, ?string $dedupeKey = null): void
     {
         if (! Schema::hasTable('platform_notifications')) {
             return;
         }
 
-        PlatformNotification::query()->create([
+        $payload = [
             'audience' => 'admin',
             'user_id' => null,
             'type' => $type,
             'title' => $title,
             'body' => $body,
             'link' => $link,
-        ]);
+        ];
+
+        if (Schema::hasColumn('platform_notifications', 'dedupe_key')) {
+            if (is_string($dedupeKey) && $dedupeKey !== '') {
+                $already = PlatformNotification::query()->where('dedupe_key', $dedupeKey)->exists();
+                if ($already) {
+                    return;
+                }
+                $payload['dedupe_key'] = $dedupeKey;
+            }
+        }
+
+        PlatformNotification::query()->create($payload);
     }
 
     public function markNotification(int $id, string $audience, ?int $userId = null): void
@@ -382,9 +443,24 @@ class Inbox
         }
     }
 
-    private function userPayload(User $user): array
+    private function userPayload(User $user, bool $preview = true): array
     {
-        $messages = InboxMessage::query()
+        $payload = [
+            'role' => 'user',
+            'unread_messages' => InboxMessage::query()
+                ->where('user_id', $user->id)
+                ->where('author', 'admin')
+                ->whereNull('read_at')
+                ->count(),
+            'unread_notifications' => $this->unreadNotifications('user', $user->id),
+            'messages_url' => route('messages.index'),
+        ];
+
+        if (! $preview) {
+            return $payload;
+        }
+
+        $payload['messages'] = InboxMessage::query()
             ->where('user_id', $user->id)
             ->orderByDesc('id')
             ->limit(8)
@@ -400,23 +476,29 @@ class Inbox
             ])
             ->values()
             ->all();
+        $payload['notifications'] = $this->recentNotifications('user', $user->id);
 
-        return [
-            'role' => 'user',
-            'unread_messages' => InboxMessage::query()
-                ->where('user_id', $user->id)
-                ->where('author', 'admin')
-                ->whereNull('read_at')
-                ->count(),
-            'unread_notifications' => $this->unreadNotifications('user', $user->id),
-            'messages' => $messages,
-            'notifications' => $this->recentNotifications('user', $user->id),
-            'messages_url' => route('messages.index'),
-        ];
+        return $payload;
     }
 
-    private function adminPayload(): array
+    private function adminPayload(bool $preview = true): array
     {
+        app(AgendaReminder::class)->notifyDueToday();
+
+        $payload = [
+            'role' => 'admin',
+            'unread_messages' => InboxMessage::query()
+                ->where('author', 'user')
+                ->whereNull('read_at')
+                ->count(),
+            'unread_notifications' => $this->unreadNotifications('admin'),
+            'messages_url' => route('admin.messages.index'),
+        ];
+
+        if (! $preview) {
+            return $payload;
+        }
+
         $latest = InboxMessage::query()
             ->with('user:id,first_name,last_name')
             ->orderByDesc('id')
@@ -426,7 +508,7 @@ class Inbox
             ->take(8)
             ->values();
 
-        $messages = $latest->map(function (InboxMessage $message) {
+        $payload['messages'] = $latest->map(function (InboxMessage $message) {
             $name = trim(($message->user->first_name ?? '').' '.($message->user->last_name ?? '')) ?: 'Employé';
 
             return [
@@ -439,18 +521,54 @@ class Inbox
                 'href' => route('admin.messages.show', $message->user_id),
             ];
         })->all();
+        $payload['notifications'] = $this->recentNotifications('admin');
 
-        return [
-            'role' => 'admin',
-            'unread_messages' => InboxMessage::query()
-                ->where('author', 'user')
+        return $payload;
+    }
+
+    private function revision(Request $request, int $userId): string
+    {
+        if (! $this->ready()) {
+            return '0';
+        }
+
+        if (session('admin_logged_in') && session('admin_id')) {
+            $parts = [
+                (int) InboxMessage::query()->max('id'),
+                (int) InboxMessage::query()->count(),
+                (int) PlatformNotification::query()->where('audience', 'admin')->max('id'),
+                (int) PlatformNotification::query()->where('audience', 'admin')->count(),
+                (int) InboxMessage::query()->where('author', 'user')->whereNull('read_at')->count(),
+                $this->unreadNotifications('admin'),
+            ];
+
+            if ($userId > 0) {
+                $parts[] = (int) InboxMessage::query()->where('user_id', $userId)->max('id');
+                $parts[] = (int) InboxMessage::query()->where('user_id', $userId)->count();
+            }
+
+            return implode('-', $parts);
+        }
+
+        $user = $request->user();
+        if (! $user) {
+            return '0';
+        }
+
+        $parts = [
+            (int) InboxMessage::query()->where('user_id', $user->id)->max('id'),
+            (int) InboxMessage::query()->where('user_id', $user->id)->count(),
+            (int) PlatformNotification::query()->where('audience', 'user')->where('user_id', $user->id)->max('id'),
+            (int) PlatformNotification::query()->where('audience', 'user')->where('user_id', $user->id)->count(),
+            (int) InboxMessage::query()
+                ->where('user_id', $user->id)
+                ->where('author', 'admin')
                 ->whereNull('read_at')
                 ->count(),
-            'unread_notifications' => $this->unreadNotifications('admin'),
-            'messages' => $messages,
-            'notifications' => $this->recentNotifications('admin'),
-            'messages_url' => route('admin.messages.index'),
+            $this->unreadNotifications('user', $user->id),
         ];
+
+        return implode('-', $parts);
     }
 
     private function unreadNotifications(string $audience, ?int $userId = null): int

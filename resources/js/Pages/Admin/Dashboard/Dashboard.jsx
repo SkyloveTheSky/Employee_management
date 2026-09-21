@@ -7,6 +7,7 @@ import { colors } from "@/config/colors";
 import { useSidebar } from "@/hooks/useSidebar";
 import Chart_Users from "@/Components/Admin/Charts/Chart_Users";
 import Chart_Payroll from "@/Components/Admin/Charts/Chart_Payroll";
+import { useDateLocale, useT } from "@/i18n";
 
 export default function Dashboard({
     admin,
@@ -17,6 +18,8 @@ export default function Dashboard({
     periodMonth,
     periodYear,
 }) {
+    const t = useT();
+    const dateLoc = useDateLocale();
     const { isOpen, setIsOpen, offset } = useSidebar();
     const [chartData, setChartData] = useState([]);
     const [payrollChartData, setPayrollChartData] = useState([]);
@@ -26,10 +29,10 @@ export default function Dashboard({
     };
 
     const formatAr = (value) =>
-        `${Number(value || 0).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} Ar`;
+        `${Number(value || 0).toLocaleString(dateLoc, { maximumFractionDigits: 0 })} Ar`;
     const periodLabel =
         periodMonth && periodYear
-            ? new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(
+            ? new Intl.DateTimeFormat(dateLoc, { month: "long", year: "numeric" }).format(
                   new Date(periodYear, periodMonth - 1, 1)
               )
             : "";
@@ -45,7 +48,7 @@ export default function Dashboard({
 
     return (
         <>
-            <Head title="Tableau de bord" />
+            <Head title={t("dashboard.title")} />
 
             <Sidebar
                 admin={admin}
@@ -58,9 +61,9 @@ export default function Dashboard({
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
-                        <h1 style={styles.title}>Tableau de bord</h1>
+                        <h1 style={styles.title}>{t("dashboard.title")}</h1>
                         <p style={styles.subtitle}>
-                            Bonjour, {admin.first_name_admin} {admin.name_admin}
+                            {t("dashboard.hello", { name: `${admin.first_name_admin} ${admin.name_admin}` })}
                         </p>
                     </div>
                     <HeaderTools />
@@ -71,28 +74,28 @@ export default function Dashboard({
                     <div style={styles.card}>
                         <div style={styles.cardHeader}>
                             <img src="/assets/icon/user.svg" alt="Users" style={styles.cardIcon}/>
-                            <p style={styles.cardLabel}>Nombre d'employés</p>
+                            <p style={styles.cardLabel}>{t("dashboard.employeesCount")}</p>
                         </div>
                         <p style={styles.cardValue}>{totalUsers}</p>
                     </div>
 
                     <div style={styles.card}>
-                        <p style={styles.cardLabel}>Masse salariale{periodLabel ? ` · ${periodLabel}` : ""}</p>
+                        <p style={styles.cardLabel}>{t("dashboard.payrollMass")}{periodLabel ? ` · ${periodLabel}` : ""}</p>
                         <p style={styles.cardValue}>{formatAr(payrollMass)}</p>
-                        <p style={styles.cardHint}>Nets à payer du mois</p>
+                        <p style={styles.cardHint}>{t("dashboard.netsOfMonth")}</p>
                     </div>
 
                     <div style={styles.card}>
-                        <p style={styles.cardLabel}>Fiches non payées{periodLabel ? ` · ${periodLabel}` : ""}</p>
+                        <p style={styles.cardLabel}>{t("dashboard.unpaidCount")}{periodLabel ? ` · ${periodLabel}` : ""}</p>
                         <p style={{ ...styles.cardValue, color: unpaidCount > 0 ? "#9c4221" : "#1a202c" }}>
                             {unpaidCount}
                         </p>
-                        <p style={styles.cardHint}>{formatAr(unpaidAmount)} en attente</p>
+                        <p style={styles.cardHint}>{t("dashboard.unpaidHint", { amount: formatAr(unpaidAmount) })}</p>
                         <Link
                             href={route("admin.payrolls.index", { filter_status: "unpaid" })}
                             style={styles.cardLink}
                         >
-                            Voir le suivi
+                            {t("dashboard.followUp")}
                         </Link>
                     </div>
                 </div>

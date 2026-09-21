@@ -18,26 +18,7 @@ class InboxController extends Controller
 {
     public function live(Request $request, Inbox $inbox): \Illuminate\Http\JsonResponse
     {
-        $payload = [
-            'inbox' => $inbox->payload($request),
-        ];
-
-        if ($request->boolean('threads')) {
-            $payload['threads'] = $inbox->adminThreads();
-        }
-
-        $userId = $request->integer('user_id');
-        if ($userId > 0) {
-            User::query()->findOrFail($userId);
-            $payload['messages'] = $inbox->threadMessages(
-                $userId,
-                'admin.messages.attachments',
-                true,
-                'admin',
-            );
-        }
-
-        return response()->json($payload);
+        return response()->json($inbox->live($request));
     }
 
     public function index(Inbox $inbox): Response

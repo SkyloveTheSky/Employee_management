@@ -7,6 +7,7 @@ use App\Models\Admin;
 use App\Models\AgendaNote;
 use App\Models\Payroll;
 use App\Models\User;
+use App\Services\Agenda\AgendaReminder;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -160,6 +161,8 @@ class AgendaController extends Controller
         $validated['admin_id'] = session('admin_id');
 
         AgendaNote::query()->create($validated);
+
+        app(AgendaReminder::class)->notifyDueToday();
 
         return $this->redirectToMonth($validated['date']);
     }

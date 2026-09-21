@@ -5,24 +5,26 @@ import MessageThread from "@/Components/Inbox/MessageThread";
 import Sidebar from "@/Components/Admin/Sidebar";
 import { colors } from "@/config/colors";
 import { useSidebar } from "@/hooks/useSidebar";
+import { useT } from "@/i18n";
 
 export default function Show({ admin, employee, messages = [] }) {
+    const t = useT();
     const { isOpen, setIsOpen, offset } = useSidebar();
 
     return (
         <>
-            <Head title={`Messages · ${employee.name}`} />
+            <Head title={`${t("admin.messages.title")} · ${employee.name}`} />
             <Sidebar admin={admin} currentPage="admin.messages.index" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
                         <h1 style={styles.title}>{employee.name}</h1>
-                        <p style={styles.subtitle}>{employee.position || "Employé"}</p>
+                        <p style={styles.subtitle}>{employee.position || t("common.employee")}</p>
                     </div>
                     <HeaderTools>
                         <Link href={route("admin.messages.index")} style={styles.back}>
-                            Tous les messages
+                            {t("admin.messages.all")}
                         </Link>
                     </HeaderTools>
                 </div>
@@ -33,10 +35,11 @@ export default function Show({ admin, employee, messages = [] }) {
                     otherLabel={employee.name}
                     otherIcon={employee.photo_path ? `/storage/${employee.photo_path}` : "/assets/icon/user.svg"}
                     storeUrl={route("admin.messages.store", employee.id)}
-                    pollUrl={`${route("admin.messages.live")}?user_id=${employee.id}`}
+                    liveUrl={route("admin.messages.live")}
+                    liveUserId={employee.id}
                     deleteUrl={(id) => route("admin.messages.destroy", id)}
                     clearUrl={route("admin.messages.destroy-thread", employee.id)}
-                    emptyText="Aucun message. Écrivez le premier ou joignez un fichier."
+                    emptyText={t("admin.messages.emptyThread")}
                 />
             </div>
         </>

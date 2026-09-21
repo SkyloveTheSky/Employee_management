@@ -2,8 +2,10 @@ import { useForm, Head } from "@inertiajs/react";
 import { colors } from "@/config/colors";
 import BrandMark from "@/Components/BrandMark";
 import SplitAuthLayout from "@/Layouts/SplitAuthLayout";
+import { useT } from "@/i18n";
 
 export default function Login() {
+    const t = useT();
     const { data, setData, post, processing, errors } = useForm({
         email_admin: "",
         password_admin: "",
@@ -16,20 +18,20 @@ export default function Login() {
 
     return (
         <SplitAuthLayout imageSrc="/assets/Img/rain-kissed-foliage-close-up-nature-s-embrace.webp">
-            <Head title="Connexion Admin" />
+            <Head title={t("auth.adminTitle")} />
             <BrandMark size={80} layout="banner" />
 
             <div style={styles.card}>
                 <div style={styles.header}>
-                    <h1 style={styles.title}>Espace Administrateur</h1>
+                    <h1 style={styles.title}>{t("auth.adminHeading")}</h1>
                     <p style={styles.subtitle}>
-                        Connectez-vous pour accéder au tableau de bord
+                        {t("auth.adminSubtitle")}
                     </p>
                 </div>
 
                 <form onSubmit={handleSubmit} style={styles.form}>
                     <div style={styles.field}>
-                        <label style={styles.label}>Adresse email</label>
+                        <label style={styles.label}>{t("auth.email")}</label>
                         <input
                             type="email"
                             value={data.email_admin}
@@ -52,7 +54,7 @@ export default function Login() {
                     </div>
 
                     <div style={styles.field}>
-                        <label style={styles.label}>Mot de passe</label>
+                        <label style={styles.label}>{t("auth.password")}</label>
                         <input
                             type="password"
                             value={data.password_admin}
@@ -82,7 +84,7 @@ export default function Login() {
                             ...(processing ? styles.buttonDisabled : {}),
                         }}
                     >
-                        {processing ? "Connexion..." : "Se connecter"}
+                        {processing ? t("auth.connecting") : t("auth.submit")}
                     </button>
                 </form>
             </div>

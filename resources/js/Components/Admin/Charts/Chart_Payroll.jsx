@@ -9,43 +9,32 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
-
-const MONTHS_SHORT = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
-const MONTHS_FULL = [
-    "Janvier",
-    "Février",
-    "Mars",
-    "Avril",
-    "Mai",
-    "Juin",
-    "Juillet",
-    "Août",
-    "Septembre",
-    "Octobre",
-    "Novembre",
-    "Décembre",
-];
-
-const formatAr = (value) =>
-    `${Number(value || 0).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} Ar`;
+import { monthFullLabels, monthShortLabels, useDateLocale, useLocale, useT } from "@/i18n";
 
 export default function Chart_Payroll({ data = [] }) {
+    const t = useT();
+    const locale = useLocale();
+    const dateLoc = useDateLocale();
     const fill = usePage().props.theme?.primary || "#261FB3";
+    const shorts = monthShortLabels(locale);
+    const fulls = monthFullLabels(locale);
     const totalsByMonth = new Map(
         data.map((item) => [Number(item.month), Number(item.total) || 0])
     );
+    const formatAr = (value) =>
+        `${Number(value || 0).toLocaleString(dateLoc, { maximumFractionDigits: 0 })} Ar`;
 
-    const formattedData = MONTHS_SHORT.map((monthLabel, index) => ({
+    const formattedData = shorts.map((monthLabel, index) => ({
         month: index + 1,
         monthLabel,
-        monthFull: MONTHS_FULL[index],
+        monthFull: fulls[index],
         total: totalsByMonth.get(index + 1) || 0,
     }));
 
     return (
         <div style={styles.container}>
-            <h3 style={styles.title}>Masse salariale par mois</h3>
-            <p style={styles.subtitle}>Somme des nets à payer, classée par mois de l’année en cours</p>
+            <h3 style={styles.title}>{t("dashboard.chartPayroll")}</h3>
+            <p style={styles.subtitle}>{t("dashboard.chartPayrollHelp")}</p>
 
             <div style={{ width: "100%", height: 300 }}>
                 <ResponsiveContainer>
@@ -55,15 +44,15 @@ export default function Chart_Payroll({ data = [] }) {
                         <YAxis
                             tick={{ fontSize: 11, fill: "#718096" }}
                             tickFormatter={(value) =>
-                                Number(value).toLocaleString("fr-FR", { notation: "compact", maximumFractionDigits: 1 })
+                                Number(value).toLocaleString(dateLoc, { notation: "compact", maximumFractionDigits: 1 })
                             }
                         />
                         <Tooltip
-                            formatter={(value) => [formatAr(value), "Net à payer"]}
+                            formatter={(value) => [formatAr(value), t("payrolls.net")]}
                             labelFormatter={(_, payload) => payload?.[0]?.payload?.monthFull || ""}
                             labelStyle={{ color: "#1A202C" }}
                         />
-                        <Bar dataKey="total" name="Masse salariale" fill={fill} radius={[4, 4, 0, 0]} maxBarSize={42} />
+                        <Bar dataKey="total" name={t("dashboard.payrollMass")} fill={fill} radius={[4, 4, 0, 0]} maxBarSize={42} />
                     </BarChart>
                 </ResponsiveContainer>
             </div>

@@ -5,22 +5,24 @@ import MessageThread from "@/Components/Inbox/MessageThread";
 import Sidebar from "@/Components/User/Sidebar";
 import { colors } from "@/config/colors";
 import { useSidebar } from "@/hooks/useSidebar";
+import { useT } from "@/i18n";
 
 export default function Index({ messages = [] }) {
+    const t = useT();
     const { auth } = usePage().props;
     const user = auth?.user;
     const { isOpen, setIsOpen, offset } = useSidebar();
 
     return (
         <>
-            <Head title="Messages" />
+            <Head title={t("messages.title")} />
             <Sidebar user={user} currentPage="messages.index" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
-                        <h1 style={styles.title}>Messages</h1>
-                        <p style={styles.subtitle}>Échangez avec le service RH</p>
+                        <h1 style={styles.title}>{t("messages.title")}</h1>
+                        <p style={styles.subtitle}>{t("messages.subtitle")}</p>
                     </div>
                     <HeaderTools />
                 </div>
@@ -28,13 +30,14 @@ export default function Index({ messages = [] }) {
                 <MessageThread
                     messages={messages}
                     me="user"
-                    otherLabel="RH"
+                    otherLabel={t("messages.hr")}
                     otherIcon="/assets/icon/building.svg"
                     storeUrl={route("messages.store")}
-                    pollUrl={`${route("messages.live")}?thread=1`}
+                    liveUrl={route("messages.live")}
+                    liveThread
                     deleteUrl={(id) => route("messages.destroy", id)}
                     clearUrl={route("messages.destroy-thread")}
-                    emptyText="Aucun message. Écrivez à la RH ou joignez un fichier."
+                    emptyText={t("messages.empty")}
                 />
             </div>
         </>

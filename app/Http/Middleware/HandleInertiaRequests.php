@@ -84,6 +84,7 @@ class HandleInertiaRequests extends Middleware
             'inbox' => $request->routeIs('messages.live', 'admin.messages.live')
                 ? []
                 : app(Inbox::class)->payload($request),
+            'locale' => app()->getLocale(),
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'payroll_warnings' => $request->session()->get('payroll_warnings'),

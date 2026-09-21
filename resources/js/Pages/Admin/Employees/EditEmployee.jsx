@@ -4,8 +4,10 @@ import BrandMark from "@/Components/BrandMark";
 import HeaderTools from "@/Components/HeaderTools";
 import { useState } from "react";
 import { useSidebar } from "@/hooks/useSidebar";
+import { useT } from "@/i18n";
 
 export default function EditEmployee({ admin, employee, isOpen: initialOpen = true }) {
+    const t = useT();
     const { isOpen, setIsOpen, offset } = useSidebar();
     const [formData, setFormData] = useState({
         first_name: employee.first_name || "",
@@ -56,14 +58,14 @@ export default function EditEmployee({ admin, employee, isOpen: initialOpen = tr
 
     return (
         <>
-            <Head title="Modifier un Employé" />
+            <Head title={t("admin.employees.editTitle")} />
             <Sidebar admin={admin} currentPage="admin.employees" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
-                        <h1 style={styles.title}>Modifier un Employé</h1>
-                        <p style={styles.subtitle}>Mettez à jour les informations et le mot de passe de l'employé</p>
+                        <h1 style={styles.title}>{t("admin.employees.editTitle")}</h1>
+                        <p style={styles.subtitle}>{t("admin.employees.editSubtitle")}</p>
                     </div>
                     <HeaderTools />
                 </div>
@@ -71,19 +73,19 @@ export default function EditEmployee({ admin, employee, isOpen: initialOpen = tr
                 <div style={styles.formContainer}>
                     <form onSubmit={handleSubmit}>
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Photo</label>
-                            {photoPreview && <img src={photoPreview} alt="Photo de l'employé" style={styles.photoPreview} />}
+                            <label style={styles.label}>{t("common.photo")}</label>
+                            {photoPreview && <img src={photoPreview} alt={t("admin.employees.photoAlt")} style={styles.photoPreview} />}
                             <input type="file" accept="image/jpeg,image/png" onChange={handlePhotoChange} />
                             {errors.photo && <p style={styles.error}>{errors.photo}</p>}
                         </div>
-                        <Field label="Prénom" name="first_name" value={formData.first_name} onChange={handleChange} error={errors.first_name} />
-                        <Field label="Nom" name="last_name" value={formData.last_name} onChange={handleChange} error={errors.last_name} />
-                        <Field label="Numéro Téléphone" name="phone" value={formData.phone} onChange={handleChange} error={errors.phone} />
-                        <Field label="Email (Optionnel)" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} />
-                        <Field label="Poste" name="position" value={formData.position} onChange={handleChange} error={errors.position} />
+                        <Field label={t("common.firstName")} name="first_name" value={formData.first_name} onChange={handleChange} error={errors.first_name} />
+                        <Field label={t("common.lastName")} name="last_name" value={formData.last_name} onChange={handleChange} error={errors.last_name} />
+                        <Field label={t("admin.employees.phone")} name="phone" value={formData.phone} onChange={handleChange} error={errors.phone} />
+                        <Field label={t("admin.employees.emailOptional")} name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} />
+                        <Field label={t("common.position")} name="position" value={formData.position} onChange={handleChange} error={errors.position} />
 
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Date d'embauche</label>
+                            <label style={styles.label}>{t("common.hireDate")}</label>
                             <input
                                 type="date"
                                 name="hire_date"
@@ -95,7 +97,7 @@ export default function EditEmployee({ admin, employee, isOpen: initialOpen = tr
                         </div>
 
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Salaire de base (Ar)</label>
+                            <label style={styles.label}>{t("admin.employees.salary")}</label>
                             <input
                                 type="number"
                                 min="0"
@@ -108,16 +110,16 @@ export default function EditEmployee({ admin, employee, isOpen: initialOpen = tr
                             {errors.salary_base && <p style={styles.error}>{errors.salary_base}</p>}
                         </div>
 
-                        <p style={styles.sectionHint}>Mot de passe — laisser vide pour ne pas le modifier</p>
-                        <Field label="Nouveau mot de passe" name="password" type="password" value={formData.password} onChange={handleChange} error={errors.password} />
-                        <Field label="Confirmer le mot de passe" name="password_confirmation" type="password" value={formData.password_confirmation} onChange={handleChange} error={errors.password_confirmation} />
+                        <p style={styles.sectionHint}>{t("admin.employees.passwordHint")}</p>
+                        <Field label={t("admin.employees.newPassword")} name="password" type="password" value={formData.password} onChange={handleChange} error={errors.password} />
+                        <Field label={t("admin.employees.confirmPassword")} name="password_confirmation" type="password" value={formData.password_confirmation} onChange={handleChange} error={errors.password_confirmation} />
 
                         <div style={styles.formActions}>
                             <button type="button" onClick={() => router.visit(route("admin.employees"))} style={styles.cancelButton} disabled={loading}>
-                                Annuler
+                                {t("common.cancel")}
                             </button>
                             <button type="submit" style={styles.submitButton} disabled={loading}>
-                                {loading ? "Mise à jour..." : "Enregistrer"}
+                                {loading ? t("common.updating") : t("common.save")}
                             </button>
                         </div>
                     </form>
@@ -152,12 +154,12 @@ const styles = {
     formContainer: { background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", padding: "24px", maxWidth: "520px", width: "100%", boxSizing: "border-box" },
     formGroup: { marginBottom: "18px" },
     label: { display: "block", fontSize: "13px", fontWeight: "600", color: "#1a202c", marginBottom: "8px" },
-    input: { width: "100%", padding: "10px 12px", fontSize: "14px", border: "1px solid #e2e8f0", borderRadius: "8px", boxSizing: "border-box", fontFamily: "system-ui, sans-serif" },
+    input: { width: "100%", height: "38px", padding: "0 12px", fontSize: "14px", border: "1px solid #e2e8f0", borderRadius: "8px", boxSizing: "border-box", fontFamily: "system-ui, sans-serif" },
     error: { fontSize: "12px", color: "#e53e3e", margin: "4px 0 0" },
     photoPreview: { width: "88px", height: "88px", objectFit: "cover", borderRadius: "8px", display: "block", marginBottom: "8px", border: "1px solid #e2e8f0" },
     sectionHint: { fontSize: "13px", fontWeight: "600", color: "#1a202c", margin: "8px 0 14px", paddingTop: "8px", borderTop: "1px solid #e2e8f0" },
-    formActions: { display: "flex", gap: "12px", marginTop: "18px" },
-    cancelButton: { flex: 1, padding: "10px 16px", background: "white", color: "#718096", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
-    submitButton: { flex: 1, padding: "10px 16px", background: "var(--color-primary)", color: "white", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
+    formActions: { display: "flex", gap: "12px", marginTop: "18px", alignItems: "center" },
+    cancelButton: { flex: 1, height: "38px", padding: "0 16px", background: "white", color: "#718096", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer", boxSizing: "border-box" },
+    submitButton: { flex: 1, height: "38px", padding: "0 16px", background: "var(--color-primary)", color: "white", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer", boxSizing: "border-box" },
 };
 

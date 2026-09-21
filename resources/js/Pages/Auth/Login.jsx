@@ -5,8 +5,10 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useT } from '@/i18n';
 
 export default function Login({ status, canResetPassword }) {
+    const t = useT();
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -23,7 +25,16 @@ export default function Login({ status, canResetPassword }) {
 
     return (
         <GuestLayout>
-            <Head title="Connexion" />
+            <Head title={t('auth.loginTitle')} />
+
+            <div className="mb-6 text-center">
+                <h1 className="text-xl font-semibold text-gray-900">
+                    {t('auth.employeeTitle')}
+                </h1>
+                <p className="mt-1 text-sm text-gray-600">
+                    {t('auth.employeeSubtitle')}
+                </p>
+            </div>
 
             {status && (
                 <div className="mb-4 text-sm font-medium text-green-600">
@@ -33,7 +44,7 @@ export default function Login({ status, canResetPassword }) {
 
             <form onSubmit={submit}>
                 <div>
-                    <InputLabel htmlFor="email" value="Email" />
+                    <InputLabel htmlFor="email" value={t('auth.email')} />
 
                     <TextInput
                         id="email"
@@ -50,7 +61,7 @@ export default function Login({ status, canResetPassword }) {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
+                    <InputLabel htmlFor="password" value={t('auth.password')} />
 
                     <TextInput
                         id="password"
@@ -75,7 +86,7 @@ export default function Login({ status, canResetPassword }) {
                             }
                         />
                         <span className="ms-2 text-sm text-gray-600">
-                            Remember me
+                            {t('auth.remember')}
                         </span>
                     </label>
                 </div>
@@ -86,12 +97,12 @@ export default function Login({ status, canResetPassword }) {
                             href={route('password.request')}
                             className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-bootstrap-primary focus:ring-offset-2"
                         >
-                            Forgot your password?
+                            {t('auth.forgot')}
                         </Link>
                     )}
 
                     <PrimaryButton className="ms-4" disabled={processing}>
-                        Log in
+                        {t('auth.submit')}
                     </PrimaryButton>
                 </div>
             </form>

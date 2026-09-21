@@ -4,30 +4,33 @@ import BrandMark from "@/Components/BrandMark";
 import HeaderTools from "@/Components/HeaderTools";
 import { colors } from "@/config/colors";
 import { useSidebar } from "@/hooks/useSidebar";
+import { useDateLocale, useT } from "@/i18n";
 
 export default function Dashboard({ latestPayroll = null, unpaidCount = 0 }) {
+    const t = useT();
+    const dateLoc = useDateLocale();
     const { auth } = usePage().props;
     const user = auth?.user;
     const { isOpen, setIsOpen, offset } = useSidebar();
 
-    const formatAr = (value) => `${Number(value || 0).toLocaleString("fr-FR")} Ar`;
+    const formatAr = (value) => `${Number(value || 0).toLocaleString(dateLoc)} Ar`;
     const formatMonth = (payroll) => {
-        if (!payroll) return "-";
+        if (!payroll) return t("common.dash");
         const date = new Date(payroll.period_year, payroll.period_month - 1, 1);
-        return new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(date);
+        return new Intl.DateTimeFormat(dateLoc, { month: "long", year: "numeric" }).format(date);
     };
 
     return (
         <>
-            <Head title="Tableau de bord" />
+            <Head title={t("dashboard.title")} />
             <Sidebar user={user} currentPage="dashboard" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
-                        <h1 style={styles.title}>Tableau de bord</h1>
+                        <h1 style={styles.title}>{t("dashboard.title")}</h1>
                         <p style={styles.subtitle}>
-                            Bonjour, {user?.first_name} {user?.last_name}
+                            {t("dashboard.hello", { name: `${user?.first_name || ""} ${user?.last_name || ""}`.trim() })}
                         </p>
                     </div>
                     <HeaderTools />
@@ -35,27 +38,27 @@ export default function Dashboard({ latestPayroll = null, unpaidCount = 0 }) {
 
                 <div className="app-cards" style={styles.content}>
                     <div style={styles.card}>
-                        <p style={styles.cardLabel}>Poste</p>
-                        <p style={styles.cardValue}>{user?.position || "-"}</p>
+                        <p style={styles.cardLabel}>{t("dashboard.position")}</p>
+                        <p style={styles.cardValue}>{user?.position || t("common.dash")}</p>
                     </div>
                     <div style={styles.card}>
-                        <p style={styles.cardLabel}>Dernière fiche</p>
+                        <p style={styles.cardLabel}>{t("dashboard.lastPayslip")}</p>
                         <p style={styles.cardValue}>
                             {latestPayroll
                                 ? `${formatMonth(latestPayroll)} · ${formatAr(latestPayroll.net_to_pay)}`
-                                : "Aucune fiche"}
+                                : t("dashboard.noPayslip")}
                         </p>
                         {latestPayroll && (
                             <p style={styles.cardHint}>
-                                {latestPayroll.payment_status === "paid" ? "Payée" : "Non payée"}
+                                {latestPayroll.payment_status === "paid" ? t("dashboard.paid") : t("dashboard.unpaid")}
                             </p>
                         )}
                     </div>
                     <div style={styles.card}>
-                        <p style={styles.cardLabel}>Fiches non payées</p>
+                        <p style={styles.cardLabel}>{t("dashboard.unpaidCount")}</p>
                         <p style={styles.cardValue}>{unpaidCount}</p>
                         <Link href={route("payrolls.index")} style={styles.cardLink}>
-                            Voir mes fiches
+                            {t("dashboard.viewPayslips")}
                         </Link>
                     </div>
                 </div>

@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'paid' => 'Congé payé',
+    'unpaid' => 'Congé non payé',
+    'sick' => 'Repos maladie',
+    'pending' => 'En attente',
+    'approved' => 'Validé',
+    'rejected' => 'Refusé',
+    'reason_paid' => 'Congé payé.',
+    'reason_unpaid' => 'Congé non payé.',
+    'reason_sick' => 'Repos maladie.',
+    'sent' => 'Demande de congé envoyée.',
+    'cancelled' => 'Demande annulée.',
+    'overlap' => 'Cette période chevauche déjà un congé en attente ou validé.',
+    'not_yours' => 'Cette demande ne vous appartient pas.',
+    'pending_only' => 'Seule une demande en attente peut être annulée.',
+    'already_reviewed' => 'Cette demande a déjà été traitée.',
+    'invalid_decision' => 'Décision invalide.',
+    'overlap_approved' => 'Cette période chevauche déjà un congé validé.',
+    'invalid_start_slot' => 'Créneau de début invalide.',
+    'invalid_end_slot' => 'Créneau de fin invalide.',
+    'end_before_start' => 'La fin du congé est avant le début.',
+    'too_long' => 'La période ne peut pas dépasser 90 jours.',
+];

@@ -2,36 +2,38 @@ import { Head, Link, usePage } from "@inertiajs/react";
 import BrandMark from "@/Components/BrandMark";
 import SplitAuthLayout from "@/Layouts/SplitAuthLayout";
 import { colors } from "@/config/colors";
+import { useT } from "@/i18n";
 
 export default function Welcome({ auth }) {
+    const t = useT();
     const { company } = usePage().props;
-    const companyName = company?.name || "Entreprise";
+    const companyName = company?.name || t("welcome.companyFallback");
 
     return (
         <SplitAuthLayout>
-            <Head title="Accueil" />
+            <Head title={t("welcome.title")} />
             <BrandMark size={80} layout="banner" />
 
             <div style={styles.card}>
                 <div style={styles.header}>
                     <h1 style={styles.title}>{companyName}</h1>
                     <p style={styles.subtitle}>
-                        Gestion de la paie et des employés
+                        {t("welcome.subtitle")}
                     </p>
                 </div>
 
                 <div style={styles.actions}>
                     {auth?.user ? (
                         <Link href={route("dashboard")} style={styles.primary}>
-                            Accéder à mon espace
+                            {t("welcome.goWorkspace")}
                         </Link>
                     ) : (
                         <>
                             <Link href={route("admin.login")} style={styles.primary}>
-                                Espace administrateur
+                                {t("welcome.adminSpace")}
                             </Link>
                             <Link href={route("login")} style={styles.secondary}>
-                                Espace employé
+                                {t("welcome.employeeSpace")}
                             </Link>
                         </>
                     )}

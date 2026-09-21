@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'paid' => 'Paid leave',
+    'unpaid' => 'Unpaid leave',
+    'sick' => 'Sick leave',
+    'pending' => 'Pending',
+    'approved' => 'Approved',
+    'rejected' => 'Rejected',
+    'reason_paid' => 'Paid leave.',
+    'reason_unpaid' => 'Unpaid leave.',
+    'reason_sick' => 'Sick leave.',
+    'sent' => 'Leave request sent.',
+    'cancelled' => 'Request cancelled.',
+    'overlap' => 'This period overlaps an existing pending or approved leave.',
+    'not_yours' => 'This request does not belong to you.',
+    'pending_only' => 'Only a pending request can be cancelled.',
+    'already_reviewed' => 'This request has already been processed.',
+    'invalid_decision' => 'Invalid decision.',
+    'overlap_approved' => 'This period overlaps an already approved leave.',
+    'invalid_start_slot' => 'Invalid start slot.',
+    'invalid_end_slot' => 'Invalid end slot.',
+    'end_before_start' => 'The leave end is before the start.',
+    'too_long' => 'The period cannot exceed 90 days.',
+];

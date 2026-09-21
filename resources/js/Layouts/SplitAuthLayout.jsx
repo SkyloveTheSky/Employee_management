@@ -1,3 +1,4 @@
+import LanguageSwitcher from "@/Components/LanguageSwitcher";
 import ThemeSync from "@/Components/ThemeSync";
 
 const USER_HERO =
@@ -14,7 +15,10 @@ export default function SplitAuthLayout({ children, imageSrc = USER_HERO }) {
                     className="absolute inset-0 h-full w-full object-cover"
                 />
             </div>
-            <div className="flex w-full items-center justify-center px-6 py-12 md:w-1/2" style={{ background: "var(--color-background)" }}>
+            <div className="relative flex w-full items-center justify-center px-6 py-12 md:w-1/2" style={{ background: "var(--color-background)" }}>
+                <div className="absolute right-6 top-6">
+                    <LanguageSwitcher />
+                </div>
                 <div className="flex w-full max-w-[400px] flex-col items-center">
                     {children}
                 </div>

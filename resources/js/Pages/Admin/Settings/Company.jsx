@@ -3,10 +3,13 @@ import { useEffect, useState } from "react";
 import BrandMark from "@/Components/BrandMark";
 import FeedbackDialog from "@/Components/FeedbackDialog";
 import HeaderTools from "@/Components/HeaderTools";
+import IconButton from "@/Components/IconButton";
+import WorkplaceMap from "@/Components/WorkplaceMap";
 import Sidebar from "../../../Components/Admin/Sidebar";
 import { colors } from "@/config/colors";
 import { cloneDefaultOvertimeTypes, normalizeOvertimePositions, normalizeOvertimeTypes } from "@/config/overtimeTypes";
 import { useSidebar } from "@/hooks/useSidebar";
+import { useLocale, useT } from "@/i18n";
 
 const DEFAULT_IRSA_BRACKETS = [
     { min: 0, max: 350000, rate: 0 },
@@ -16,6 +19,8 @@ const DEFAULT_IRSA_BRACKETS = [
     { min: 600001, max: 4000000, rate: 20 },
     { min: 4000001, max: "", rate: 25 },
 ];
+
+const RADIUS_PRESETS = [50, 100, 150, 200, 300, 500];
 
 function defaultHalf(hoursPerDay) {
     const day = Number(hoursPerDay);
@@ -43,6 +48,8 @@ function normalizeBrackets(rows) {
 }
 
 export default function Company({ admin, settings, irsa_brackets, overtime_types, overtime_positions }) {
+    const t = useT();
+    const locale = useLocale();
     const { flash } = usePage().props;
     const { isOpen, setIsOpen, offset } = useSidebar();
     const [openSection, setOpenSection] = useState("identity");
@@ -68,13 +75,21 @@ export default function Company({ admin, settings, irsa_brackets, overtime_types
         cnaps_employer_percent: settings?.cnaps_employer_percent ?? "13",
         cnaps_employee_percent: settings?.cnaps_employee_percent ?? settings?.cnaps_percent ?? "1",
         irsa_brackets: normalizeBrackets(irsa_brackets),
+        attendance_timezone: settings?.attendance_timezone || "Indian/Antananarivo",
+        attendance_morning_start: settings?.attendance_morning_start || "06:00",
+        attendance_morning_end: settings?.attendance_morning_end || "12:30",
+        attendance_afternoon_start: settings?.attendance_afternoon_start || "12:00",
+        attendance_afternoon_end: settings?.attendance_afternoon_end || "20:00",
+        attendance_latitude: settings?.attendance_latitude ?? "",
+        attendance_longitude: settings?.attendance_longitude ?? "",
+        attendance_radius_m: settings?.attendance_radius_m ?? 150,
     });
 
     useEffect(() => {
         if (flash?.success) {
             setFeedback({
                 variant: "success",
-                title: "Enregistrement réussi",
+                title: t("admin.company.savedTitle"),
                 message: flash.success,
             });
         }
@@ -110,15 +125,15 @@ export default function Company({ admin, settings, irsa_brackets, overtime_types
             onSuccess: () => {
                 setFeedback({
                     variant: "success",
-                    title: "Enregistrement réussi",
-                    message: "Les paramètres de l’entreprise ont bien été enregistrés.",
+                    title: t("admin.company.savedTitle"),
+                    message: t("admin.company.savedBody"),
                 });
             },
             onError: () => {
                 setFeedback({
                     variant: "error",
-                    title: "Enregistrement impossible",
-                    message: "Vérifiez les champs indiqués, puis réessayez.",
+                    title: t("admin.company.errorTitle"),
+                    message: t("admin.company.errorBody"),
                 });
             },
         });
@@ -166,7 +181,7 @@ export default function Company({ admin, settings, irsa_brackets, overtime_types
         updatePosition(positionIndex, {
             types: [
                 ...row.types,
-                { key: `hs_${n}`, code: `HS_${n}`, label: "Nouveau type", premium: 30, enabled: true },
+                { key: `hs_${n}`, code: `HS_${n}`, label: t("admin.company.newType"), premium: 30, enabled: true },
             ],
         });
     };
@@ -189,40 +204,45 @@ export default function Company({ admin, settings, irsa_brackets, overtime_types
             const next = [
                 ...data.overtime_positions,
                 { position: name, enabled: true, types: cloneDefaultOvertimeTypes() },
-            ].sort((a, b) => a.position.localeCompare(b.position, "fr"));
+            ].sort((a, b) => a.position.localeCompare(b.position, locale === "en" ? "en" : "fr"));
             setData("overtime_positions", next);
             setSelectedPosition(next.findIndex((row) => row.position === name));
         }
         setNewPosition("");
     };
 
+    const currentIndex = data.overtime_positions.length
+        ? Math.min(selectedPosition, data.overtime_positions.length - 1)
+        : -1;
+    const currentPos = currentIndex >= 0 ? data.overtime_positions[currentIndex] : null;
+
     return (
         <>
-            <Head title="Paramètres entreprise" />
+            <Head title={t("admin.company.title")} />
             <Sidebar admin={admin} currentPage="admin.settings.company.edit" isOpen={isOpen} setIsOpen={setIsOpen} />
             <div className="app-page" style={{ ...styles.page, marginLeft: offset }}>
                 <div className="app-header" style={styles.header}>
                     <BrandMark />
                     <div>
-                        <h1 style={styles.title}>Paramètres de l'entreprise</h1>
-                        <p style={styles.subtitle}>Identité, journée de travail, heures supplémentaires, cotisations et impôts</p>
+                        <h1 style={styles.title}>{t("admin.company.heading")}</h1>
+                        <p style={styles.subtitle}>{t("admin.company.subtitle")}</p>
                     </div>
                     <HeaderTools />
                 </div>
 
                 <form onSubmit={submit} style={styles.list}>
                     <Accordion
-                        title="Identité"
+                        title={t("admin.company.identity")}
                         open={openSection === "identity"}
                         onToggle={() => toggle("identity")}
                     >
-                        <Field label="Nom de l'entreprise" value={data.company_name} onChange={(v) => setData("company_name", v)} error={errors.company_name} />
-                        <Field label="Propriétaire" value={data.owner_name} onChange={(v) => setData("owner_name", v)} error={errors.owner_name} />
+                        <Field label={t("admin.company.companyName")} value={data.company_name} onChange={(v) => setData("company_name", v)} error={errors.company_name} />
+                        <Field label={t("admin.company.owner")} value={data.owner_name} onChange={(v) => setData("owner_name", v)} error={errors.owner_name} />
                         <Field label="NIF" value={data.nif} onChange={(v) => setData("nif", v)} error={errors.nif} />
                         <Field label="STAT" value={data.stat} onChange={(v) => setData("stat", v)} error={errors.stat} />
                         <Field label="RCS" value={data.rcs} onChange={(v) => setData("rcs", v)} error={errors.rcs} />
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Logo (png/jpg)</label>
+                            <label style={styles.label}>{t("admin.company.logo")}</label>
                             <input
                                 type="file"
                                 accept="image/png,image/jpeg"
@@ -234,12 +254,12 @@ export default function Company({ admin, settings, irsa_brackets, overtime_types
                     </Accordion>
 
                     <Accordion
-                        title="Journée de travail"
+                        title={t("admin.company.workday")}
                         open={openSection === "overtime"}
                         onToggle={() => toggle("overtime")}
                     >
                         <Field
-                            label="Nombre d’heures de travail par jour"
+                            label={t("admin.company.hoursPerDay")}
                             type="number"
                             step="0.25"
                             min="0"
@@ -258,7 +278,131 @@ export default function Company({ admin, settings, irsa_brackets, overtime_types
                     </Accordion>
 
                     <Accordion
-                        title="Heures supplémentaires"
+                        title={t("admin.company.attendance")}
+                        open={openSection === "attendance"}
+                        onToggle={() => toggle("attendance")}
+                    >
+                        <p style={styles.scaleHint}>
+                            {t("admin.company.attendanceHint")}
+                        </p>
+                        <Field
+                            label={t("admin.company.timezone")}
+                            value={data.attendance_timezone}
+                            onChange={(v) => setData("attendance_timezone", v)}
+                            error={errors.attendance_timezone}
+                        />
+                        <div className="app-grid-2" style={styles.grid}>
+                            <Field
+                                label={t("admin.company.morningStart")}
+                                type="time"
+                                value={data.attendance_morning_start}
+                                onChange={(v) => setData("attendance_morning_start", v)}
+                                error={errors.attendance_morning_start}
+                            />
+                            <Field
+                                label={t("admin.company.morningEnd")}
+                                type="time"
+                                value={data.attendance_morning_end}
+                                onChange={(v) => setData("attendance_morning_end", v)}
+                                error={errors.attendance_morning_end}
+                            />
+                            <Field
+                                label={t("admin.company.afternoonStart")}
+                                type="time"
+                                value={data.attendance_afternoon_start}
+                                onChange={(v) => setData("attendance_afternoon_start", v)}
+                                error={errors.attendance_afternoon_start}
+                            />
+                            <Field
+                                label={t("admin.company.afternoonEnd")}
+                                type="time"
+                                value={data.attendance_afternoon_end}
+                                onChange={(v) => setData("attendance_afternoon_end", v)}
+                                error={errors.attendance_afternoon_end}
+                            />
+                        </div>
+                    </Accordion>
+
+                    <Accordion
+                        title={t("admin.company.location")}
+                        open={openSection === "localisation"}
+                        onToggle={() => toggle("localisation")}
+                    >
+                        <p style={styles.scaleHint}>
+                            {t("admin.company.locationHint")}
+                        </p>
+                        <WorkplaceMap
+                            latitude={data.attendance_latitude}
+                            longitude={data.attendance_longitude}
+                            radius={data.attendance_radius_m}
+                            lockPosition={Boolean(data.attendance_latitude && data.attendance_longitude)}
+                            onChange={({ latitude, longitude }) => {
+                                setData((current) => ({
+                                    ...current,
+                                    attendance_latitude: latitude,
+                                    attendance_longitude: longitude,
+                                }));
+                            }}
+                        />
+                        <div style={styles.geofence}>
+                            <p style={styles.label}>{t("admin.company.geofence")}</p>
+                            <p style={styles.scaleHint}>
+                                {data.attendance_latitude && data.attendance_longitude
+                                    ? t("admin.company.geofenceLocked")
+                                    : t("admin.company.geofenceUnlock")}
+                            </p>
+                            <div style={styles.geofenceRow}>
+                                <input
+                                    type="range"
+                                    min="20"
+                                    max="1000"
+                                    step="10"
+                                    value={Math.min(1000, Math.max(20, Number(data.attendance_radius_m) || 150))}
+                                    onChange={(e) => setData("attendance_radius_m", e.target.value)}
+                                    style={styles.slider}
+                                />
+                                <input
+                                    type="number"
+                                    min="20"
+                                    max="5000"
+                                    step="1"
+                                    value={data.attendance_radius_m}
+                                    onChange={(e) => setData("attendance_radius_m", e.target.value)}
+                                    style={{ ...styles.input, width: "110px", margin: 0 }}
+                                />
+                                <span style={styles.geofenceUnit}>m</span>
+                            </div>
+                            {errors.attendance_radius_m ? (
+                                <p style={styles.error}>{errors.attendance_radius_m}</p>
+                            ) : null}
+                            <div style={styles.scaleActions}>
+                                {RADIUS_PRESETS.map((meters) => (
+                                    <button
+                                        key={meters}
+                                        type="button"
+                                        onClick={() => setData("attendance_radius_m", meters)}
+                                        style={{
+                                            ...styles.secondary,
+                                            background:
+                                                Number(data.attendance_radius_m) === meters
+                                                    ? "var(--color-primary)"
+                                                    : "white",
+                                            color: Number(data.attendance_radius_m) === meters ? "white" : colors.dark,
+                                            borderColor:
+                                                Number(data.attendance_radius_m) === meters
+                                                    ? "var(--color-primary)"
+                                                    : colors.border,
+                                        }}
+                                    >
+                                        {meters} m
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </Accordion>
+
+                    <Accordion
+                        title={t("admin.company.overtime")}
                         open={openSection === "overtime_rules"}
                         onToggle={() => toggle("overtime_rules")}
                     >
@@ -268,162 +412,158 @@ export default function Company({ admin, settings, irsa_brackets, overtime_types
                                 checked={asFlag(data.overtime_enabled)}
                                 onChange={(e) => setData("overtime_enabled", e.target.checked)}
                             />
-                            <span>
-                                <strong>Activer les heures supplémentaires</strong>
-                                <span style={styles.switchHint}>
-                                    Si cette option est désactivée, aucun surplus n’est compté, quel que soit le poste.
-                                </span>
-                            </span>
+                            <span><strong>{t("admin.company.overtimeEnable")}</strong></span>
                         </label>
-                        <p style={styles.scaleHint}>
-                            Sur une demi-journée (matin ou après-midi), le surplus au-delà du seuil est compté en heures supplémentaires.
-                        </p>
-                        <Field
-                            label="Seuil par demi-journée (h)"
-                            type="number"
-                            step="0.25"
-                            min="0"
-                            max="12"
-                            value={data.overtime_hours_per_half}
-                            onChange={(v) => setData("overtime_hours_per_half", v)}
-                            error={errors.overtime_hours_per_half}
-                        />
 
-                        <p style={styles.scaleTitle}>Types d’heures supplémentaires par poste</p>
-                        <p style={styles.scaleHint}>
-                            Choisissez un poste pour définir ses types de HS (code, libellé, majoration). Chaque poste a sa propre liste, et peut désactiver les HS.
-                        </p>
-                        {data.overtime_positions.length === 0 ? (
-                            <p style={styles.scaleHint}>Aucun poste pour le moment. Ils apparaissent dès qu’un employé a un poste, ou ajoutez-en un ci-dessous.</p>
-                        ) : (
-                            <div style={styles.posLayout}>
-                                <div style={styles.posList}>
-                                    {data.overtime_positions.map((row, index) => (
-                                        <button
-                                            key={row.position}
-                                            type="button"
-                                            onClick={() => setSelectedPosition(index)}
-                                            style={{
-                                                ...styles.posItem,
-                                                borderColor: selectedPosition === index ? "var(--color-primary)" : colors.border,
-                                                background: selectedPosition === index ? "#f7fafc" : "white",
-                                            }}
-                                        >
-                                            <span>{row.position}</span>
-                                            <span style={styles.posMeta}>
-                                                {asFlag(row.enabled)
-                                                    ? `${(row.types || []).filter((type) => asFlag(type.enabled)).length} type${(row.types || []).filter((type) => asFlag(type.enabled)).length > 1 ? "s" : ""}`
-                                                    : "HS off"}
-                                            </span>
-                                        </button>
-                                    ))}
-                                </div>
-                                {data.overtime_positions[selectedPosition] && (
-                                    <div style={styles.posEditor}>
-                                        <label style={styles.switchRow}>
-                                            <input
-                                                type="checkbox"
-                                                checked={asFlag(data.overtime_positions[selectedPosition].enabled)}
-                                                onChange={(e) => updatePosition(selectedPosition, { enabled: e.target.checked })}
-                                            />
-                                            <span>
-                                                <strong>Activer les HS — {data.overtime_positions[selectedPosition].position}</strong>
-                                                <span style={styles.switchHint}>Si cette option est désactivée, ce poste n’a pas d’heures supplémentaires.</span>
-                                            </span>
-                                        </label>
-                                        <div style={styles.otHead}>
-                                            <span>Actif</span>
-                                            <span>Code</span>
-                                            <span>Libellé</span>
-                                            <span>Maj. (%)</span>
-                                            <span />
-                                        </div>
-                                        {data.overtime_positions[selectedPosition].types.map((row, index) => (
-                                            <div key={row.key || index} style={styles.otRow}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={asFlag(row.enabled)}
-                                                    onChange={(e) => updatePositionType(selectedPosition, index, "enabled", e.target.checked)}
-                                                    aria-label={`Activer ${row.label || row.code}`}
-                                                />
-                                                <input
-                                                    value={row.code}
-                                                    onChange={(e) => updatePositionType(selectedPosition, index, "code", e.target.value.toUpperCase())}
-                                                    style={styles.scaleInput}
-                                                />
-                                                <input
-                                                    value={row.label}
-                                                    onChange={(e) => updatePositionType(selectedPosition, index, "label", e.target.value)}
-                                                    style={styles.scaleInput}
-                                                />
-                                                <div>
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        max="400"
-                                                        step="0.1"
-                                                        value={row.premium}
-                                                        onChange={(e) => updatePositionType(selectedPosition, index, "premium", e.target.value)}
-                                                        style={styles.scaleInput}
-                                                    />
-                                                    <p style={styles.coeff}>× {coefficientFromPremium(row.premium)}</p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    style={styles.removeBtn}
-                                                    onClick={() => removePositionType(selectedPosition, index)}
-                                                    disabled={data.overtime_positions[selectedPosition].types.length <= 1}
-                                                >
-                                                    Retirer
-                                                </button>
-                                            </div>
-                                        ))}
-                                        <div style={styles.scaleActions}>
-                                            <button type="button" style={styles.secondary} onClick={() => addPositionType(selectedPosition)}>
-                                                Ajouter un type
-                                            </button>
-                                            <button
-                                                type="button"
-                                                style={styles.secondary}
-                                                onClick={() => updatePosition(selectedPosition, { types: cloneDefaultOvertimeTypes() })}
+                        {asFlag(data.overtime_enabled) && (
+                            <>
+                                <Field
+                                    label={t("admin.company.halfThreshold")}
+                                    type="number"
+                                    step="0.25"
+                                    min="0"
+                                    max="12"
+                                    value={data.overtime_hours_per_half}
+                                    onChange={(v) => setData("overtime_hours_per_half", v)}
+                                    error={errors.overtime_hours_per_half}
+                                />
+                                <p style={styles.scaleHint}>
+                                    {t("admin.company.halfHint")}
+                                </p>
+
+                                <div style={styles.block}>
+                                    <p style={styles.blockTitle}>{t("admin.company.byPosition")}</p>
+                                    <div style={styles.posToolbar}>
+                                        {data.overtime_positions.length > 0 ? (
+                                            <select
+                                                value={currentIndex}
+                                                onChange={(e) => setSelectedPosition(Number(e.target.value))}
+                                                style={styles.select}
                                             >
-                                                Types par défaut
-                                            </button>
+                                                {data.overtime_positions.map((row, index) => (
+                                                    <option key={row.position} value={index}>
+                                                        {row.position}{asFlag(row.enabled) ? "" : ` — ${t("admin.company.disabled")}`}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : null}
+                                        <div style={styles.addRow}>
+                                            <input
+                                                value={newPosition}
+                                                onChange={(e) => setNewPosition(e.target.value)}
+                                                placeholder={t("admin.company.newPosition")}
+                                                style={styles.scaleInput}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter") {
+                                                        e.preventDefault();
+                                                        addPosition();
+                                                    }
+                                                }}
+                                            />
+                                            <IconButton
+                                                icon="add"
+                                                label={t("admin.company.addPosition")}
+                                                variant="primary"
+                                                showLabel
+                                                onClick={addPosition}
+                                            />
                                         </div>
                                     </div>
-                                )}
-                            </div>
+
+                                    {!currentPos ? (
+                                        <p style={styles.emptyHint}>{t("admin.company.noPosition")}</p>
+                                    ) : (
+                                        <>
+                                            <label style={styles.switchInline}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={asFlag(currentPos.enabled)}
+                                                    onChange={(e) => updatePosition(currentIndex, { enabled: e.target.checked })}
+                                                />
+                                                <span>{t("admin.company.enableFor", { name: currentPos.position })}</span>
+                                            </label>
+
+                                            {asFlag(currentPos.enabled) ? (
+                                                <>
+                                                    <div className="app-table-wrap">
+                                                    <div style={styles.otHead}>
+                                                        <span />
+                                                        <span>{t("admin.company.type")}</span>
+                                                        <span>{t("admin.company.premium")}</span>
+                                                        <span>{t("admin.company.coeff")}</span>
+                                                        <span />
+                                                    </div>
+                                                    {currentPos.types.map((row, index) => (
+                                                        <div key={row.key || index} style={styles.otRow}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={asFlag(row.enabled)}
+                                                                onChange={(e) => updatePositionType(currentIndex, index, "enabled", e.target.checked)}
+                                                                aria-label={t("admin.company.enableType", { name: row.label || row.code })}
+                                                            />
+                                                            <input
+                                                                value={row.label}
+                                                                onChange={(e) => updatePositionType(currentIndex, index, "label", e.target.value)}
+                                                                style={styles.scaleInput}
+                                                            />
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                max="400"
+                                                                step="0.1"
+                                                                value={row.premium}
+                                                                onChange={(e) => updatePositionType(currentIndex, index, "premium", e.target.value)}
+                                                                style={styles.scaleInput}
+                                                            />
+                                                            <span style={styles.coeff}>× {coefficientFromPremium(row.premium)}</span>
+                                                            <IconButton
+                                                                icon="less"
+                                                                label={t("admin.company.removeType")}
+                                                                variant="ghost"
+                                                                onClick={() => removePositionType(currentIndex, index)}
+                                                                disabled={currentPos.types.length <= 1}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                    </div>
+                                                    <div style={styles.scaleActions}>
+                                                        <IconButton
+                                                            icon="add"
+                                                            label={t("admin.company.addType")}
+                                                            variant="primary"
+                                                            showLabel
+                                                            onClick={() => addPositionType(currentIndex)}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            style={styles.secondary}
+                                                            onClick={() => updatePosition(currentIndex, { types: cloneDefaultOvertimeTypes() })}
+                                                        >
+                                                            {t("admin.company.defaultTypes")}
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <p style={styles.emptyHint}>{t("admin.company.noOt")}</p>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </>
                         )}
-                        <div style={styles.addRow}>
-                            <input
-                                value={newPosition}
-                                onChange={(e) => setNewPosition(e.target.value)}
-                                placeholder="Nouveau poste"
-                                style={styles.scaleInput}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        addPosition();
-                                    }
-                                }}
-                            />
-                            <button type="button" style={styles.secondary} onClick={addPosition}>
-                                Ajouter un poste
-                            </button>
-                        </div>
                     </Accordion>
 
                     <Accordion
-                        title="Cotisation et impôts"
+                        title={t("admin.company.contributions")}
                         open={openSection === "contributions"}
                         onToggle={() => toggle("contributions")}
                     >
                         <p style={styles.scaleTitle}>CNAPS</p>
                         <div className="app-grid-2" style={styles.grid}>
                             <div>
-                                <p style={styles.partTitle}>Part patronale (employeur)</p>
+                                <p style={styles.partTitle}>{t("admin.company.employerShare")}</p>
                                 <Field
-                                    label="Taux de cotisation (%)"
+                                    label={t("admin.company.rate")}
                                     type="number"
                                     step="0.01"
                                     min="0"
@@ -432,12 +572,12 @@ export default function Company({ admin, settings, irsa_brackets, overtime_types
                                     onChange={(v) => setData("cnaps_employer_percent", v)}
                                     error={errors.cnaps_employer_percent}
                                 />
-                                <p style={styles.scaleHint}>Détails : retraite et prestations familiales. Charge entreprise, non retenue sur le salaire.</p>
+                                <p style={styles.scaleHint}>{t("admin.company.employerHint")}</p>
                             </div>
                             <div>
-                                <p style={styles.partTitle}>Part salariale (employé)</p>
+                                <p style={styles.partTitle}>{t("admin.company.employeeShare")}</p>
                                 <Field
-                                    label="Taux de cotisation (%)"
+                                    label={t("admin.company.rate")}
                                     type="number"
                                     step="0.01"
                                     min="0"
@@ -446,15 +586,15 @@ export default function Company({ admin, settings, irsa_brackets, overtime_types
                                     onChange={(v) => setData("cnaps_employee_percent", v)}
                                     error={errors.cnaps_employee_percent}
                                 />
-                                <p style={styles.scaleHint}>Détails : retraite uniquement. Retenue directement sur le salaire.</p>
+                                <p style={styles.scaleHint}>{t("admin.company.employeeHint")}</p>
                             </div>
                         </div>
-                        <p style={styles.scaleTitle}>Barème IRSA</p>
-                        <p style={styles.scaleHint}>Modifiable selon l’actualité fiscale. Laissez le maximum vide pour la dernière tranche.</p>
+                        <p style={styles.scaleTitle}>{t("admin.company.irsa")}</p>
+                        <p style={styles.scaleHint}>{t("admin.company.irsaHint")}</p>
                         <div style={styles.scaleHead}>
-                            <span>Minimum (Ar)</span>
-                            <span>Maximum (Ar)</span>
-                            <span>Taux (%)</span>
+                            <span>{t("admin.company.min")}</span>
+                            <span>{t("admin.company.max")}</span>
+                            <span>{t("admin.company.ratePct")}</span>
                             <span />
                         </div>
                         {data.irsa_brackets.map((row, index) => (
@@ -472,7 +612,7 @@ export default function Company({ admin, settings, irsa_brackets, overtime_types
                                     min="0"
                                     step="1"
                                     value={row.max}
-                                    placeholder="Et plus"
+                                    placeholder={t("admin.company.andMore")}
                                     onChange={(e) => updateBracket(index, "max", e.target.value)}
                                     style={styles.scaleInput}
                                 />
@@ -485,29 +625,32 @@ export default function Company({ admin, settings, irsa_brackets, overtime_types
                                     onChange={(e) => updateBracket(index, "rate", e.target.value)}
                                     style={styles.scaleInput}
                                 />
-                                <button
-                                    type="button"
-                                    style={styles.removeBtn}
+                                <IconButton
+                                    icon="less"
+                                    label={t("admin.company.removeBracket")}
+                                    variant="ghost"
                                     onClick={() => removeBracket(index)}
                                     disabled={data.irsa_brackets.length <= 1}
-                                >
-                                    Retirer
-                                </button>
+                                />
                             </div>
                         ))}
                         {errors.irsa_brackets && <p style={styles.error}>{errors.irsa_brackets}</p>}
                         <div style={styles.scaleActions}>
-                            <button type="button" style={styles.secondary} onClick={addBracket}>
-                                Ajouter une tranche
-                            </button>
+                            <IconButton
+                                icon="add"
+                                label={t("admin.company.addBracket")}
+                                variant="primary"
+                                showLabel
+                                onClick={addBracket}
+                            />
                             <button type="button" style={styles.secondary} onClick={() => setData("irsa_brackets", DEFAULT_IRSA_BRACKETS)}>
-                                Barème 2026
+                                {t("admin.company.scale2026")}
                             </button>
                         </div>
                     </Accordion>
 
                     <button type="submit" disabled={processing} style={styles.button}>
-                        {processing ? "Enregistrement..." : "Enregistrer"}
+                        {processing ? t("common.saving") : t("common.save")}
                     </button>
                 </form>
                 <FeedbackDialog
@@ -557,7 +700,7 @@ const styles = {
     header: { display: "flex", alignItems: "center", gap: "16px", background: "white", padding: "20px 24px", borderRadius: "12px", marginBottom: "24px", border: `1px solid ${colors.border}` },
     title: { fontSize: "18px", fontWeight: "600", color: colors.dark, margin: 0 },
     subtitle: { fontSize: "13px", color: colors.muted, margin: 0 },
-    list: { maxWidth: "1040px", display: "flex", flexDirection: "column", gap: "12px" },
+    list: { width: "100%", maxWidth: "100%", display: "flex", flexDirection: "column", gap: "12px" },
     item: { background: "white", borderRadius: "12px", border: `1px solid ${colors.border}`, overflow: "hidden" },
     itemHeader: {
         width: "100%",
@@ -585,6 +728,10 @@ const styles = {
     scaleTitle: { fontSize: "13px", fontWeight: 700, color: colors.dark, margin: "20px 0 4px" },
     partTitle: { fontSize: "13px", fontWeight: 700, color: colors.dark, margin: "8px 0 0" },
     scaleHint: { fontSize: "12px", color: colors.muted, margin: "0 0 12px", lineHeight: 1.4 },
+    geofence: { marginTop: "16px" },
+    geofenceRow: { display: "flex", alignItems: "center", gap: "12px" },
+    geofenceUnit: { fontSize: "13px", fontWeight: 600, color: colors.dark, flexShrink: 0 },
+    slider: { flex: 1, accentColor: "var(--color-primary)" },
     scaleHead: {
         display: "grid",
         gridTemplateColumns: "1fr 1fr 110px 72px",
@@ -595,75 +742,71 @@ const styles = {
         marginBottom: "6px",
     },
     scaleRow: { display: "grid", gridTemplateColumns: "1fr 1fr 110px 72px", gap: "8px", marginBottom: "8px", alignItems: "center" },
+    block: {
+        marginTop: "20px",
+        padding: "16px",
+        border: `1px solid ${colors.border}`,
+        borderRadius: "10px",
+        background: "#fafbfc",
+    },
+    blockTitle: { fontSize: "13px", fontWeight: 700, color: colors.dark, margin: "0 0 12px" },
+    posToolbar: {
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        marginBottom: "16px",
+    },
+    select: {
+        width: "100%",
+        height: "38px",
+        padding: "0 10px",
+        fontSize: "13px",
+        border: `1px solid ${colors.border}`,
+        borderRadius: "8px",
+        background: "white",
+        fontFamily: "inherit",
+        color: colors.dark,
+        boxSizing: "border-box",
+    },
     otHead: {
         display: "grid",
-        gridTemplateColumns: "52px 140px minmax(0, 1.4fr) 100px 72px",
+        gridTemplateColumns: "36px minmax(140px, 1fr) 90px 56px 40px",
         gap: "8px",
         fontSize: "12px",
         fontWeight: 700,
         color: colors.muted,
         marginBottom: "6px",
         alignItems: "center",
+        minWidth: "420px",
     },
     otRow: {
         display: "grid",
-        gridTemplateColumns: "52px 140px minmax(0, 1.4fr) 100px 72px",
+        gridTemplateColumns: "36px minmax(140px, 1fr) 90px 56px 40px",
         gap: "8px",
-        marginBottom: "10px",
+        marginBottom: "8px",
         alignItems: "center",
+        minWidth: "420px",
     },
-    posLayout: {
-        display: "grid",
-        gridTemplateColumns: "220px minmax(0, 1fr)",
-        gap: "16px",
-        alignItems: "start",
-        marginTop: "8px",
-    },
-    posList: {
-        display: "flex",
-        flexDirection: "column",
-        gap: "6px",
-        maxHeight: "420px",
-        overflowY: "auto",
-        paddingRight: "4px",
-    },
-    posItem: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        gap: "2px",
-        width: "100%",
-        textAlign: "left",
-        border: `1px solid ${colors.border}`,
-        borderRadius: "8px",
-        background: "white",
-        padding: "8px 10px",
-        cursor: "pointer",
-        fontFamily: "inherit",
-        fontSize: "13px",
-        fontWeight: 600,
-        color: colors.dark,
-    },
-    posMeta: { fontSize: "11px", fontWeight: 500, color: colors.muted },
-    posEditor: { minWidth: 0 },
     switchRow: {
         display: "flex",
-        alignItems: "flex-start",
+        alignItems: "center",
         gap: "10px",
-        margin: "0 0 16px",
+        margin: "0",
         fontSize: "14px",
         color: colors.dark,
     },
-    switchHint: {
-        display: "block",
-        fontSize: "12px",
-        color: colors.muted,
-        fontWeight: 400,
-        marginTop: "2px",
-        lineHeight: 1.4,
+    switchInline: {
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        margin: "0 0 14px",
+        fontSize: "14px",
+        fontWeight: 600,
+        color: colors.dark,
     },
-    addRow: { display: "flex", gap: "8px", alignItems: "center", marginTop: "8px" },
-    coeff: { fontSize: "11px", color: colors.muted, fontWeight: 600, margin: "4px 0 0" },
+    emptyHint: { fontSize: "12px", color: colors.muted, margin: "0", lineHeight: 1.4 },
+    addRow: { display: "flex", gap: "8px", alignItems: "center", minWidth: 0 },
+    coeff: { fontSize: "12px", color: colors.muted, fontWeight: 600, textAlign: "center" },
     scaleInput: { width: "100%", padding: "8px 10px", fontSize: "13px", border: `1px solid ${colors.border}`, borderRadius: "8px", boxSizing: "border-box", fontFamily: "inherit" },
     scaleActions: { display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "8px" },
     secondary: { border: `1px solid ${colors.border}`, background: "white", color: colors.dark, borderRadius: "8px", padding: "8px 12px", fontSize: "13px", fontWeight: 600, cursor: "pointer" },

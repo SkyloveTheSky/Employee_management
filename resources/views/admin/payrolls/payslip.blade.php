@@ -104,6 +104,16 @@
         </tbody>
     </table>
 
+    <div class="payment" style="margin-bottom: 12px;">
+        <div class="box-title">CONGÉS DU MOIS</div>
+        @foreach($leaves as $leave)
+            <div class="box-item">
+                <span class="label">{{ $leave['type_label'] }}:</span>
+                {{ rtrim(rtrim(number_format((float) ($leave['days'] ?? 0), 1, ',', ' '), '0'), ',') }}
+            </div>
+        @endforeach
+    </div>
+
     <div class="payment">
         <div class="box-title">INFORMATIONS DE PAIEMENT</div>
         <div class="box-item"><span class="label">Mode :</span> {{ $payroll->payment_method ?? 'N/A' }}</div>

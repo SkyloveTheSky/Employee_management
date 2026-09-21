@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\PayrollController;
@@ -8,6 +9,9 @@ use App\Http\Controllers\User\FileManagerController as UserFileManagerController
 use App\Http\Controllers\User\InboxController as UserInboxController;
 use App\Http\Controllers\User\NotificationController as UserNotificationController;
 use App\Http\Controllers\User\PayrollController as UserPayrollController;
+use App\Http\Controllers\User\AttendanceController as UserAttendanceController;
+use App\Http\Controllers\User\LeaveController as UserLeaveController;
+use App\Http\Controllers\Admin\LeaveController as AdminLeaveController;
 use App\Http\Controllers\Admin\CompanySettingsController;
 use App\Http\Controllers\Admin\AgendaController;
 use App\Http\Controllers\Admin\ChargeController;
@@ -22,6 +26,8 @@ use App\Http\Controllers\Admin\EntrepriseWidgetController;
 use App\Http\Controllers\Admin\EmployeWidgetController;
 
 use Inertia\Inertia;
+
+Route::get('/locale/{locale}', [LocaleController::class, 'update'])->name('locale.update');
 
 Route::get('/', function () {
     if (session('admin_logged_in')) {
@@ -43,8 +49,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/payrolls', [UserPayrollController::class, 'index'])->name('payrolls.index');
     Route::get('/payrolls/{id}/pdf', [UserPayrollController::class, 'pdf'])->name('payrolls.pdf');
+    Route::get('/attendance', [UserAttendanceController::class, 'index'])->name('attendance.index');
+    Route::post('/attendance/punch', [UserAttendanceController::class, 'punch'])->name('attendance.punch');
+    Route::get('/leaves', [UserLeaveController::class, 'index'])->name('leaves.index');
+    Route::post('/leaves', [UserLeaveController::class, 'store'])->name('leaves.store');
+    Route::delete('/leaves/{leave}', [UserLeaveController::class, 'destroy'])->name('leaves.destroy');
     Route::get('/files', [UserFileManagerController::class, 'index'])->name('files.index');
-    Route::post('/files/mkdir', [UserFileManagerController::class, 'mkdir'])->name('files.mkdir');
     Route::post('/files/upload', [UserFileManagerController::class, 'upload'])->name('files.upload');
     Route::delete('/files', [UserFileManagerController::class, 'destroy'])->name('files.destroy');
     Route::get('/files/download', [UserFileManagerController::class, 'download'])->name('files.download');
@@ -102,6 +112,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/overtime', [OvertimeController::class, 'index'])->name('overtime.index');
         Route::put('/overtime/day', [OvertimeController::class, 'updateDay'])->name('overtime.day');
+        Route::get('/leaves', [AdminLeaveController::class, 'index'])->name('leaves.index');
+        Route::patch('/leaves/{leave}', [AdminLeaveController::class, 'update'])->name('leaves.update');
 
         // Settings
         Route::get('/settings', [AuthController::class, 'showSettings'])->name('settings.edit');

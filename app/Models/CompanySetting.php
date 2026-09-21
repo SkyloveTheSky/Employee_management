@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\Payroll\OvertimeTypes;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 
@@ -29,6 +30,14 @@ class CompanySetting extends Model
         'cnaps_employee_percent',
         'irsa_percent',
         'irsa_brackets',
+        'attendance_timezone',
+        'attendance_morning_start',
+        'attendance_morning_end',
+        'attendance_afternoon_start',
+        'attendance_afternoon_end',
+        'attendance_latitude',
+        'attendance_longitude',
+        'attendance_radius_m',
     ];
 
     protected function casts(): array
@@ -48,6 +57,9 @@ class CompanySetting extends Model
             'cnaps_employee_percent' => 'decimal:2',
             'irsa_percent' => 'decimal:2',
             'irsa_brackets' => 'array',
+            'attendance_latitude' => 'float',
+            'attendance_longitude' => 'float',
+            'attendance_radius_m' => 'integer',
         ];
     }
 
@@ -70,6 +82,20 @@ class CompanySetting extends Model
         }
 
         return round(self::workdayHours($settings) / 2, 2);
+    }
+
+    public static function overtimeDivisor(?self $settings = null): float
+    {
+        $settings ??= self::query()->first();
+        $stored = Schema::hasColumn('company_settings', 'overtime_divisor')
+            ? (float) ($settings?->overtime_divisor ?? 0)
+            : 0.0;
+
+        if ($stored > 0) {
+            return round($stored, 2);
+        }
+
+        return 173.33;
     }
 
     public static function overtimePremium(?self $settings = null): float
@@ -152,5 +178,83 @@ class CompanySetting extends Model
 
         return (bool) ($map[$key]['enabled'] ?? true);
     }
-}
 
+    public static function attendanceTimezone(?self $settings = null): string
+    {
+        $settings ??= self::query()->first();
+        $tz = Schema::hasColumn('company_settings', 'attendance_timezone')
+            ? (string) ($settings?->attendance_timezone ?: '')
+            : '';
+        $tz = $tz !== '' ? $tz : 'Indian/Antananarivo';
+
+        return in_array($tz, timezone_identifiers_list(), true) ? $tz : 'Indian/Antananarivo';
+    }
+
+    public static function attendanceNow(?self $settings = null): Carbon
+    {
+        return Carbon::now(self::attendanceTimezone($settings));
+    }
+
+    /**
+     * @return array{morning: array{start: string, end: string}, afternoon: array{start: string, end: string}}
+     */
+    public static function attendanceWindows(?self $settings = null): array
+    {
+        $settings ??= self::query()->first();
+        $has = Schema::hasColumn('company_settings', 'attendance_morning_start');
+
+        return [
+            'morning' => [
+                'start' => $has ? self::normalizeClock($settings?->attendance_morning_start, '06:00') : '06:00',
+                'end' => $has ? self::normalizeClock($settings?->attendance_morning_end, '12:30') : '12:30',
+            ],
+            'afternoon' => [
+                'start' => $has ? self::normalizeClock($settings?->attendance_afternoon_start, '12:00') : '12:00',
+                'end' => $has ? self::normalizeClock($settings?->attendance_afternoon_end, '20:00') : '20:00',
+            ],
+        ];
+    }
+
+    public static function attendanceRadius(?self $settings = null): int
+    {
+        $settings ??= self::query()->first();
+        if (! Schema::hasColumn('company_settings', 'attendance_radius_m')) {
+            return 150;
+        }
+        $radius = (int) ($settings?->attendance_radius_m ?: 0);
+
+        return $radius > 0 ? $radius : 150;
+    }
+
+    /**
+     * @return array{latitude: float, longitude: float}|null
+     */
+    public static function attendanceWorkplace(?self $settings = null): ?array
+    {
+        $settings ??= self::query()->first();
+        if (
+            ! Schema::hasColumn('company_settings', 'attendance_latitude')
+            || $settings?->attendance_latitude === null
+            || $settings?->attendance_longitude === null
+        ) {
+            return null;
+        }
+
+        return [
+            'latitude' => (float) $settings->attendance_latitude,
+            'longitude' => (float) $settings->attendance_longitude,
+        ];
+    }
+
+    public static function normalizeClock(?string $value, string $fallback): string
+    {
+        if (is_string($value) && preg_match('/^(\d{2}):(\d{2})/', $value, $match)) {
+            $hour = max(0, min(23, (int) $match[1]));
+            $minute = max(0, min(59, (int) $match[2]));
+
+            return sprintf('%02d:%02d', $hour, $minute);
+        }
+
+        return $fallback;
+    }
+}

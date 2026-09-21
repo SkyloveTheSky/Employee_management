@@ -4,6 +4,7 @@ namespace App\Services\Payroll;
 
 use App\Models\CompanySetting;
 use App\Models\WorkEntry;
+use App\Services\Leave\LeaveCalendar;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -23,7 +24,65 @@ class OvertimeFromTimesheet
     {
         $entries = $this->entriesInRange($year, $month, $userId);
 
-        return $this->compute($entries->keyBy(fn (WorkEntry $entry) => $entry->date->toDateString()), $year, $month);
+        return $this->compute($entries->keyBy(fn (WorkEntry $entry) => $entry->date->toDateString()), $year, $month, $userId);
+    }
+
+    /**
+     * Surplus quotidien (demi-journées), aligné sur Gestion des présences.
+     *
+     * @return array{
+     *     allowed: bool,
+     *     worked: float,
+     *     hours: float,
+     *     lines: list<array{key: string, code: string, label: string, premium: float, hours: float}>
+     * }
+     */
+    public function presenceBreakdown(int $userId, int $year, int $month, ?string $position = null): array
+    {
+        $settings = CompanySetting::query()->first();
+        $allowed = CompanySetting::positionAllowsOvertime($position, $settings);
+        $computed = $this->forEmployee($userId, $year, $month);
+        $worked = round(array_sum(array_column($computed['days'], 'hours')), 2);
+        $hours = $allowed
+            ? round(array_sum(array_column($computed['days'], 'overtime')), 2)
+            : 0.0;
+
+        $lines = [];
+        if ($allowed && $hours > 0) {
+            $types = OvertimeTypes::enabled(CompanySetting::overtimeTypesForPosition($position, $settings));
+            $normal = collect($types)->firstWhere('key', 'normal') ?? ($types[0] ?? null);
+            $sunday = collect($types)->firstWhere('key', 'sunday');
+            $byKey = [];
+
+            foreach ($computed['days'] as $day) {
+                $ot = (float) ($day['overtime'] ?? 0);
+                if ($ot <= 0 || ! $normal) {
+                    continue;
+                }
+
+                $type = Carbon::parse($day['date'])->isSunday() && $sunday ? $sunday : $normal;
+                $key = $type['key'];
+                if (! isset($byKey[$key])) {
+                    $byKey[$key] = [
+                        'key' => $type['key'],
+                        'code' => $type['code'],
+                        'label' => $type['label'],
+                        'premium' => (float) $type['premium'],
+                        'hours' => 0.0,
+                    ];
+                }
+                $byKey[$key]['hours'] = round($byKey[$key]['hours'] + $ot, 2);
+            }
+
+            $lines = array_values($byKey);
+        }
+
+        return [
+            'allowed' => $allowed,
+            'worked' => $worked,
+            'hours' => $hours,
+            'lines' => $lines,
+        ];
     }
 
     /**
@@ -40,7 +99,7 @@ class OvertimeFromTimesheet
 
         foreach ($grouped as $userId => $rows) {
             $map = $rows->keyBy(fn (WorkEntry $entry) => $entry->date->toDateString());
-            $hours[(int) $userId] = $this->compute($map, $year, $month)['hours'];
+            $hours[(int) $userId] = $this->compute($map, $year, $month, (int) $userId)['hours'];
         }
 
         return $hours;
@@ -56,7 +115,7 @@ class OvertimeFromTimesheet
      *     days: list<array<string, mixed>>
      * }
      */
-    public function compute(Collection $byDate, int $year, int $month): array
+    public function compute(Collection $byDate, int $year, int $month, ?int $userId = null): array
     {
         $settings = CompanySetting::query()->first();
         $weeklyGoal = (float) ($settings?->overtime_weekly_goal ?: 40);
@@ -65,6 +124,14 @@ class OvertimeFromTimesheet
 
         $monthStart = Carbon::create($year, $month, 1)->startOfDay();
         $monthEnd = $monthStart->copy()->endOfMonth();
+        $leaveMap = [];
+        if ($userId) {
+            $leaveMap = app(LeaveCalendar::class)->approvedSlotsForUsers(
+                [$userId],
+                $monthStart,
+                $monthEnd,
+            )[$userId] ?? [];
+        }
         $cursor = $monthStart->copy()->startOfWeek(Carbon::MONDAY);
         $rangeEnd = $monthEnd->copy()->endOfWeek(Carbon::SUNDAY);
 
@@ -88,6 +155,14 @@ class OvertimeFromTimesheet
                 $key = $day->toDateString();
                 $entry = $byDate->get($key);
                 [$morningHours, $afternoonHours] = $this->halfDayHours($entry, $hoursPerDay);
+                $morningLeave = $leaveMap[$key]['morning'] ?? null;
+                $afternoonLeave = $leaveMap[$key]['afternoon'] ?? null;
+                if ($morningLeave) {
+                    $morningHours = 0.0;
+                }
+                if ($afternoonLeave) {
+                    $afternoonHours = 0.0;
+                }
                 $hours = round($morningHours + $afternoonHours, 2);
                 $morningOvertime = self::overtimeFromHalf($morningHours, $hoursPerHalf);
                 $afternoonOvertime = self::overtimeFromHalf($afternoonHours, $hoursPerHalf);
@@ -106,6 +181,8 @@ class OvertimeFromTimesheet
                     'over_daily' => $hoursPerDay > 0 && $hours > $hoursPerDay,
                     'note' => $entry?->note,
                     'id' => $entry?->id,
+                    'morning_leave' => $morningLeave,
+                    'afternoon_leave' => $afternoonLeave,
                 ];
                 $weekDays[] = $row;
                 $days[] = $row;

@@ -1,15 +1,18 @@
 import { Link, router, usePage } from "@inertiajs/react";
 import { useEffect, useRef, useState } from "react";
 import ConfirmDialog from "@/Components/ConfirmDialog";
+import IconButton from "@/Components/IconButton";
+import LanguageSwitcher from "@/Components/LanguageSwitcher";
 import { colors } from "@/config/colors";
 import useInboxLive from "@/hooks/useInboxLive";
 import { inboxDelete } from "@/lib/inboxRequest";
+import { useDateLocale, useT } from "@/i18n";
 
-function formatWhen(value) {
+function formatWhen(value, locale) {
     if (!value) return "";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
-    return new Intl.DateTimeFormat("fr-FR", {
+    return new Intl.DateTimeFormat(locale, {
         day: "2-digit",
         month: "short",
         hour: "2-digit",
@@ -18,17 +21,29 @@ function formatWhen(value) {
 }
 
 export default function HeaderTools({ children }) {
+    const t = useT();
+    const dateLoc = useDateLocale();
     const { inbox: pageInbox } = usePage().props;
     const isAdmin = pageInbox?.role === "admin";
     const liveUrl = pageInbox?.role
         ? (isAdmin ? route("admin.messages.live") : route("messages.live"))
         : null;
-    const { data: live, refresh } = useInboxLive(liveUrl, { enabled: Boolean(liveUrl) });
-    const inbox = live?.inbox?.role ? live.inbox : pageInbox;
     const [open, setOpen] = useState(null);
     const [pending, setPending] = useState(null);
     const [deleting, setDeleting] = useState(false);
     const wrapRef = useRef(null);
+    const preview = open === "messages" || open === "notifications";
+    const { data: live, refresh } = useInboxLive({
+        url: liveUrl,
+        enabled: Boolean(liveUrl),
+        preview,
+    });
+    const inbox = {
+        ...(pageInbox || {}),
+        ...(live?.inbox || {}),
+        messages: live?.inbox?.messages ?? pageInbox?.messages ?? [],
+        notifications: live?.inbox?.notifications ?? pageInbox?.notifications ?? [],
+    };
     const messages = inbox?.messages || [];
     const notifications = inbox?.notifications || [];
     const unreadMessages = inbox?.unread_messages || 0;
@@ -80,12 +95,13 @@ export default function HeaderTools({ children }) {
     return (
         <div className="app-header-tools" ref={wrapRef} style={styles.wrap}>
             {children}
+            <LanguageSwitcher />
             <div style={styles.iconWrap}>
                 <button
                     type="button"
                     style={styles.iconBtn}
-                    aria-label="Messages"
-                    title="Messages"
+                    aria-label={t("header.messages")}
+                    title={t("header.messages")}
                     onClick={() => toggle("messages")}
                 >
                     <img src="/assets/icon/message.svg" alt="" style={styles.icon} />
@@ -94,15 +110,15 @@ export default function HeaderTools({ children }) {
                 {open === "messages" && (
                     <div style={styles.panel}>
                         <div style={styles.panelHead}>
-                            <p style={styles.panelTitle}>Messages</p>
+                            <p style={styles.panelTitle}>{t("header.messages")}</p>
                             {messagesUrl && (
                                 <Link href={messagesUrl} style={styles.panelLink} onClick={() => setOpen(null)}>
-                                    Ouvrir
+                                    {t("header.open")}
                                 </Link>
                             )}
                         </div>
                         {messages.length === 0 ? (
-                            <p style={styles.panelEmpty}>Aucun message pour le moment.</p>
+                            <p style={styles.panelEmpty}>{t("header.noMessages")}</p>
                         ) : (
                             messages.map((item) => (
                                 <div key={item.id} style={styles.itemRow}>
@@ -113,21 +129,21 @@ export default function HeaderTools({ children }) {
                                     >
                                         <span style={styles.itemFrom}>{item.from}</span>
                                         <span style={styles.itemPreview}>{item.preview}</span>
-                                        <span style={styles.itemWhen}>{formatWhen(item.at)}</span>
+                                        <span style={styles.itemWhen}>{formatWhen(item.at, dateLoc)}</span>
                                     </Link>
-                                    <button
-                                        type="button"
+                                    <IconButton
+                                        icon="close"
+                                        label={t("header.deleteMessage")}
+                                        variant="ghost"
+                                        size={28}
+                                        iconSize={14}
                                         style={styles.deleteBtn}
-                                        title="Supprimer"
-                                        aria-label="Supprimer ce message"
                                         onClick={() => setPending({
-                                            title: "Supprimer ce message ?",
-                                            message: "Le message sera retiré définitivement.",
+                                            title: t("header.deleteMessageTitle"),
+                                            message: t("header.deleteMessageBody"),
                                             url: route(destroyMessageRoute, item.id),
                                         })}
-                                    >
-                                        ×
-                                    </button>
+                                    />
                                 </div>
                             ))
                         )}
@@ -138,8 +154,8 @@ export default function HeaderTools({ children }) {
                 <button
                     type="button"
                     style={styles.iconBtn}
-                    aria-label="Notifications"
-                    title="Notifications"
+                    aria-label={t("header.notifications")}
+                    title={t("header.notifications")}
                     onClick={() => toggle("notifications")}
                 >
                     <img src="/assets/icon/notifications.svg" alt="" style={styles.icon} />
@@ -150,7 +166,7 @@ export default function HeaderTools({ children }) {
                 {open === "notifications" && (
                     <div style={styles.panel}>
                         <div style={styles.panelHead}>
-                            <p style={styles.panelTitle}>Notifications</p>
+                            <p style={styles.panelTitle}>{t("header.notifications")}</p>
                             <div style={styles.panelActions}>
                                 {unreadNotifications > 0 && (
                                     <button
@@ -158,26 +174,28 @@ export default function HeaderTools({ children }) {
                                         style={styles.panelLinkBtn}
                                         onClick={() => router.post(route(readAllRoute), {}, { preserveScroll: true })}
                                     >
-                                        Tout lu
+                                        {t("header.markAllRead")}
                                     </button>
                                 )}
                                 {notifications.length > 0 && (
-                                    <button
-                                        type="button"
-                                        style={styles.panelDangerBtn}
+                                    <IconButton
+                                        icon="close"
+                                        label={t("header.deleteAll")}
+                                        variant="ghost"
+                                        size={28}
+                                        iconSize={14}
+                                        style={styles.deleteBtn}
                                         onClick={() => setPending({
-                                            title: "Supprimer toutes les notifications ?",
-                                            message: "Toutes vos notifications seront retirées définitivement.",
+                                            title: t("header.deleteAllTitle"),
+                                            message: t("header.deleteAllBody"),
                                             url: route(destroyAllRoute),
                                         })}
-                                    >
-                                        Tout supprimer
-                                    </button>
+                                    />
                                 )}
                             </div>
                         </div>
                         {notifications.length === 0 ? (
-                            <p style={styles.panelEmpty}>Aucune notification pour le moment.</p>
+                            <p style={styles.panelEmpty}>{t("header.noNotifications")}</p>
                         ) : (
                             notifications.map((item) => (
                                 <div key={item.id} style={styles.itemRow}>
@@ -188,21 +206,21 @@ export default function HeaderTools({ children }) {
                                     >
                                         <span style={styles.itemFrom}>{item.title}</span>
                                         {item.preview && <span style={styles.itemPreview}>{item.preview}</span>}
-                                        <span style={styles.itemWhen}>{formatWhen(item.at)}</span>
+                                        <span style={styles.itemWhen}>{formatWhen(item.at, dateLoc)}</span>
                                     </button>
-                                    <button
-                                        type="button"
+                                    <IconButton
+                                        icon="close"
+                                        label={t("header.deleteNotification")}
+                                        variant="ghost"
+                                        size={28}
+                                        iconSize={14}
                                         style={styles.deleteBtn}
-                                        title="Supprimer"
-                                        aria-label="Supprimer cette notification"
                                         onClick={() => setPending({
-                                            title: "Supprimer cette notification ?",
-                                            message: "La notification sera retirée définitivement.",
+                                            title: t("header.deleteNotificationTitle"),
+                                            message: t("header.deleteNotificationBody"),
                                             url: route(destroyRoute, item.id),
                                         })}
-                                    >
-                                        ×
-                                    </button>
+                                    />
                                 </div>
                             ))
                         )}
@@ -276,7 +294,7 @@ const styles = {
         border: `1px solid ${colors.border}`,
         borderRadius: "12px",
         boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
-        padding: "12px 14px",
+        padding: "20px 0 14px 14px",
         zIndex: 40,
         maxHeight: "70vh",
         overflow: "auto",
@@ -286,7 +304,8 @@ const styles = {
         alignItems: "center",
         justifyContent: "space-between",
         gap: "8px",
-        marginBottom: "8px",
+        marginBottom: "10px",
+        paddingRight: "16px",
     },
     panelActions: {
         display: "flex",
@@ -326,24 +345,20 @@ const styles = {
     },
     itemRow: {
         display: "flex",
-        alignItems: "flex-start",
-        gap: "4px",
+        alignItems: "center",
+        gap: "8px",
         borderTop: `1px solid ${colors.border}`,
+        paddingRight: "16px",
     },
     deleteBtn: {
-        border: "none",
-        background: "transparent",
-        color: colors.muted,
-        cursor: "pointer",
-        fontSize: "18px",
-        lineHeight: 1,
-        padding: "8px 4px",
+        marginRight: "4px",
         flexShrink: 0,
     },
     panelEmpty: {
         margin: 0,
         fontSize: "13px",
         color: colors.muted,
+        paddingRight: "16px",
     },
     item: {
         display: "flex",
